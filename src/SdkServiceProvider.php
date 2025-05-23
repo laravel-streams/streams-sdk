@@ -6,10 +6,6 @@ use Streams\Core\Field\Field;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
-use Streams\Sdk\Console\Commands\MakeAddon;
-use Streams\Sdk\Console\Commands\MakeEntry;
-use Streams\Sdk\Console\Commands\MakeStream;
-use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
 use Streams\Sdk\Console\Inputs\ObjectConsoleInput;
 use Streams\Sdk\Console\Inputs\SelectConsoleInput;
@@ -117,8 +113,12 @@ class SdkServiceProvider extends ServiceProvider
             'datetime' => StringConsoleInput::class,
             'date' => StringConsoleInput::class,
             'time' => StringConsoleInput::class,
-            
+
             'relationship' => StringConsoleInput::class,
+
+            'number' => StringConsoleInput::class,
+            'decimal' => StringConsoleInput::class,
+            'integer' => StringConsoleInput::class,
         ]);
 
         foreach ($inputs as $abstract => $concrete) {

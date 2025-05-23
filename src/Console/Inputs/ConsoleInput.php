@@ -22,7 +22,7 @@ class ConsoleInput
 
         return $command->ask(
             $this->field->name(),
-            $this->field->default($default)
+            is_null($default) ? $default : $this->field->default($default)
         );
     }
 }

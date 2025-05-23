@@ -117,6 +117,8 @@ class SdkServiceProvider extends ServiceProvider
             'datetime' => StringConsoleInput::class,
             'date' => StringConsoleInput::class,
             'time' => StringConsoleInput::class,
+            
+            'relationship' => StringConsoleInput::class,
         ]);
 
         foreach ($inputs as $abstract => $concrete) {

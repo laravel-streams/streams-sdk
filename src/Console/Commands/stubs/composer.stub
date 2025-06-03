@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "{{ $namespace }}\\": "src/"
+            "{{ addslashes($namespace) }}\\": "src/"
         }
     },
     "autoload-dev": {

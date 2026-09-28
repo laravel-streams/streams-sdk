@@ -1,6 +1,6 @@
 {
     "name": "Files",
-    "handle": "files",
+    "id": "files",
     "description": "Basic filesystem cache.",
     "config": {
         "source": {
@@ -17,11 +17,6 @@
             "handle": "view",
             "uri": "files\/{id}",
             "view": "file"
-        },
-        {
-            "handle": "render",
-            "uri": "file/{id}",
-            "uses": "App\\Http\\Controllers\\ViewFile"
         }
     ],
     "fields": [
@@ -97,14 +92,6 @@
                         "handle": "data",
                         "attributes": {
                             "href": "/files/{entry.id}",
-                            "target": "_blank",
-                            "class": ["a-button", "-secondary"]
-                        }
-                    },
-                    {
-                        "handle": "render",
-                        "attributes": {
-                            "href": "/file/{entry.id}",
                             "target": "_blank",
                             "class": ["a-button", "-secondary"]
                         }

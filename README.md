@@ -52,6 +52,10 @@ You can also update your entire project using `composer update`.
 
 `php artisan streams:livewire posts` writes `app/Livewire/PostsIndex.php`, `PostsForm.php`, and `PostsShow.php` (the namespace follows `livewire.class_namespace`) and matching views under `resources/views/livewire/`. The components use the stream's repository, so they work with any source. Form rules come from the stream's field rules and types; protected fields are not shown or bound. Nothing is registered for you: add the printed routes (named `posts.index`, `posts.create`, `posts.edit`, `posts.show`) to `routes/web.php`. Full-page components render inside the Livewire layout (`livewire.layout`). Existing files are kept unless `--force` is passed.
 
+## Example streams
+
+`php artisan vendor:publish --tag=examples` copies the example definitions in [`streams/`](streams) (`blog_posts`, `products`, `contacts`, `docs`, `files`) into your app. Single examples publish with `--tag=blog-example`, `ecommerce-example`, `crm-example`, `docs-example`, or `files-example`. They use flat-file JSON storage so they boot without models or migrations; point `config.source` at Eloquent when you add a model. Some relationship fields name streams the examples do not ship (for example `users`), which `streams:validate` reports as warnings.
+
 # MCP server for AI agents
 
 With `laravel/mcp` installed, the SDK registers a local MCP server that agents (Claude Code, Cursor, Codex, and others) can use to inspect streams, read and write entries, validate and create stream definitions, search the docs, and run the generators:

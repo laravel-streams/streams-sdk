@@ -1,0 +1,238 @@
+{
+    "id": "products",
+    "name": "Products",
+    "description": "E-commerce product catalog with inventory management, pricing, and categories.",
+    "config": {
+        "source": {
+            "format": "json"
+        }
+    },
+    "fields": [
+        {
+            "handle": "id",
+            "type": "integer",
+            "name": "ID"
+        },
+        {
+            "handle": "name",
+            "type": "string",
+            "name": "Product Name",
+            "required": true,
+            "config": {
+                "max": 255,
+                "placeholder": "Enter product name..."
+            }
+        },
+        {
+            "handle": "slug",
+            "type": "slug",
+            "name": "URL Slug",
+            "unique": true,
+            "config": {
+                "slugify": "name"
+            }
+        },
+        {
+            "handle": "description",
+            "type": "string",
+            "name": "Short Description",
+            "config": {
+                "max": 500,
+                "placeholder": "Brief product description..."
+            }
+        },
+        {
+            "handle": "long_description",
+            "type": "string",
+            "input": {
+                "type": "markdown"
+            },
+            "name": "Detailed Description",
+            "config": {
+                "height": 300
+            }
+        },
+        {
+            "handle": "sku",
+            "type": "string",
+            "name": "SKU",
+            "unique": true,
+            "required": true,
+            "config": {
+                "max": 100,
+                "placeholder": "Product SKU..."
+            }
+        },
+        {
+            "handle": "price",
+            "type": "decimal",
+            "name": "Price",
+            "required": true,
+            "config": {
+                "decimals": 2,
+                "min": 0,
+                "step": 0.01
+            }
+        },
+        {
+            "handle": "sale_price",
+            "type": "decimal",
+            "name": "Sale Price",
+            "config": {
+                "decimals": 2,
+                "min": 0,
+                "step": 0.01
+            }
+        },
+        {
+            "handle": "cost",
+            "type": "decimal",
+            "name": "Cost",
+            "config": {
+                "decimals": 2,
+                "min": 0,
+                "step": 0.01
+            }
+        },
+        {
+            "handle": "stock_quantity",
+            "type": "integer",
+            "name": "Stock Quantity",
+            "config": {
+                "min": 0,
+                "default": 0
+            }
+        },
+        {
+            "handle": "low_stock_threshold",
+            "type": "integer",
+            "name": "Low Stock Threshold",
+            "config": {
+                "min": 0,
+                "default": 5
+            }
+        },
+        {
+            "handle": "weight",
+            "type": "decimal",
+            "name": "Weight (kg)",
+            "config": {
+                "decimals": 3,
+                "min": 0
+            }
+        },
+        {
+            "handle": "dimensions",
+            "type": "object",
+            "name": "Dimensions",
+            "config": {
+                "schema": {
+                    "length": {
+                        "type": "decimal"
+                    },
+                    "width": {
+                        "type": "decimal"
+                    },
+                    "height": {
+                        "type": "decimal"
+                    }
+                }
+            }
+        },
+        {
+            "handle": "featured_image",
+            "type": "image",
+            "name": "Featured Image",
+            "config": {
+                "disk": "public",
+                "path": "products/images"
+            }
+        },
+        {
+            "handle": "category_id",
+            "type": "relationship",
+            "name": "Category",
+            "required": true,
+            "config": {
+                "related": "product_categories",
+                "title_field": "name",
+                "value_field": "id"
+            }
+        },
+        {
+            "handle": "brand_id",
+            "type": "relationship",
+            "name": "Brand",
+            "config": {
+                "related": "brands",
+                "title_field": "name",
+                "value_field": "id"
+            }
+        },
+        {
+            "handle": "status",
+            "type": "select",
+            "name": "Status",
+            "required": true,
+            "config": {
+                "options": {
+                    "active": "Active",
+                    "inactive": "Inactive",
+                    "draft": "Draft",
+                    "discontinued": "Discontinued"
+                },
+                "default": "draft"
+            }
+        },
+        {
+            "handle": "is_featured",
+            "type": "boolean",
+            "name": "Featured Product",
+            "config": {
+                "default": false
+            }
+        },
+        {
+            "handle": "is_digital",
+            "type": "boolean",
+            "name": "Digital Product",
+            "config": {
+                "default": false
+            }
+        },
+        {
+            "handle": "manage_stock",
+            "type": "boolean",
+            "name": "Manage Stock",
+            "config": {
+                "default": true
+            }
+        },
+        {
+            "handle": "meta_title",
+            "type": "string",
+            "name": "SEO Title",
+            "config": {
+                "max": 60
+            }
+        },
+        {
+            "handle": "meta_description",
+            "type": "string",
+            "name": "SEO Description",
+            "config": {
+                "max": 160
+            }
+        },
+        {
+            "handle": "created_at",
+            "type": "datetime",
+            "name": "Created At"
+        },
+        {
+            "handle": "updated_at",
+            "type": "datetime",
+            "name": "Updated At"
+        }
+    ]
+}

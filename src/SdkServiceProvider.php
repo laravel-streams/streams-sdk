@@ -49,6 +49,22 @@ class SdkServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../streams/files.json' => base_path('streams/files.json'),
         ], ['examples', 'files-example']);
+
+        $this->publishes([
+            __DIR__ . '/../streams/blog_posts.json' => base_path('streams/blog_posts.json'),
+        ], ['examples', 'blog-example']);
+
+        $this->publishes([
+            __DIR__ . '/../streams/products.json' => base_path('streams/products.json'),
+        ], ['examples', 'ecommerce-example']);
+
+        $this->publishes([
+            __DIR__ . '/../streams/contacts.json' => base_path('streams/contacts.json'),
+        ], ['examples', 'crm-example']);
+
+        $this->publishes([
+            __DIR__ . '/../streams/docs.json' => base_path('streams/docs.json'),
+        ], ['examples', 'docs-example']);
     }
 
     public function boot()

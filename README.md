@@ -1,3 +1,11 @@
+# Streams SDK
+
+`streams/sdk` is the development toolkit for Laravel apps built on [Streams](https://streams.dev): Artisan generators, stubs, stream definition validation, and a local MCP server that gives AI agents a machine interface to your app.
+
+Install it as a dev dependency. It is not needed in production.
+
+> **Naming:** in Streams, **SDK** means this PHP package: Artisan tooling plus the MCP server. The **client** is the JavaScript API client, [`@laravel-streams/api-client`](https://www.npmjs.com/package/@laravel-streams/api-client), which talks to the HTTP API from `streams/api`. The SDK is not a client library.
+
 # Installation
 
 ## Downloading
@@ -5,10 +13,18 @@
 This package is added to Laravel projects as a dependency by requiring it with Composer.
 
 ```bash
-composer require streams/sdk:1.0.x-dev
+composer require --dev streams/sdk:1.0.x-dev
 ```
 
 The Streams SDK comes pre-configured with the [Streams starter application](/docs/installation) and some of the [examples](/docs/examples).
+
+To use the MCP server, also install [`laravel/mcp`](https://github.com/laravel/mcp) (Laravel 11.45+ or 12.41+):
+
+```bash
+composer require --dev laravel/mcp
+```
+
+Everything except the MCP server works on Laravel 10 through 12.
 
 ## Updating
 
@@ -19,6 +35,37 @@ composer update streams/sdk --with-dependencies
 ```
 
 You can also update your entire project using `composer update`.
+
+# Commands
+
+| Command | Description |
+|---------|-------------|
+| `make:stream {id} [--name=] [--description=] [--force]` | Write a validated stream definition to `streams/{id}.json`. Refuses to overwrite unless `--force` is passed. |
+| `make:entry {stream} {input?}` | Create an entry, prompting for missing fields. |
+| `make:addon {vendor/name} [--description=] [--force]` | Scaffold an addon package in `addons/`. |
+| `streams:list [--json]` | List registered streams. |
+| `streams:schema [--include=] [--exclude=] [--path=]` | Write a JSON Schema for each stream's entries. |
+| `streams:validate [paths...] [--json]` | Validate stream definitions. Defaults to `streams/*.json`. |
+
+# MCP server for AI agents
+
+With `laravel/mcp` installed, the SDK registers a local MCP server that agents (Claude Code, Cursor, Codex, and others) can use to inspect streams, read and write entries, validate and create stream definitions, search the docs, and run the generators:
+
+```bash
+php artisan mcp:start streams
+```
+
+For example, with Claude Code, run this from the app root:
+
+```bash
+claude mcp add streams -- php artisan mcp:start streams
+```
+
+See [docs/mcp.md](docs/mcp.md) for the tool list, client configuration, and settings.
+
+# Stream definition JSON Schema
+
+[`resources/schemas/streams.schema.json`](resources/schemas/streams.schema.json) describes `streams/*.json`. Point your editor at it, or validate with `php artisan streams:validate`. See [docs/stream-definition-schema.md](docs/stream-definition-schema.md).
 
 # Templates
 
@@ -32,5 +79,4 @@ Or target specific example templates:
 
 ```bash
 php artisan vendor:publish --tag=files-example
-php artisan vendor:publish --tag=users-example
 ```

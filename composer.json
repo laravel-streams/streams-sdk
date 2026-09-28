@@ -1,6 +1,6 @@
 {
     "name": "streams/sdk",
-    "description": "Dev tools for Laravel + Streams.",
+    "description": "Artisan generators, stream definition validation, and a local MCP server for Laravel Streams.",
     "type": "streams-addon",
     "authors": [
         {

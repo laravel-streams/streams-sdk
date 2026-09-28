@@ -35,7 +35,7 @@ class StreamGenerator
 
         if (File::exists($path) && !$overwrite) {
             throw ValidationException::withMessages([
-                'id' => "[{$relative}] already exists. Pass overwrite: true to replace it.",
+                'id' => "[{$relative}] already exists.",
             ]);
         }
 
@@ -70,7 +70,7 @@ class StreamGenerator
         $definition = [
             '$schema' => StreamDefinitionValidator::SCHEMA_ID,
             'name' => Arr::get($attributes, 'name') ?: Str::title(str_replace(['-', '_'], ' ', $id)),
-            'description' => Arr::get($attributes, 'description', ''),
+            'description' => Arr::get($attributes, 'description') ?: '',
             'config' => Arr::get($attributes, 'config') ?: [
                 'source' => [
                     'format' => 'json',

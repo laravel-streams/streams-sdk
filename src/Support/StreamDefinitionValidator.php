@@ -126,6 +126,10 @@ class StreamDefinitionValidator
             $errors[] = "/config/source/model: Model class [{$model}] does not exist.";
         }
 
+        foreach ($this->unresolvedImports($definition) as $pointer => $import) {
+            $warnings[] = "{$pointer}: Import [{$import}] does not exist or is not valid JSON. streams/core resolves imports relative to the application base path.";
+        }
+
         foreach ($this->fields($definition) as $pointer => $field) {
 
             $type = Arr::get($field, 'type', 'string');
@@ -180,9 +184,18 @@ class StreamDefinitionValidator
     {
         $fields = [];
 
-        foreach ((array) Arr::get($definition, 'fields', []) as $key => $field) {
+        $definitionFields = $this->resolveImport(Arr::get($definition, 'fields', []));
+
+        foreach ((array) $definitionFields as $key => $field) {
+
+            $field = $this->resolveImport($field);
 
             $field = is_string($field) ? ['type' => $field] : $field;
+
+            // An unresolved import is reported by unresolvedImports().
+            if (is_string($field['type'] ?? null) && $this->isImport($field['type'])) {
+                continue;
+            }
 
             if (!is_array($field)) {
                 continue;
@@ -192,6 +205,60 @@ class StreamDefinitionValidator
         }
 
         return $fields;
+    }
+
+    /**
+     * Imports ("@path/to/file.json") in "fields" that do not resolve
+     * to a JSON file, keyed by JSON pointer.
+     *
+     * @return array<string, string>
+     */
+    protected function unresolvedImports(array $definition): array
+    {
+        $fields = Arr::get($definition, 'fields', []);
+
+        if (is_string($fields)) {
+            return $this->resolveImport($fields) === $fields && $this->isImport($fields)
+                ? ['/fields' => $fields]
+                : [];
+        }
+
+        $missing = [];
+
+        foreach ((array) $fields as $key => $field) {
+            if (is_string($field) && $this->isImport($field) && $this->resolveImport($field) === $field) {
+                $missing['/fields/' . $key] = $field;
+            }
+        }
+
+        return $missing;
+    }
+
+    protected function isImport(mixed $value): bool
+    {
+        return is_string($value) && str_starts_with($value, '@');
+    }
+
+    /**
+     * Resolve an "@path/to/file.json" import the way streams/core's
+     * StreamBuilder does (relative to the base path, JSON decoded).
+     * Anything else, or an import that does not resolve, is returned as is.
+     */
+    protected function resolveImport(mixed $value): mixed
+    {
+        if (!$this->isImport($value)) {
+            return $value;
+        }
+
+        $path = base_path(substr($value, 1));
+
+        if (!is_file($path)) {
+            return $value;
+        }
+
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : $value;
     }
 
     /**

@@ -144,4 +144,71 @@ class StreamDefinitionSchemaTest extends TestCase
             fn ($path) => str_contains((string) $path, 'constraints')
         ), $message);
     }
+
+    public static function fieldImportShapes(): array
+    {
+        return [
+            'whole fields value' => ['@streams/fields/common.json', true],
+            'one field in list form' => [['@streams/fields/title.json', ['handle' => 'id', 'type' => 'slug']], true],
+            'one field in object form' => [['seo' => '@streams/fields/seo.json', 'title' => 'string'], true],
+            'path without @' => ['streams/fields/common.json', false],
+            'non-JSON import' => [['@streams/fields/title.yaml'], false],
+        ];
+    }
+
+    #[DataProvider('fieldImportShapes')]
+    public function test_fields_accept_imports(mixed $fields, bool $valid)
+    {
+        $this->assertSchemaResult(['fields' => $fields], $valid, 'fields');
+    }
+
+    public static function objectAllowedShapes(): array
+    {
+        return [
+            'stream' => [[['stream' => 'posts']], true],
+            'generic and prototype classes' => [[['generic' => 'Illuminate\Support\Collection'], ['prototype' => 'App\Prototypes\Address']], true],
+            'list of strings' => [['posts'], false],
+            'field type object' => [[['type' => 'number']], false],
+            'empty object' => [[[]], false],
+        ];
+    }
+
+    #[DataProvider('objectAllowedShapes')]
+    public function test_object_allowed_items_name_a_stream_generic_or_prototype(array $allowed, bool $valid)
+    {
+        $this->assertSchemaResult([
+            'fields' => [[
+                'handle' => 'meta',
+                'type' => 'object',
+                'config' => ['allowed' => $allowed],
+            ]],
+        ], $valid, 'allowed');
+    }
+
+    protected function assertSchemaResult(array $definition, bool $valid, string $path): void
+    {
+        // Encode empty PHP arrays inside "allowed" as JSON objects.
+        $json = json_encode($definition);
+        $json = str_replace('"allowed":[[]]', '"allowed":[{}]', $json);
+
+        $result = (new Validator())->validate(
+            json_decode($json),
+            json_decode(file_get_contents(StreamDefinitionValidator::schemaPath()))
+        );
+
+        $message = $result->isValid()
+            ? 'expected this definition to be rejected: ' . $json
+            : json_encode((new ErrorFormatter())->format($result->error()), JSON_PRETTY_PRINT);
+
+        $this->assertSame($valid, $result->isValid(), $message);
+
+        if ($valid) {
+            return;
+        }
+
+        $this->assertNotEmpty(array_filter(
+            array_keys((new ErrorFormatter())->format($result->error())),
+            fn ($pointer) => str_contains((string) $pointer, $path)
+        ), $message);
+    }
 }

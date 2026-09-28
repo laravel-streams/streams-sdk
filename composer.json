@@ -2,6 +2,13 @@
     "name": "streams/sdk",
     "description": "Artisan generators, stream definition validation, and a local MCP server for Laravel Streams.",
     "type": "streams-addon",
+    "license": "MIT",
+    "homepage": "https://streams.dev",
+    "support": {
+        "issues": "https://github.com/laravel-streams/streams-sdk/issues",
+        "source": "https://github.com/laravel-streams/streams-sdk",
+        "docs": "https://streams.dev/docs/sdk/introduction"
+    },
     "authors": [
         {
             "name": "Ryan Thompson",
@@ -9,6 +16,7 @@
         }
     ],
     "require": {
+        "php": "^8.2",
         "streams/core": "^2.0",
         "opis/json-schema": "^2.3"
     },
@@ -33,9 +41,6 @@
         }
     },
     "extra": {
-        "branch-alias": {
-            "dev-master": "1.x-dev"
-        },
         "laravel": {
             "providers": [
                 "Streams\\Sdk\\SdkServiceProvider"

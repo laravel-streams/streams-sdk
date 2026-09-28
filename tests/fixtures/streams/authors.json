@@ -1,0 +1,19 @@
+{
+    "name": "Authors",
+    "config": {
+        "source": {
+            "type": "filebase",
+            "format": "json"
+        }
+    },
+    "fields": {
+        "id": {
+            "type": "slug",
+            "required": true
+        },
+        "name": "string",
+        "email": {
+            "type": "email"
+        }
+    }
+}

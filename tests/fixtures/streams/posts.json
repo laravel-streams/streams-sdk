@@ -1,0 +1,51 @@
+{
+    "$schema": "https://streams.dev/schema/streams.schema.json",
+    "name": "Posts",
+    "description": "Blog posts.",
+    "config": {
+        "source": {
+            "type": "filebase",
+            "format": "json"
+        }
+    },
+    "fields": [
+        {
+            "handle": "id",
+            "type": "slug",
+            "required": true,
+            "unique": true
+        },
+        {
+            "handle": "title",
+            "type": "string",
+            "required": true,
+            "rules": ["max:120"]
+        },
+        {
+            "handle": "status",
+            "type": "select",
+            "config": {
+                "options": {
+                    "draft": "Draft",
+                    "live": "Live"
+                }
+            }
+        },
+        {
+            "handle": "author_id",
+            "type": "relationship",
+            "config": {
+                "related": "authors"
+            }
+        },
+        {
+            "handle": "views",
+            "type": "integer"
+        },
+        {
+            "handle": "secret",
+            "type": "string",
+            "protected": true
+        }
+    ]
+}

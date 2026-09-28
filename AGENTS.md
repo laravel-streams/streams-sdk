@@ -33,6 +33,7 @@
 | `make:stream {id} [--name=] [--description=] [--force]` | Validated `streams/{id}.json`. Refuses to overwrite unless `--force` is passed. |
 | `make:addon {vendor/name} [--description=] [--force]` | Addon scaffold. Non-interactive when `--description` is passed. |
 | `make:entry {stream}` | Interactive entry prompt. Agents should use the `create-entry` tool instead. |
+| `streams:livewire {stream} [--type=all\|index\|form\|show] [--force]` | Livewire 3 components and views for a stream. Non-interactive; prints routes instead of editing `routes/web.php`. Refuses to overwrite unless `--force` is passed. |
 
 `streams:describe` and `streams:tap` live under `src/Console/Commands` and are not registered. `streams:describe` introspects a database table or Eloquent model and was written against an older API. The supported way to inspect a registered stream is the MCP `describe-stream` tool (and the `streams://streams/{id}` resource). Do not register that command without rewriting it.
 

@@ -46,6 +46,11 @@ You can also update your entire project using `composer update`.
 | `streams:list [--json]` | List registered streams. |
 | `streams:schema [--include=] [--exclude=] [--path=]` | Write a JSON Schema for each stream's entries. |
 | `streams:validate [paths...] [--json]` | Validate stream definitions. Defaults to `streams/*.json`. |
+| `streams:livewire {stream} [--type=all\|index\|form\|show] [--force]` | Generate Livewire 3 index, form, and show components and views for a stream, and print the routes to add. Needs `livewire/livewire` ^3 in the app. |
+
+## Livewire components
+
+`php artisan streams:livewire posts` writes `app/Livewire/PostsIndex.php`, `PostsForm.php`, and `PostsShow.php` (the namespace follows `livewire.class_namespace`) and matching views under `resources/views/livewire/`. The components use the stream's repository, so they work with any source. Form rules come from the stream's field rules and types; protected fields are not shown or bound. Nothing is registered for you: add the printed routes (named `posts.index`, `posts.create`, `posts.edit`, `posts.show`) to `routes/web.php`. Full-page components render inside the Livewire layout (`livewire.layout`). Existing files are kept unless `--force` is passed.
 
 # MCP server for AI agents
 

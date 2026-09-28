@@ -1,0 +1,42 @@
+<?php
+
+namespace {{ namespace }};
+
+use Livewire\Component;
+use Illuminate\Support\Facades\Route;
+use Streams\Core\Support\Facades\Streams;
+
+class {{ class }} extends Component
+{
+    /**
+     * Key of the entry on screen (route parameter {entry}).
+     */
+    public string $entryKey;
+
+    public function mount(string $entry): void
+    {
+        abort_unless(Streams::repository('{{ stream }}')->find($entry), 404);
+
+        $this->entryKey = $entry;
+    }
+
+    public function delete()
+    {
+        if ($instance = Streams::repository('{{ stream }}')->find($this->entryKey)) {
+            $instance->delete();
+
+            session()->flash('message', '{{ title }} entry deleted.');
+        }
+
+        if (Route::has('{{ stream }}.index')) {
+            return $this->redirectRoute('{{ stream }}.index');
+        }
+    }
+
+    public function render()
+    {
+        return view('{{ view }}', [
+            'entry' => Streams::repository('{{ stream }}')->find($this->entryKey),
+        ]);
+    }
+}

@@ -25,10 +25,12 @@
         "laravel/mcp": "^1.0",
         "orchestra/testbench-core": "^10.0",
         "phpunit/phpunit": "^11.5",
-        "mockery/mockery": "^1.6"
+        "mockery/mockery": "^1.6",
+        "livewire/livewire": "^3.6"
     },
     "suggest": {
-        "laravel/mcp": "Required to run the Streams MCP server for AI agents (php artisan mcp:start streams). Needs Laravel 11.45+ or 12.41+."
+        "laravel/mcp": "Required to run the Streams MCP server for AI agents (php artisan mcp:start streams). Needs Laravel 11.45+ or 12.41+.",
+        "livewire/livewire": "Required by the components streams:livewire generates (^3.0)."
     },
     "autoload": {
         "psr-4": {

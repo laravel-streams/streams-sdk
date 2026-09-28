@@ -1,0 +1,84 @@
+<?php
+
+namespace {{ namespace }};
+
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Route;
+use Streams\Core\Support\Facades\Streams;
+
+class {{ class }} extends Component
+{
+    use WithFileUploads;
+
+    /**
+     * Key of the entry being edited. Null while creating.
+     */
+    public ?string $entry = null;
+
+{{ properties }}
+
+    protected function rules(): array
+    {
+        return [
+{{ rules }}
+        ];
+    }
+
+    public function mount(?string $entry = null): void
+    {
+        if (! $entry) {
+            return;
+        }
+
+        $instance = Streams::repository('{{ stream }}')->find($entry);
+
+        abort_unless($instance, 404);
+
+        $this->entry = $entry;
+
+        foreach ($this->attributes() as $attribute) {
+            $this->{$attribute} = $instance->{$attribute};
+        }
+    }
+
+    protected function attributes(): array
+    {
+        return [{{ attributes }}];
+    }
+
+    public function save()
+    {
+        $data = $this->validate();
+
+        foreach ($data as $key => $value) {
+            if (is_object($value) && method_exists($value, 'store')) {
+                $data[$key] = $value->store('uploads', 'public');
+            }
+        }
+
+        $repository = Streams::repository('{{ stream }}');
+
+        if ($this->entry && $instance = $repository->find($this->entry)) {
+            $instance->fill($data);
+            $instance->save();
+
+            session()->flash('message', '{{ title }} entry updated.');
+        } else {
+            $instance = $repository->create($data);
+
+            $this->entry = (string) $instance->{{ keyName }};
+
+            session()->flash('message', '{{ title }} entry created.');
+        }
+
+        if (Route::has('{{ stream }}.index')) {
+            return $this->redirectRoute('{{ stream }}.index');
+        }
+    }
+
+    public function render()
+    {
+        return view('{{ view }}');
+    }
+}

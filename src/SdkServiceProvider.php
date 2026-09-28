@@ -34,6 +34,7 @@ class SdkServiceProvider extends ServiceProvider
                 \Streams\Sdk\Console\Commands\MakeAddon::class,
                 \Streams\Sdk\Console\Commands\MakeEntry::class,
                 \Streams\Sdk\Console\Commands\MakeStream::class,
+                \Streams\Sdk\Console\Commands\MakeLivewire::class,
                 \Streams\Sdk\Console\Commands\StreamsSchema::class,
                 // \Streams\Sdk\Console\Commands\ShowEntry::class,      Necessary?
                 // \Streams\Sdk\Console\Commands\ShowStream::class,     Necessary?

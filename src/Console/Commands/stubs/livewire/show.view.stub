@@ -1,0 +1,24 @@
+<div class="mx-auto max-w-3xl space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-gray-900">{{ title }} entry</h1>
+        <div class="flex items-center gap-3 text-sm">
+            @if (Route::has('{{ stream }}.index'))
+                <a href="{{ route('{{ stream }}.index') }}" class="text-gray-700 underline">Back</a>
+            @endif
+            @if (Route::has('{{ stream }}.edit'))
+                <a href="{{ route('{{ stream }}.edit', $entry->{{ keyName }}) }}" class="text-gray-700 underline">Edit</a>
+            @endif
+            <button type="button" wire:click="delete" wire:confirm="Delete this entry?" class="text-red-600">Delete</button>
+        </div>
+    </div>
+
+    @if (session()->has('message'))
+        <div class="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">{{ session('message') }}</div>
+    @endif
+
+    <div class="rounded-lg border border-gray-200 bg-white">
+        <dl class="divide-y divide-gray-200">
+{{ showFields }}
+        </dl>
+    </div>
+</div>

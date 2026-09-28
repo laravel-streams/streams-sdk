@@ -70,6 +70,13 @@
             "type": "string",
             "description": "Shorthand for a single \"view\" route URI, for example \"posts/{id}\"."
         },
+        "data": {
+            "description": "Inline entries for a self source (config.source.type \"self\"). An object keyed by entry key, or a list of entry objects. streams/core reads this key from the definition file.",
+            "oneOf": [
+                { "type": "object" },
+                { "type": "array" }
+            ]
+        },
         "routes": {
             "description": "Routes served by this stream. A list of route objects, or an object keyed by route handle whose values are a URI string or a route object.",
             "oneOf": [
@@ -167,6 +174,18 @@
                 "example": {
                     "description": "An example value, used by docs and generators."
                 },
+                "docs": {
+                    "type": "string",
+                    "description": "URL of documentation for this field."
+                },
+                "input": {
+                    "type": "object",
+                    "description": "Form input hint consumed by streams/ui (for example {\"type\": \"editor\"}). streams/core does not read it.",
+                    "properties": {
+                        "type": { "type": "string" },
+                        "language": { "type": "string" }
+                    }
+                },
                 "config": {
                     "$ref": "#/definitions/fieldConfig"
                 }
@@ -217,8 +236,39 @@
                     ]
                 },
                 "related": {
-                    "description": "relationship/array: the related stream ID.",
-                    "$ref": "#/definitions/streamId"
+                    "description": "relationship, polymorphic, or array: the related stream ID, or a list of stream IDs. This is the key streams/core reads (Field::config('related')). A \"related\" key next to \"type\" is ignored.",
+                    "oneOf": [
+                        { "$ref": "#/definitions/streamId" },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": { "$ref": "#/definitions/streamId" }
+                        }
+                    ]
+                },
+                "multiple": {
+                    "type": "boolean",
+                    "description": "relationship: store a list of related keys."
+                },
+                "key_name": {
+                    "type": "string",
+                    "description": "relationship: key field on the related stream. Defaults to \"id\"."
+                },
+                "stream": {
+                    "description": "array: a stream ID, or an inline stream definition, used to cast items.",
+                    "oneOf": [
+                        { "$ref": "#/definitions/streamId" },
+                        { "type": "object" }
+                    ]
+                },
+                "allowed": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "object: allowed property types."
+                },
+                "enforce_items": {
+                    "type": "boolean",
+                    "description": "array: when false, items are not validated against config.items. Defaults to true."
                 },
                 "relation": {
                     "type": "string",

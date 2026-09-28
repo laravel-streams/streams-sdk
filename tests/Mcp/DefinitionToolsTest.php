@@ -77,6 +77,39 @@ class DefinitionToolsTest extends McpTestCase
         $this->assertStringContainsString('Stream [tags] is not registered yet', implode("\n", $result['warnings']));
     }
 
+    public function test_validate_warns_once_per_related_stream_in_a_list()
+    {
+        $result = $this->decode(StreamsServer::tool(ValidateStreamDefinition::class, [
+            'id' => 'comments',
+            'definition' => [
+                'fields' => [[
+                    'handle' => 'commentable',
+                    'type' => 'polymorphic',
+                    'config' => ['related' => ['posts', 'pages', 'comments']],
+                ]],
+            ],
+        ])->assertOk());
+
+        $warnings = implode("\n", $result['warnings']);
+
+        $this->assertTrue($result['valid'], json_encode($result));
+        $this->assertStringNotContainsString('Stream [posts]', $warnings);
+        $this->assertStringNotContainsString('Stream [comments]', $warnings);
+        $this->assertStringContainsString('Stream [pages] is not registered yet', $warnings);
+    }
+
+    public function test_validate_warns_when_default_is_not_in_config()
+    {
+        $result = $this->decode(StreamsServer::tool(ValidateStreamDefinition::class, [
+            'definition' => [
+                'fields' => [['handle' => 'title', 'type' => 'string', 'default' => 'Untitled']],
+            ],
+        ])->assertOk());
+
+        $this->assertTrue($result['valid'], json_encode($result));
+        $this->assertStringContainsString('config.default', implode("\n", $result['warnings']));
+    }
+
     public function test_validate_existing_files()
     {
         $result = $this->decode(

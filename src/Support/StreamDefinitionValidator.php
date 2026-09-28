@@ -50,7 +50,7 @@ class StreamDefinitionValidator
 
         $errors = array_merge($errors, $this->schemaErrors($definition));
 
-        [$semanticErrors, $warnings] = $this->semanticIssues($definition);
+        [$semanticErrors, $warnings] = $this->semanticIssues($definition, $id);
 
         $errors = array_merge($errors, $semanticErrors);
 
@@ -97,7 +97,7 @@ class StreamDefinitionValidator
         return $errors;
     }
 
-    protected function semanticIssues(array $definition): array
+    protected function semanticIssues(array $definition, ?string $id = null): array
     {
         $errors = [];
         $warnings = [];
@@ -105,6 +105,12 @@ class StreamDefinitionValidator
         if (isset($definition['handle']) && !isset($definition['id'])) {
             $warnings[] = '/handle: "handle" is deprecated. Use "id" or rely on the file name.';
         }
+
+        $ownIds = array_filter([
+            $id,
+            Arr::get($definition, 'id'),
+            Arr::get($definition, 'handle'),
+        ], fn ($value) => is_string($value) && $value !== '');
 
         if (($extends = Arr::get($definition, 'extends')) && is_string($extends) && !Streams::exists($extends)) {
             $errors[] = "/extends: Stream [{$extends}] is not registered.";
@@ -129,13 +135,19 @@ class StreamDefinitionValidator
                     . implode(', ', $this->fieldTypes()) . '.';
             }
 
-            if (isset($field['related']) && !Arr::has($field, 'config.related')) {
-                $errors[] = "{$pointer}: \"related\" must be inside \"config\" (config.related).";
+            if (array_key_exists('default', $field)) {
+                $warnings[] = "{$pointer}/default: \"default\" at the field root is ignored. Put it in config.default.";
             }
 
-            $related = Arr::get($field, 'config.related');
+            if (isset($field['related']) && !Arr::has($field, 'config.related')) {
+                $errors[] = "{$pointer}: \"related\" must be inside \"config\" (config.related). streams/core only reads config.related.";
+            }
 
-            if (is_string($related) && !Streams::exists($related) && $related !== Arr::get($definition, 'id')) {
+            foreach ($this->relatedIds(Arr::get($field, 'config.related')) as $related) {
+                if (in_array($related, $ownIds, true) || Streams::exists($related)) {
+                    continue;
+                }
+
                 $warnings[] = "{$pointer}/config/related: Stream [{$related}] is not registered yet.";
             }
         }
@@ -180,6 +192,22 @@ class StreamDefinitionValidator
         }
 
         return $fields;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function relatedIds(mixed $related): array
+    {
+        if (is_string($related)) {
+            return [$related];
+        }
+
+        if (!is_array($related)) {
+            return [];
+        }
+
+        return array_values(array_filter($related, fn ($id) => is_string($id) && $id !== ''));
     }
 
     protected function fieldTypes(): array

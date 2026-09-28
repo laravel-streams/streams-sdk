@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Streams\Sdk\Support\StreamDefinitionValidator;
+use Streams\Sdk\Support\StreamGenerator;
 
 class StreamDefinitionSchemaTest extends TestCase
 {
@@ -49,10 +50,54 @@ class StreamDefinitionSchemaTest extends TestCase
         $this->assertSame('http://json-schema.org/draft-07/schema#', $schema['$schema']);
     }
 
-    public function test_the_make_stream_stub_points_at_the_schema()
+    public function test_generated_definitions_point_at_the_schema()
     {
-        $stub = file_get_contents(dirname(__DIR__, 2) . '/src/Console/Commands/stubs/stream.stub');
+        $definition = (new StreamGenerator(new StreamDefinitionValidator()))->definition('notes');
 
-        $this->assertStringContainsString(StreamDefinitionValidator::SCHEMA_ID, $stub);
+        $this->assertSame(StreamDefinitionValidator::SCHEMA_ID, $definition['$schema']);
+    }
+
+    public function test_related_lists_self_entries_and_input_hints_match_the_schema()
+    {
+        $definition = [
+            'name' => 'Comments',
+            'config' => ['source' => ['type' => 'self']],
+            'data' => [
+                'one' => ['id' => 'one', 'body' => 'Hi'],
+            ],
+            'fields' => [
+                [
+                    'handle' => 'id',
+                    'type' => 'slug',
+                    'required' => true,
+                ],
+                [
+                    'handle' => 'body',
+                    'type' => 'string',
+                    'docs' => 'https://streams.dev/docs/core/fields',
+                    'input' => ['type' => 'editor'],
+                ],
+                [
+                    'handle' => 'commentable',
+                    'type' => 'polymorphic',
+                    'config' => ['related' => ['posts', 'pages']],
+                ],
+                [
+                    'handle' => 'author_id',
+                    'type' => 'relationship',
+                    'config' => ['related' => 'authors', 'multiple' => true],
+                ],
+            ],
+        ];
+
+        $result = (new Validator())->validate(
+            json_decode(json_encode($definition)),
+            json_decode(file_get_contents(StreamDefinitionValidator::schemaPath()))
+        );
+
+        $this->assertTrue(
+            $result->isValid(),
+            $result->isValid() ? '' : json_encode((new ErrorFormatter())->format($result->error()), JSON_PRETTY_PRINT)
+        );
     }
 }

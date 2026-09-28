@@ -3,7 +3,7 @@
     "config": {
         "source": {
             "path": "vendor/streams/sdk/resources/streams/data/blueprints",
-            "format": "markdown"
+            "format": "md"
         },
         "abstract": "Streams\\Core\\Entry\\Entry"
     },

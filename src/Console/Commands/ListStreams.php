@@ -3,6 +3,7 @@
 namespace Streams\Sdk\Console\Commands;
 
 use Illuminate\Console\Command;
+use Streams\Sdk\Support\StreamInspector;
 
 class ListStreams extends Command
 {
@@ -13,21 +14,27 @@ class ListStreams extends Command
      * @var string
      */
     protected $signature = 'streams:list
-        {--query= : Query constraints.}
-        {--show=id,name,description : Fields to display.}
-        {--per-page=15 : Entries per page.}
-        {--page= : Page to list.}';
+        {--json : Output JSON for scripts and agents.}';
 
     protected $description = 'List registered streams.';
 
-    public function handle()
+    public function handle(StreamInspector $inspector)
     {
-        $this->call('entries:list', [
-            'stream' => 'core.streams',
-            '--query' => $this->option('query'),
-            '--show' => $this->option('show'),
-            '--per-page' => $this->option('per-page'),
-            '--page' => $this->option('page'),
-        ]);
+        $streams = $inspector->summaries();
+
+        if ($this->option('json')) {
+            return $this->line(json_encode($streams, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+
+        $this->table(
+            ['ID', 'Name', 'Source', 'Fields', 'Description'],
+            array_map(fn ($stream) => [
+                $stream['id'],
+                $stream['name'],
+                $stream['source'],
+                count($stream['fields']),
+                (string) $stream['description'],
+            ], $streams)
+        );
     }
 }

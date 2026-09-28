@@ -6,6 +6,7 @@ use Streams\Core\Field\Field;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
+use Streams\Sdk\Support\DocsIndex;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
 use Streams\Sdk\Console\Inputs\ObjectConsoleInput;
 use Streams\Sdk\Console\Inputs\SelectConsoleInput;
@@ -17,6 +18,17 @@ class SdkServiceProvider extends ServiceProvider
 {
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__ . '/../resources/config/sdk.php', 'streams.sdk');
+
+        $this->app->singleton(DocsIndex::class, fn () => new DocsIndex(
+            (array) Config::get('streams.sdk.mcp.docs.paths', []),
+            base_path()
+        ));
+
+        $this->publishes([
+            __DIR__ . '/../resources/config/sdk.php' => config_path('streams/sdk.php'),
+        ], 'streams-sdk-config');
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \Streams\Sdk\Console\Commands\MakeAddon::class,
@@ -28,6 +40,8 @@ class SdkServiceProvider extends ServiceProvider
                 // \Streams\Sdk\Console\Commands\ListEntries::class,    Necessary?
                 // \Streams\Sdk\Console\Commands\ListStreams::class,    Necessary?
                 //\Streams\Sdk\Console\Commands\DescribeStream::class,
+                \Streams\Sdk\Console\Commands\ListStreams::class,
+                \Streams\Sdk\Console\Commands\StreamsValidate::class,
             ]);
         }
 
@@ -39,6 +53,7 @@ class SdkServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerInputs();
+        $this->registerMcpServer();
 
         Field::macro('console', function () {
 
@@ -124,5 +139,25 @@ class SdkServiceProvider extends ServiceProvider
         foreach ($inputs as $abstract => $concrete) {
             $this->app->bind("streams.console.inputs.{$abstract}", $concrete);
         }
+    }
+
+    /**
+     * Register the local-development MCP server
+     * when laravel/mcp is installed.
+     */
+    protected function registerMcpServer()
+    {
+        if (!class_exists(\Laravel\Mcp\Server::class) || !Config::get('streams.sdk.mcp.enabled', true)) {
+            return;
+        }
+
+        if ($this->app->environment('production') && !Config::get('streams.sdk.mcp.allow_production', false)) {
+            return;
+        }
+
+        \Laravel\Mcp\Facades\Mcp::local(
+            Config::get('streams.sdk.mcp.handle', 'streams'),
+            \Streams\Sdk\Mcp\StreamsServer::class
+        );
     }
 }

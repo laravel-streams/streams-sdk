@@ -100,4 +100,48 @@ class StreamDefinitionSchemaTest extends TestCase
             $result->isValid() ? '' : json_encode((new ErrorFormatter())->format($result->error()), JSON_PRETTY_PRINT)
         );
     }
+
+    public static function routeConstraintShapes(): array
+    {
+        return [
+            'object of parameter to regex' => [['id' => '[^./]+'], true],
+            'list of parameter objects' => [[['id' => '[^./]+']], true],
+            'string' => ['[^./]+', false],
+        ];
+    }
+
+    #[DataProvider('routeConstraintShapes')]
+    public function test_route_constraints_accept_an_object_or_a_list_of_objects(mixed $constraints, bool $valid)
+    {
+        $definition = [
+            'routes' => [[
+                'handle' => 'view',
+                'uri' => 'docs/{id}',
+                'view' => 'docs',
+                'constraints' => $constraints,
+            ]],
+        ];
+
+        $result = (new Validator())->validate(
+            json_decode(json_encode($definition)),
+            json_decode(file_get_contents(StreamDefinitionValidator::schemaPath()))
+        );
+
+        $message = $result->isValid()
+            ? 'expected this constraints value to be rejected'
+            : json_encode((new ErrorFormatter())->format($result->error()), JSON_PRETTY_PRINT);
+
+        $this->assertSame($valid, $result->isValid(), $message);
+
+        if ($valid) {
+            return;
+        }
+
+        $paths = array_keys((new ErrorFormatter())->format($result->error()));
+
+        $this->assertNotEmpty(array_filter(
+            $paths,
+            fn ($path) => str_contains((string) $path, 'constraints')
+        ), $message);
+    }
 }

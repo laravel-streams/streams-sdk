@@ -1,0 +1,125 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/catalog.schema.json",
+    "title": "Streams SDK catalog",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "version",
+        "source",
+        "field_types",
+        "ui"
+    ],
+    "properties": {
+        "version": {
+            "type": "integer"
+        },
+        "source": {
+            "type": "object",
+            "required": [
+                "core",
+                "ui"
+            ],
+            "properties": {
+                "core": {
+                    "type": "string"
+                },
+                "ui": {
+                    "type": "string"
+                }
+            }
+        },
+        "field_types": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "handle",
+                    "class"
+                ],
+                "properties": {
+                    "handle": {
+                        "type": "string",
+                        "description": "The field type handle, kebab-case."
+                    },
+                    "class": {
+                        "type": "string",
+                        "description": "The field type class."
+                    },
+                    "schema": {
+                        "type": "string",
+                        "description": "The field JSON schema class."
+                    },
+                    "decorator": {
+                        "type": "string",
+                        "description": "The field decorator class."
+                    },
+                    "config": {
+                        "type": "object",
+                        "description": "Config keys the type reads, with required flags."
+                    },
+                    "defaults": {
+                        "type": "object",
+                        "description": "Default config values."
+                    },
+                    "allowed_parents": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "ui": {
+            "type": "object",
+            "required": [
+                "builders"
+            ],
+            "properties": {
+                "builders": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "id",
+                            "group"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "group": {
+                                "type": "string"
+                            },
+                            "label": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "options": {
+                                "type": "object"
+                            },
+                            "allowed_parents": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "source": {
+                                "type": "string",
+                                "enum": [
+                                    "code",
+                                    "manifest"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

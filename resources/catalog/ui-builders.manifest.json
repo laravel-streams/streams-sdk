@@ -1,0 +1,352 @@
+[
+    {
+        "id": "panel",
+        "group": "panel",
+        "label": "Panel",
+        "description": "An administration panel that hosts navigation and resources.",
+        "options": {
+            "path": "admin",
+            "brandName": null,
+            "navigation": []
+        },
+        "allowed_parents": []
+    },
+    {
+        "id": "tab",
+        "group": "panel",
+        "label": "Tab",
+        "description": "A navigation tab inside a panel.",
+        "options": {},
+        "allowed_parents": ["panel"]
+    },
+    {
+        "id": "table",
+        "group": "table",
+        "label": "Table",
+        "description": "A data table bound to a stream with columns, filters, and actions.",
+        "options": {
+            "stream": null,
+            "columns": [],
+            "filters": [],
+            "actions": []
+        },
+        "allowed_parents": ["panel", "page"]
+    },
+    {
+        "id": "column",
+        "group": "table",
+        "label": "Column",
+        "description": "A column in a table.",
+        "options": {
+            "handle": null,
+            "label": null,
+            "sortable": false
+        },
+        "allowed_parents": ["table"]
+    },
+    {
+        "id": "form",
+        "group": "form",
+        "label": "Form",
+        "description": "A form bound to a stream or entry.",
+        "options": {
+            "stream": null,
+            "fields": []
+        },
+        "allowed_parents": ["panel", "page", "modal"]
+    },
+    {
+        "id": "field",
+        "group": "form",
+        "label": "Field",
+        "description": "A form field bound to a stream field.",
+        "options": {
+            "handle": null,
+            "label": null,
+            "required": false
+        },
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "action",
+        "group": "action",
+        "label": "Action",
+        "description": "An action an entry or table row can run.",
+        "options": {
+            "name": null,
+            "handle": null,
+            "confirm": false
+        },
+        "allowed_parents": ["table", "form", "resource"]
+    },
+    {
+        "id": "modal",
+        "group": "modal",
+        "label": "Modal",
+        "description": "A modal dialog for confirmations and nested forms.",
+        "options": {
+            "title": null,
+            "width": "md"
+        },
+        "allowed_parents": ["panel", "page", "table", "form"]
+    },
+    {
+        "id": "navigation",
+        "group": "navigation",
+        "label": "Navigation",
+        "description": "The navigation bar of a panel.",
+        "options": {},
+        "allowed_parents": ["panel"]
+    },
+    {
+        "id": "menu",
+        "group": "menu",
+        "label": "Menu",
+        "description": "A dropdown menu of links or actions.",
+        "options": {},
+        "allowed_parents": ["panel", "form", "page"]
+    },
+    {
+        "id": "list",
+        "group": "list",
+        "label": "List",
+        "description": "A repeatable list of entries.",
+        "options": {
+            "stream": null
+        },
+        "allowed_parents": ["panel", "page"]
+    },
+    {
+        "id": "repeater",
+        "group": "list",
+        "label": "Repeater",
+        "description": "A repeatable array of nested items.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "calendar",
+        "group": "calendar",
+        "label": "Calendar",
+        "description": "A calendar view of dated entries.",
+        "options": {
+            "stream": null,
+            "date_field": null
+        },
+        "allowed_parents": ["panel", "page"]
+    },
+    {
+        "id": "prompt",
+        "group": "prompt",
+        "label": "Prompt",
+        "description": "A modal prompt (confirm, alert, or input capture).",
+        "options": {
+            "type": "confirm"
+        },
+        "allowed_parents": ["panel", "page", "table", "form"]
+    },
+    {
+        "id": "livewire-page",
+        "group": "livewire",
+        "label": "Livewire Page",
+        "description": "A standalone Livewire page component.",
+        "options": {},
+        "allowed_parents": []
+    },
+    {
+        "id": "livewire-table",
+        "group": "livewire",
+        "label": "Livewire Table",
+        "description": "A Livewire component rendering a table.",
+        "options": {},
+        "allowed_parents": ["livewire-page"]
+    },
+    {
+        "id": "livewire-form",
+        "group": "livewire",
+        "label": "Livewire Form",
+        "description": "A Livewire component rendering a form.",
+        "options": {},
+        "allowed_parents": ["livewire-page"]
+    },
+    {
+        "id": "livewire-widget",
+        "group": "livewire",
+        "label": "Livewire Widget",
+        "description": "A Livewire component rendering a small dashboard widget.",
+        "options": {},
+        "allowed_parents": ["livewire-page"]
+    },
+    {
+        "id": "resource",
+        "group": "resource",
+        "label": "Resource",
+        "description": "A resource tying a stream to its panel table, form, and actions.",
+        "options": {
+            "stream": null,
+            "table": null,
+            "form": null
+        },
+        "allowed_parents": ["panel"]
+    },
+    {
+        "id": "input-text",
+        "group": "input",
+        "label": "Text Input",
+        "description": "Single-line text input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-textarea",
+        "group": "input",
+        "label": "Textarea Input",
+        "description": "Multi-line text input.",
+        "options": {},
+        "allowed_parents": ["form", "list"]
+    },
+    {
+        "id": "input-email",
+        "group": "input",
+        "label": "Email Input",
+        "description": "Email input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-url",
+        "group": "input",
+        "label": "URL Input",
+        "description": "URL input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-password",
+        "group": "input",
+        "label": "Password Input",
+        "description": "Password input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-number",
+        "group": "input",
+        "label": "Number Input",
+        "description": "Numeric input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-integer",
+        "group": "input",
+        "label": "Integer Input",
+        "description": "Integer input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-decimal",
+        "group": "input",
+        "label": "Decimal Input",
+        "description": "Decimal/number with precision input.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-date",
+        "group": "input",
+        "label": "Date Input",
+        "description": "Date picker.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-datetime",
+        "group": "input",
+        "label": "Datetime Input",
+        "description": "Date and time picker.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-time",
+        "group": "input",
+        "label": "Time Input",
+        "description": "Time picker.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-select",
+        "group": "input",
+        "label": "Select Input",
+        "description": "Dropdown select.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-multiselect",
+        "group": "input",
+        "label": "Multiselect Input",
+        "description": "Multi-value select.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-checkbox",
+        "group": "input",
+        "label": "Checkbox Input",
+        "description": "Boolean checkbox.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-radio",
+        "group": "input",
+        "label": "Radio Input",
+        "description": "Single-choice radio group.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-toggle",
+        "group": "input",
+        "label": "Toggle Input",
+        "description": "Boolean toggle switch.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-range",
+        "group": "input",
+        "label": "Range Input",
+        "description": "Numeric range slider.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-color",
+        "group": "input",
+        "label": "Color Input",
+        "description": "Color picker.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-file",
+        "group": "input",
+        "label": "File Input",
+        "description": "File upload.",
+        "options": {},
+        "allowed_parents": ["form"]
+    },
+    {
+        "id": "input-image",
+        "group": "input",
+        "label": "Image Input",
+        "description": "Image upload and picker.",
+        "options": {},
+        "allowed_parents": ["form"]
+    }
+]

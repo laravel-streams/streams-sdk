@@ -1,0 +1,790 @@
+{
+    "$schema": "https://streams.dev/schema/catalog.schema.json",
+    "version": 1,
+    "source": {
+        "core": "vendor/streams/core/src/Field/Types",
+        "ui": "resources/catalog/ui-builders.manifest.json (streams/ui is not installed)"
+    },
+    "field_types": [
+        {
+            "handle": "array",
+            "class": "Streams\\Core\\Field\\Types\\ArrayFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\ArraySchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\ArrayDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "boolean",
+            "class": "Streams\\Core\\Field\\Types\\BooleanFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\BooleanSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\BooleanDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "color",
+            "class": "Streams\\Core\\Field\\Types\\ColorFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\ColorDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "date",
+            "class": "Streams\\Core\\Field\\Types\\DateFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\DateSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\DateDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "datetime",
+            "class": "Streams\\Core\\Field\\Types\\DatetimeFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\DatetimeSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\DatetimeDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "decimal",
+            "class": "Streams\\Core\\Field\\Types\\DecimalFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\DecimalSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\DecimalDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "email",
+            "class": "Streams\\Core\\Field\\Types\\EmailFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\EmailSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\EmailDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "encrypted",
+            "class": "Streams\\Core\\Field\\Types\\EncryptedFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\EncryptedSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\EncryptedDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "file",
+            "class": "Streams\\Core\\Field\\Types\\FileFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\FileDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "hash",
+            "class": "Streams\\Core\\Field\\Types\\HashFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\HashSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\HashDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "image",
+            "class": "Streams\\Core\\Field\\Types\\ImageFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\ImageDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "integer",
+            "class": "Streams\\Core\\Field\\Types\\IntegerFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\IntegerSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\IntegerDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "markdown",
+            "class": "Streams\\Core\\Field\\Types\\MarkdownFieldType",
+            "schema": "Streams\\Core\\Field\\FieldSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\MarkdownDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "multiselect",
+            "class": "Streams\\Core\\Field\\Types\\MultiselectFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\MultiselectSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\MultiselectDecorator",
+            "config": {
+                "options": {
+                    "type": "object|string",
+                    "required": true,
+                    "description": "The selectable options keyed by value."
+                }
+            },
+            "defaults": {
+                "options": []
+            },
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "number",
+            "class": "Streams\\Core\\Field\\Types\\NumberFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\NumberSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\NumberDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "object",
+            "class": "Streams\\Core\\Field\\Types\\ObjectFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\ObjectSchema",
+            "decorator": "Streams\\Core\\Field\\FieldDecorator",
+            "config": {
+                "allowed": {
+                    "type": "object",
+                    "required": false,
+                    "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}."
+                },
+                "properties": {
+                    "type": "object",
+                    "required": false,
+                    "description": "Inline nested field definitions."
+                }
+            },
+            "defaults": [],
+            "allowed_parents": [
+                "stream",
+                "object"
+            ]
+        },
+        {
+            "handle": "relationship",
+            "class": "Streams\\Core\\Field\\Types\\RelationshipFieldType",
+            "schema": "Streams\\Core\\Field\\FieldSchema",
+            "decorator": "Streams\\Core\\Field\\FieldDecorator",
+            "config": {
+                "related": {
+                    "type": "string|array",
+                    "required": true,
+                    "description": "One stream id, or a list of ids for polymorphic and multi-target fields."
+                }
+            },
+            "defaults": {
+                "related": null
+            },
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "select",
+            "class": "Streams\\Core\\Field\\Types\\SelectFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\SelectSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\SelectDecorator",
+            "config": {
+                "options": {
+                    "type": "object|string",
+                    "required": true,
+                    "description": "The selectable options keyed by value."
+                }
+            },
+            "defaults": {
+                "options": []
+            },
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "slug",
+            "class": "Streams\\Core\\Field\\Types\\SlugFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\StringDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "string",
+            "class": "Streams\\Core\\Field\\Types\\StringFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\StringDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "time",
+            "class": "Streams\\Core\\Field\\Types\\TimeFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\TimeSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\DatetimeDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "url",
+            "class": "Streams\\Core\\Field\\Types\\UrlFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\UrlSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\UrlDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
+            ]
+        },
+        {
+            "handle": "uuid",
+            "class": "Streams\\Core\\Field\\Types\\UuidFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\UuidSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\StringDecorator",
+            "config": {
+                "default": {
+                    "type": "boolean|string|integer",
+                    "required": false,
+                    "description": "\"default\": true generates a UUID when an entry is created."
+                }
+            },
+            "defaults": {
+                "default": false
+            },
+            "allowed_parents": [
+                "stream"
+            ]
+        }
+    ],
+    "ui": {
+        "builders": [
+            {
+                "id": "panel",
+                "group": "panel",
+                "label": "Panel",
+                "description": "An administration panel that hosts navigation and resources.",
+                "options": {
+                    "path": "admin",
+                    "brandName": null,
+                    "navigation": []
+                },
+                "allowed_parents": [],
+                "source": "manifest"
+            },
+            {
+                "id": "tab",
+                "group": "panel",
+                "label": "Tab",
+                "description": "A navigation tab inside a panel.",
+                "options": [],
+                "allowed_parents": [
+                    "panel"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "table",
+                "group": "table",
+                "label": "Table",
+                "description": "A data table bound to a stream with columns, filters, and actions.",
+                "options": {
+                    "stream": null,
+                    "columns": [],
+                    "filters": [],
+                    "actions": []
+                },
+                "allowed_parents": [
+                    "panel",
+                    "page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "column",
+                "group": "table",
+                "label": "Column",
+                "description": "A column in a table.",
+                "options": {
+                    "handle": null,
+                    "label": null,
+                    "sortable": false
+                },
+                "allowed_parents": [
+                    "table"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "form",
+                "group": "form",
+                "label": "Form",
+                "description": "A form bound to a stream or entry.",
+                "options": {
+                    "stream": null,
+                    "fields": []
+                },
+                "allowed_parents": [
+                    "panel",
+                    "page",
+                    "modal"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "field",
+                "group": "form",
+                "label": "Field",
+                "description": "A form field bound to a stream field.",
+                "options": {
+                    "handle": null,
+                    "label": null,
+                    "required": false
+                },
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "action",
+                "group": "action",
+                "label": "Action",
+                "description": "An action an entry or table row can run.",
+                "options": {
+                    "name": null,
+                    "handle": null,
+                    "confirm": false
+                },
+                "allowed_parents": [
+                    "table",
+                    "form",
+                    "resource"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "modal",
+                "group": "modal",
+                "label": "Modal",
+                "description": "A modal dialog for confirmations and nested forms.",
+                "options": {
+                    "title": null,
+                    "width": "md"
+                },
+                "allowed_parents": [
+                    "panel",
+                    "page",
+                    "table",
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "navigation",
+                "group": "navigation",
+                "label": "Navigation",
+                "description": "The navigation bar of a panel.",
+                "options": [],
+                "allowed_parents": [
+                    "panel"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "menu",
+                "group": "menu",
+                "label": "Menu",
+                "description": "A dropdown menu of links or actions.",
+                "options": [],
+                "allowed_parents": [
+                    "panel",
+                    "form",
+                    "page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "list",
+                "group": "list",
+                "label": "List",
+                "description": "A repeatable list of entries.",
+                "options": {
+                    "stream": null
+                },
+                "allowed_parents": [
+                    "panel",
+                    "page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "repeater",
+                "group": "list",
+                "label": "Repeater",
+                "description": "A repeatable array of nested items.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "calendar",
+                "group": "calendar",
+                "label": "Calendar",
+                "description": "A calendar view of dated entries.",
+                "options": {
+                    "stream": null,
+                    "date_field": null
+                },
+                "allowed_parents": [
+                    "panel",
+                    "page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "prompt",
+                "group": "prompt",
+                "label": "Prompt",
+                "description": "A modal prompt (confirm, alert, or input capture).",
+                "options": {
+                    "type": "confirm"
+                },
+                "allowed_parents": [
+                    "panel",
+                    "page",
+                    "table",
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "livewire-page",
+                "group": "livewire",
+                "label": "Livewire Page",
+                "description": "A standalone Livewire page component.",
+                "options": [],
+                "allowed_parents": [],
+                "source": "manifest"
+            },
+            {
+                "id": "livewire-table",
+                "group": "livewire",
+                "label": "Livewire Table",
+                "description": "A Livewire component rendering a table.",
+                "options": [],
+                "allowed_parents": [
+                    "livewire-page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "livewire-form",
+                "group": "livewire",
+                "label": "Livewire Form",
+                "description": "A Livewire component rendering a form.",
+                "options": [],
+                "allowed_parents": [
+                    "livewire-page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "livewire-widget",
+                "group": "livewire",
+                "label": "Livewire Widget",
+                "description": "A Livewire component rendering a small dashboard widget.",
+                "options": [],
+                "allowed_parents": [
+                    "livewire-page"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "resource",
+                "group": "resource",
+                "label": "Resource",
+                "description": "A resource tying a stream to its panel table, form, and actions.",
+                "options": {
+                    "stream": null,
+                    "table": null,
+                    "form": null
+                },
+                "allowed_parents": [
+                    "panel"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-text",
+                "group": "input",
+                "label": "Text Input",
+                "description": "Single-line text input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-textarea",
+                "group": "input",
+                "label": "Textarea Input",
+                "description": "Multi-line text input.",
+                "options": [],
+                "allowed_parents": [
+                    "form",
+                    "list"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-email",
+                "group": "input",
+                "label": "Email Input",
+                "description": "Email input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-url",
+                "group": "input",
+                "label": "URL Input",
+                "description": "URL input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-password",
+                "group": "input",
+                "label": "Password Input",
+                "description": "Password input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-number",
+                "group": "input",
+                "label": "Number Input",
+                "description": "Numeric input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-integer",
+                "group": "input",
+                "label": "Integer Input",
+                "description": "Integer input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-decimal",
+                "group": "input",
+                "label": "Decimal Input",
+                "description": "Decimal/number with precision input.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-date",
+                "group": "input",
+                "label": "Date Input",
+                "description": "Date picker.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-datetime",
+                "group": "input",
+                "label": "Datetime Input",
+                "description": "Date and time picker.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-time",
+                "group": "input",
+                "label": "Time Input",
+                "description": "Time picker.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-select",
+                "group": "input",
+                "label": "Select Input",
+                "description": "Dropdown select.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-multiselect",
+                "group": "input",
+                "label": "Multiselect Input",
+                "description": "Multi-value select.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-checkbox",
+                "group": "input",
+                "label": "Checkbox Input",
+                "description": "Boolean checkbox.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-radio",
+                "group": "input",
+                "label": "Radio Input",
+                "description": "Single-choice radio group.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-toggle",
+                "group": "input",
+                "label": "Toggle Input",
+                "description": "Boolean toggle switch.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-range",
+                "group": "input",
+                "label": "Range Input",
+                "description": "Numeric range slider.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-color",
+                "group": "input",
+                "label": "Color Input",
+                "description": "Color picker.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-file",
+                "group": "input",
+                "label": "File Input",
+                "description": "File upload.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            },
+            {
+                "id": "input-image",
+                "group": "input",
+                "label": "Image Input",
+                "description": "Image upload and picker.",
+                "options": [],
+                "allowed_parents": [
+                    "form"
+                ],
+                "source": "manifest"
+            }
+        ]
+    }
+}

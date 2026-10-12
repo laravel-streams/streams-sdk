@@ -1,0 +1,283 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/streams.schema.json",
+    "title": "Stream definition",
+    "additionalProperties": true,
+    "required": [
+        "name",
+        "fields"
+    ],
+    "properties": {
+        "id": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string"
+        },
+        "handle": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "extends": {
+            "type": "string"
+        },
+        "config": {
+            "type": "object"
+        },
+        "fields": {
+            "type": [
+                "array",
+                "object"
+            ],
+            "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                    "handle": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "array",
+                            "boolean",
+                            "color",
+                            "date",
+                            "datetime",
+                            "decimal",
+                            "email",
+                            "encrypted",
+                            "file",
+                            "hash",
+                            "image",
+                            "integer",
+                            "markdown",
+                            "multiselect",
+                            "number",
+                            "object",
+                            "relationship",
+                            "select",
+                            "slug",
+                            "string",
+                            "time",
+                            "url",
+                            "uuid"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "unique": {
+                        "type": "boolean"
+                    },
+                    "rules": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "config": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "options": {
+                                "description": "The selectable options keyed by value. Required when the field type is used.",
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "allowed": {
+                                "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}.",
+                                "oneOf": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            },
+                            "properties": {
+                                "description": "Inline nested field definitions.",
+                                "oneOf": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            },
+                            "related": {
+                                "description": "One stream id, or a list of ids for polymorphic and multi-target fields. Required when the field type is used.",
+                                "oneOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                ]
+                            },
+                            "default": {
+                                "description": "\"default\": true generates a UUID when an entry is created.",
+                                "oneOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "additionalProperties": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                    "handle": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "array",
+                            "boolean",
+                            "color",
+                            "date",
+                            "datetime",
+                            "decimal",
+                            "email",
+                            "encrypted",
+                            "file",
+                            "hash",
+                            "image",
+                            "integer",
+                            "markdown",
+                            "multiselect",
+                            "number",
+                            "object",
+                            "relationship",
+                            "select",
+                            "slug",
+                            "string",
+                            "time",
+                            "url",
+                            "uuid"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "unique": {
+                        "type": "boolean"
+                    },
+                    "rules": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "config": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "properties": {
+                            "options": {
+                                "description": "The selectable options keyed by value. Required when the field type is used.",
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "allowed": {
+                                "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}.",
+                                "oneOf": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            },
+                            "properties": {
+                                "description": "Inline nested field definitions.",
+                                "oneOf": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            },
+                            "related": {
+                                "description": "One stream id, or a list of ids for polymorphic and multi-target fields. Required when the field type is used.",
+                                "oneOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                ]
+                            },
+                            "default": {
+                                "description": "\"default\": true generates a UUID when an entry is created.",
+                                "oneOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "rules": {
+            "type": "object"
+        },
+        "route": {
+            "type": "object"
+        },
+        "routes": {
+            "type": "object"
+        },
+        "data": {
+            "type": "object"
+        },
+        "ui": {
+            "type": "object"
+        }
+    }
+}

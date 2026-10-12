@@ -17,7 +17,7 @@ Install it with Core already required:
 composer require --dev streams/sdk:1.0.x-dev
 ```
 
-Commands are registered only when the app is running in the console. The ones `php artisan` can see today are `make:stream`, `make:entry`, `make:addon`, `streams:list`, `streams:validate`, `streams:schema`, and `streams:livewire`. Arguments, options, and the commands that exist in source but are not registered are in the [command reference](/docs/sdk/commands).
+Commands are registered only when the app is running in the console. The ones `php artisan` can see today are `make:stream`, `make:entry`, `make:addon`, `make:table`, `streams:list`, `streams:validate`, `streams:schema`, `streams:catalog`, and `streams:livewire`. Arguments, options, and the commands that exist in source but are not registered are in the [command reference](/docs/sdk/commands).
 
 There is no `streams:component` or `streams:crud` command.
 

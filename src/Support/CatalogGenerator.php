@@ -123,6 +123,7 @@ class CatalogGenerator
             'additionalProperties' => false,
             'required' => ['version', 'source', 'field_types', 'ui'],
             'properties' => [
+                '$schema' => ['type' => 'string', 'description' => 'Points at this schema.'],
                 'version' => ['type' => 'integer'],
                 'source' => [
                     'type' => 'object',
@@ -157,16 +158,23 @@ class CatalogGenerator
 
             if (!$config instanceof \stdClass && $config !== []) {
                 foreach ($config as $key => $rule) {
-                    $fieldConfig[$key] ??= [
-                        'description' => $rule['description'] ?? null,
-                        'oneOf' => $this->configTypes($rule['type'] ?? 'string'),
-                    ];
+                    $entry = ['oneOf' => $this->configTypes($rule['type'] ?? 'string')];
+
+                    if (($rule['description'] ?? null) !== null) {
+                        $entry['description'] = $rule['description'];
+                    }
 
                     if ($rule['required'] ?? false) {
-                        $fieldConfig[$key]['description'] = trim(
+                        $entry['description'] = trim(
                             (($rule['description'] ?? '') . ' Required when the field type is used.')
                         );
+
+                        if ($entry['description'] === '') {
+                            $entry['description'] = 'Required when the field type is used.';
+                        }
                     }
+
+                    $fieldConfig[$key] ??= $entry;
                 }
             }
         }
@@ -239,7 +247,22 @@ class CatalogGenerator
             'array' => ['type' => 'array'],
         ];
 
-        return $map[$type] ?? ['type' => 'string'];
+        $schemas = $map[$type] ?? [['type' => 'string']];
+
+        // oneOf always takes a list of schemas; a single schema is wrapped.
+        if (array_key_exists('type', $schemas)) {
+            $schemas = [$schemas];
+        }
+
+        return $schemas;
+    }
+
+    /**
+     * Empty payloads encode as JSON objects ({}), never arrays ([]).
+     */
+    protected function asObject(array $value): object|array
+    {
+        return empty($value) ? new \stdClass() : $value;
     }
 
     /**
@@ -271,8 +294,8 @@ class CatalogGenerator
                 'class' => $class,
                 'schema' => $this->className($class, 'getSchemaName'),
                 'decorator' => $this->className($class, 'getDecoratorName'),
-                'config' => $this->fieldTypeMeta[$handle]['config'] ?? new \stdClass(),
-                'defaults' => $this->fieldTypeMeta[$handle]['defaults'] ?? new \stdClass(),
+                'config' => $this->asObject($this->fieldTypeMeta[$handle]['config'] ?? []),
+                'defaults' => $this->asObject($this->fieldTypeMeta[$handle]['defaults'] ?? []),
                 'allowed_parents' => $this->allowedParents($handle),
             ], fn ($value) => $value !== null);
         }
@@ -422,6 +445,11 @@ class CatalogGenerator
 
         foreach ($manifest as &$builder) {
             $builder['source'] = 'manifest';
+
+            // Empty options must stay JSON objects ({}) once re-encoded.
+            if (empty($builder['options']) || !is_array($builder['options'])) {
+                $builder['options'] = new \stdClass();
+            }
         }
 
         return $manifest;

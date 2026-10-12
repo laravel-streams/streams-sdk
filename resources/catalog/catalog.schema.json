@@ -11,6 +11,10 @@
         "ui"
     ],
     "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "Points at this schema."
+        },
         "version": {
             "type": "integer"
         },

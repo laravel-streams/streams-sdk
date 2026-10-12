@@ -196,7 +196,7 @@
                     "description": "Inline nested field definitions."
                 }
             },
-            "defaults": [],
+            "defaults": {},
             "allowed_parents": [
                 "stream",
                 "object"
@@ -324,7 +324,7 @@
                 "group": "panel",
                 "label": "Tab",
                 "description": "A navigation tab inside a panel.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "panel"
                 ],
@@ -432,7 +432,7 @@
                 "group": "navigation",
                 "label": "Navigation",
                 "description": "The navigation bar of a panel.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "panel"
                 ],
@@ -443,7 +443,7 @@
                 "group": "menu",
                 "label": "Menu",
                 "description": "A dropdown menu of links or actions.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "panel",
                     "form",
@@ -470,7 +470,7 @@
                 "group": "list",
                 "label": "Repeater",
                 "description": "A repeatable array of nested items.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -512,7 +512,7 @@
                 "group": "livewire",
                 "label": "Livewire Page",
                 "description": "A standalone Livewire page component.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [],
                 "source": "manifest"
             },
@@ -521,7 +521,7 @@
                 "group": "livewire",
                 "label": "Livewire Table",
                 "description": "A Livewire component rendering a table.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "livewire-page"
                 ],
@@ -532,7 +532,7 @@
                 "group": "livewire",
                 "label": "Livewire Form",
                 "description": "A Livewire component rendering a form.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "livewire-page"
                 ],
@@ -543,7 +543,7 @@
                 "group": "livewire",
                 "label": "Livewire Widget",
                 "description": "A Livewire component rendering a small dashboard widget.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "livewire-page"
                 ],
@@ -569,7 +569,7 @@
                 "group": "input",
                 "label": "Text Input",
                 "description": "Single-line text input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -580,7 +580,7 @@
                 "group": "input",
                 "label": "Textarea Input",
                 "description": "Multi-line text input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form",
                     "list"
@@ -592,7 +592,7 @@
                 "group": "input",
                 "label": "Email Input",
                 "description": "Email input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -603,7 +603,7 @@
                 "group": "input",
                 "label": "URL Input",
                 "description": "URL input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -614,7 +614,7 @@
                 "group": "input",
                 "label": "Password Input",
                 "description": "Password input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -625,7 +625,7 @@
                 "group": "input",
                 "label": "Number Input",
                 "description": "Numeric input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -636,7 +636,7 @@
                 "group": "input",
                 "label": "Integer Input",
                 "description": "Integer input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -647,7 +647,7 @@
                 "group": "input",
                 "label": "Decimal Input",
                 "description": "Decimal/number with precision input.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -658,7 +658,7 @@
                 "group": "input",
                 "label": "Date Input",
                 "description": "Date picker.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -669,7 +669,7 @@
                 "group": "input",
                 "label": "Datetime Input",
                 "description": "Date and time picker.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -680,7 +680,7 @@
                 "group": "input",
                 "label": "Time Input",
                 "description": "Time picker.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -691,7 +691,7 @@
                 "group": "input",
                 "label": "Select Input",
                 "description": "Dropdown select.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -702,7 +702,7 @@
                 "group": "input",
                 "label": "Multiselect Input",
                 "description": "Multi-value select.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -713,7 +713,7 @@
                 "group": "input",
                 "label": "Checkbox Input",
                 "description": "Boolean checkbox.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -724,7 +724,7 @@
                 "group": "input",
                 "label": "Radio Input",
                 "description": "Single-choice radio group.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -735,7 +735,7 @@
                 "group": "input",
                 "label": "Toggle Input",
                 "description": "Boolean toggle switch.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -746,7 +746,7 @@
                 "group": "input",
                 "label": "Range Input",
                 "description": "Numeric range slider.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -757,7 +757,7 @@
                 "group": "input",
                 "label": "Color Input",
                 "description": "Color picker.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -768,7 +768,7 @@
                 "group": "input",
                 "label": "File Input",
                 "description": "File upload.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],
@@ -779,7 +779,7 @@
                 "group": "input",
                 "label": "Image Input",
                 "description": "Image upload and picker.",
-                "options": [],
+                "options": {},
                 "allowed_parents": [
                     "form"
                 ],

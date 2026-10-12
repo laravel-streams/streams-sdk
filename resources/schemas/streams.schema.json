@@ -90,7 +90,6 @@
                         "additionalProperties": true,
                         "properties": {
                             "options": {
-                                "description": "The selectable options keyed by value. Required when the field type is used.",
                                 "oneOf": [
                                     {
                                         "type": "object",
@@ -99,24 +98,28 @@
                                     {
                                         "type": "string"
                                     }
-                                ]
+                                ],
+                                "description": "The selectable options keyed by value. Required when the field type is used."
                             },
                             "allowed": {
-                                "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}.",
-                                "oneOf": {
-                                    "type": "object",
-                                    "additionalProperties": true
-                                }
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                ],
+                                "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}."
                             },
                             "properties": {
-                                "description": "Inline nested field definitions.",
-                                "oneOf": {
-                                    "type": "object",
-                                    "additionalProperties": true
-                                }
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                ],
+                                "description": "Inline nested field definitions."
                             },
                             "related": {
-                                "description": "One stream id, or a list of ids for polymorphic and multi-target fields. Required when the field type is used.",
                                 "oneOf": [
                                     {
                                         "type": "string"
@@ -127,10 +130,10 @@
                                             "type": "string"
                                         }
                                     }
-                                ]
+                                ],
+                                "description": "One stream id, or a list of ids for polymorphic and multi-target fields. Required when the field type is used."
                             },
                             "default": {
-                                "description": "\"default\": true generates a UUID when an entry is created.",
                                 "oneOf": [
                                     {
                                         "type": "boolean"
@@ -141,7 +144,8 @@
                                     {
                                         "type": "integer"
                                     }
-                                ]
+                                ],
+                                "description": "\"default\": true generates a UUID when an entry is created."
                             }
                         }
                     }
@@ -206,7 +210,6 @@
                         "additionalProperties": true,
                         "properties": {
                             "options": {
-                                "description": "The selectable options keyed by value. Required when the field type is used.",
                                 "oneOf": [
                                     {
                                         "type": "object",
@@ -215,24 +218,28 @@
                                     {
                                         "type": "string"
                                     }
-                                ]
+                                ],
+                                "description": "The selectable options keyed by value. Required when the field type is used."
                             },
                             "allowed": {
-                                "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}.",
-                                "oneOf": {
-                                    "type": "object",
-                                    "additionalProperties": true
-                                }
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                ],
+                                "description": "Nested objects: {\"stream\": ...}, {\"generic\": ...} or {\"prototype\": ...}."
                             },
                             "properties": {
-                                "description": "Inline nested field definitions.",
-                                "oneOf": {
-                                    "type": "object",
-                                    "additionalProperties": true
-                                }
+                                "oneOf": [
+                                    {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                ],
+                                "description": "Inline nested field definitions."
                             },
                             "related": {
-                                "description": "One stream id, or a list of ids for polymorphic and multi-target fields. Required when the field type is used.",
                                 "oneOf": [
                                     {
                                         "type": "string"
@@ -243,10 +250,10 @@
                                             "type": "string"
                                         }
                                     }
-                                ]
+                                ],
+                                "description": "One stream id, or a list of ids for polymorphic and multi-target fields. Required when the field type is used."
                             },
                             "default": {
-                                "description": "\"default\": true generates a UUID when an entry is created.",
                                 "oneOf": [
                                     {
                                         "type": "boolean"
@@ -257,7 +264,8 @@
                                     {
                                         "type": "integer"
                                     }
-                                ]
+                                ],
+                                "description": "\"default\": true generates a UUID when an entry is created."
                             }
                         }
                     }

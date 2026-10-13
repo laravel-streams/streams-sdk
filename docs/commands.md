@@ -24,7 +24,9 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 | [`make:stream`](#makestream) | Writes a validated `streams/{id}.json` |
 | [`make:entry`](#makeentry) | Creates or updates an entry in the stream's source |
 | [`make:addon`](#makeaddon) | Scaffolds an addon package in `addons/{vendor}/{name}/` |
-| [`streams:list`](#streamslist) | Lists registered streams, as a table or JSON |
+| [`streams:list`](#streamslist) | Lists registered streams by delegating to `entries:list` |
+| [`entries:list`](#entrieslist) | Paginated table of a stream's entries |
+| [`entries:show`](#entriesshow) | Shows one entry as a field and value table |
 | [`streams:validate`](#streamsvalidate) | Checks definitions against the JSON Schema and the running app |
 | [`streams:schema`](#streamsschema) | Writes a `{id}.schema.json` entry schema per stream |
 | [`streams:livewire`](#streamslivewire) | Generates Livewire 3 index, form, and show components |
@@ -82,23 +84,26 @@ Add the directory as a Composer path repository to install it. See [Addons](/doc
 ### streams:list
 
 ```bash
-php artisan streams:list {--json}
+php artisan streams:list {--query=} {--show=id,name,description} {--per-page=15} {--page=}
 ```
 
-Lists every registered stream, sorted by ID, with its name, source type, field count, and description. `--json` prints an array instead, which is what scripts and agents should read:
+Lists entries on the `core.streams` stream by calling [`entries:list`](#entrieslist) with the same `--query`, `--show`, `--per-page`, and `--page` options. There is no `--json` flag. `--show` is a comma-separated field list and defaults to `id,name,description`.
 
-```json
-[
-    {
-        "id": "posts",
-        "name": "Posts",
-        "description": "Blog posts.",
-        "source": "filebase",
-        "fields": ["id", "title", "status", "author_id"],
-        "extends": null
-    }
-]
+### entries:list
+
+```bash
+php artisan entries:list {stream} {--query=} {--show=} {--per-page=15} {--page=}
 ```
+
+Prints page totals and a table of entries from `{stream}`. `--query` is a `|`-separated list of `method:arg,arg` criteria calls. With no `--show`, the columns are the stream's field handles. When another page exists, the command asks before continuing.
+
+### entries:show
+
+```bash
+php artisan entries:show {stream} {entry} {--show=}
+```
+
+Prints one entry as a Field / Value table. `{entry}` is the stream's key. `--show` is a comma-separated field list; with no `--show`, every field is included.
 
 ### streams:validate
 
@@ -168,8 +173,6 @@ These command classes exist in the SDK source but are **not registered**, so `ph
 | Command | Intended purpose | State |
 |---------|------------------|-------|
 | `streams:show` | Show one stream's attributes | Implemented, registration commented out. Use the MCP `describe-stream` tool. |
-| `entries:list` | Paginated table of a stream's entries | Implemented, registration commented out. Use the MCP `list-entries` tool. |
-| `entries:show` | Show one entry | Implemented, registration commented out. Use the MCP `read-entry` tool. |
 | `streams:describe` | Write `streams/{id}.json` by inspecting a URL, JSON, database table, or Eloquent model | Implemented, registration commented out |
 | `streams:tap` | Call a "tap" URL with query-string input | Not implemented (empty handler) |
 

@@ -17,7 +17,7 @@ Install it with Core already required:
 composer require --dev streams/sdk:1.0.x-dev
 ```
 
-Commands are registered only when the app is running in the console. The ones `php artisan` can see today are `make:stream`, `make:entry`, `make:addon`, `make:table`, `streams:list`, `streams:validate`, `streams:schema`, `streams:catalog`, and `streams:livewire`. Arguments, options, and the commands that exist in source but are not registered are in the [command reference](/docs/sdk/commands).
+Commands are registered only when the app is running in the console. The ones `php artisan` can see today are `make:stream`, `make:entry`, `make:addon`, `make:table`, `streams:list`, `entries:list`, `entries:show`, `streams:validate`, `streams:schema`, `streams:catalog`, and `streams:livewire`. Arguments, options, and the commands that exist in source but are not registered are in the [command reference](/docs/sdk/commands).
 
 There is no `streams:component` or `streams:crud` command.
 
@@ -25,7 +25,7 @@ There is no `streams:component` or `streams:crud` command.
 
 Use the SDK to write the first version of a stream file, an entry, an addon package, or a JSON schema export, to check definitions with `streams:validate`, and to generate Livewire index, form, and show components with `streams:livewire`. Configured control panels belong to [Streams UI](/docs/ui/introduction), not to these generators. `streams:admin` has been removed.
 
-The SDK also ships a local-development [MCP server](/docs/mcp) for AI agents. Start it with `php artisan mcp:start streams`. It needs `laravel/mcp`, which needs Laravel 11.45+ or 12.41+. On Laravel 10, agents use `streams:list --json` and `streams:validate --json` instead.
+The SDK also ships a local-development [MCP server](/docs/mcp) for AI agents. Start it with `php artisan mcp:start streams`. It needs `laravel/mcp`, which needs Laravel 11.45+ or 12.41+. On Laravel 10, MCP is unavailable. Read registered streams with `streams:list` and stream entries with `entries:list`.
 
 The SDK is on the `1.0.x-dev` branch and has no tagged release yet. See [Versions and support](/docs/versions).
 

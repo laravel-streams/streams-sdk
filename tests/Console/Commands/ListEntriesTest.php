@@ -11,11 +11,10 @@ class ListEntriesTest extends SdkTestCase
     {
         $this->artisan('entries:list', [
             'stream' => 'films',
-            'entry' => 4
-        ])->expectsTable([
-            'id'
-        ], [
-            [4]
-        ]);
+            '--show' => 'title',
+            '--per-page' => 50,
+        ])->assertSuccessful()
+            ->expectsOutputToContain('A New Hope')
+            ->expectsOutputToContain('The Empire Strikes Back');
     }
 }

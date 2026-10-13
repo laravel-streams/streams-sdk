@@ -11,11 +11,10 @@ class ShowEntryTest extends SdkTestCase
     {
         $this->artisan('entries:show', [
             'stream' => 'films',
-            'entry' => 4
-        ])->expectsTable([
-            'id'
-        ], [
-            [4]
-        ]);
+            'entry' => 4,
+            '--show' => 'title,episode_id',
+        ])->assertSuccessful()
+            ->expectsOutputToContain('A New Hope')
+            ->expectsOutputToContain('episode_id');
     }
 }

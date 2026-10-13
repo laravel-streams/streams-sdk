@@ -25,10 +25,10 @@ class SdkServiceProvider extends ServiceProvider
                 \Streams\Sdk\Console\Commands\MakeTable::class,
                 \Streams\Sdk\Console\Commands\CatalogGenerate::class,
                 \Streams\Sdk\Console\Commands\StreamsSchema::class,
-                // \Streams\Sdk\Console\Commands\ShowEntry::class,      Necessary?
+                \Streams\Sdk\Console\Commands\ShowEntry::class,
+                \Streams\Sdk\Console\Commands\ListEntries::class,
+                \Streams\Sdk\Console\Commands\ListStreams::class,
                 // \Streams\Sdk\Console\Commands\ShowStream::class,     Necessary?
-                // \Streams\Sdk\Console\Commands\ListEntries::class,    Necessary?
-                // \Streams\Sdk\Console\Commands\ListStreams::class,    Necessary?
                 //\Streams\Sdk\Console\Commands\DescribeStream::class,
             ]);
         }

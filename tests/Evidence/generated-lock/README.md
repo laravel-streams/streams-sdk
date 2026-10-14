@@ -19,3 +19,34 @@
 5. The attribute class is `Streams\Sdk\Attributes\Generated` in streams-sdk. streams-core is unchanged. `streams:make` stays the only build command.
 
 `vendor/bin/phpstan` is not installed in this package. Changed PHP files were formatted with `resources/bin/pint.phar`.
+
+## Review fix (2026-10-14)
+
+Commit `85b79a3` addresses the blocking review finding: a missing lock entry
+returns false from `BuildStage::isHandEdit()`, so a managed tagged file can
+regenerate and restore its hash. The command documentation explains that
+preserving the lock preserves the baseline for hand-edit detection.
+
+- `phpunit-review-fix.txt` contains the complete full-suite output, including
+  existing vendor deprecations: 71 tests, 2690 assertions, zero errors/failures,
+  and the same pre-existing Make Addon skip.
+- `focused-review-fix.txt` contains the generated attribute, lock, and command
+  tests: 17 tests, 713 assertions, all passing.
+- `review-fix.diff` contains the complete implementation diff against the task
+  base, excluding evidence files.
+- Pint passed for both changed PHP files. The requested PHPStan invocation
+  could not run because `vendor/bin/phpstan` is absent.
+
+The two new command tests cover deleting the entire lock and removing only
+the action file's lock entry. Both verify a dry run leaves files and lock
+unchanged, apply regenerates the tagged class with its new label and correct
+hash, and the next run leaves the lock byte-identical. The existing hand-edit
+test still verifies a recorded hash mismatch reports the dot path and file
+and leaves both file and lock unchanged.
+
+Acceptance reconciliation: class tags and path/file/hash mapping remain
+covered by the attribute and lock tests and the attached sample files;
+hand-edit conflicts and unchanged bytes pass; deterministic lock bytes pass;
+the full suite and focused tests pass with output attached. The required
+Operations review must approve this updated evidence before task closure.
+No second command, streams-core, or streams-ui changes are included.

@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/opaque.schema.json",
+    "title": "Opaque node",
+    "description": "A captured setting that cannot be represented as JSON data: a closure, permission callback, computed option, or other callback. It points at its source location and is owned by people; streams:make never rewrites it.",
+    "type": "object",
+    "required": [
+        "handle",
+        "file",
+        "line"
+    ],
+    "properties": {
+        "handle": {
+            "type": "string",
+            "description": "The dot path of the setting inside its node (columns.status.color)."
+        },
+        "file": {
+            "type": "string",
+            "description": "The source file the callback came from, relative to the app root."
+        },
+        "line": {
+            "type": "integer",
+            "description": "The line in the source file where the callback starts."
+        }
+    }
+}

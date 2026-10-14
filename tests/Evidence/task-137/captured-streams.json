@@ -1,0 +1,527 @@
+{
+    "name": "Captured",
+    "streams": {
+        "people": {
+            "config": {
+                "source": {
+                    "type": "database",
+                    "table": "people"
+                },
+                "abstract": "App\\Domains\\People\\Models\\Person"
+            },
+            "fields": [
+                {
+                    "handle": "id",
+                    "type": "integer",
+                    "required": true,
+                    "unique": true,
+                    "config": {
+                        "default": "increment"
+                    }
+                },
+                {
+                    "handle": "created_at",
+                    "type": "datetime",
+                    "required": true,
+                    "config": {
+                        "default": "now"
+                    }
+                },
+                {
+                    "handle": "identity_id",
+                    "type": "relationship",
+                    "config": {
+                        "related": "identities"
+                    }
+                },
+                {
+                    "handle": "organization_id",
+                    "type": "relationship",
+                    "config": {
+                        "related": "organizations"
+                    }
+                },
+                {
+                    "handle": "location_id",
+                    "type": "relationship",
+                    "config": {
+                        "related": "locations"
+                    }
+                },
+                {
+                    "handle": "first_name",
+                    "type": "string",
+                    "required": true,
+                    "rules": [
+                        "max:40"
+                    ]
+                },
+                {
+                    "handle": "last_name",
+                    "type": "string",
+                    "required": true,
+                    "rules": [
+                        "max:40"
+                    ]
+                },
+                {
+                    "handle": "status",
+                    "type": "select",
+                    "config": {
+                        "default": "active",
+                        "options": {
+                            "active": "Active",
+                            "inactive": "Inactive",
+                            "invited": "Invited"
+                        }
+                    }
+                },
+                {
+                    "handle": "prefix",
+                    "type": "string"
+                },
+                {
+                    "handle": "given_name",
+                    "type": "string",
+                    "rules": [
+                        "max:40"
+                    ]
+                },
+                {
+                    "handle": "nickname",
+                    "type": "string",
+                    "rules": [
+                        "max:40"
+                    ]
+                },
+                {
+                    "handle": "middle_name",
+                    "type": "string",
+                    "rules": [
+                        "max:40"
+                    ]
+                },
+                {
+                    "handle": "suffix",
+                    "type": "string"
+                },
+                {
+                    "handle": "email",
+                    "type": "email"
+                },
+                {
+                    "handle": "phone_number",
+                    "type": "string"
+                },
+                {
+                    "handle": "location_id",
+                    "type": "relationship",
+                    "config": {
+                        "related": "locations"
+                    }
+                },
+                {
+                    "handle": "is_child",
+                    "type": "boolean"
+                },
+                {
+                    "handle": "gender",
+                    "type": "select",
+                    "config": {
+                        "options": {
+                            "male": "Male",
+                            "female": "Female"
+                        }
+                    }
+                },
+                {
+                    "handle": "birthday",
+                    "type": "date"
+                },
+                {
+                    "handle": "marital_status",
+                    "type": "select",
+                    "config": {
+                        "options": {
+                            "single": "Single",
+                            "married": "Married",
+                            "divorced": "Divorced",
+                            "widowed": "Widowed"
+                        }
+                    }
+                },
+                {
+                    "handle": "household_id",
+                    "type": "string",
+                    "config": {
+                        "nullable": true
+                    }
+                }
+            ],
+            "handle": "people",
+            "name": "People",
+            "ui": {
+                "actions": {
+                    "add_person_modal": {
+                        "handle": "add_person_modal",
+                        "kind": "action",
+                        "source": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                        "settings": {
+                            "modalWidth": "xl"
+                        },
+                        "opaque": [
+                            {
+                                "handle": "PersonCreateForm",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 18
+                            },
+                            {
+                                "handle": "label",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 21
+                            },
+                            {
+                                "handle": "modalHeading",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 23
+                            },
+                            {
+                                "handle": "modalComponents",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 24
+                            },
+                            {
+                                "handle": "action",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 43
+                            },
+                            {
+                                "handle": "authorize",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 64
+                            },
+                            {
+                                "handle": "disabled",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 65
+                            },
+                            {
+                                "handle": "mergeHtmlAttributes.wire:click",
+                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
+                                "line": 67
+                            }
+                        ]
+                    }
+                },
+                "pages": {
+                    "list_people": {
+                        "handle": "list_people",
+                        "kind": "page",
+                        "source": "app/Domains/People/Panel/Pages/ListPeople.php",
+                        "settings": {
+                            "navigationBadge": null,
+                            "navigationGroup": "People",
+                            "navigationLabel": "domains/people.navigation.manage",
+                            "navigationSort": 1,
+                            "registerNavigation": true
+                        },
+                        "opaque": [
+                            {
+                                "handle": "resource",
+                                "file": "app/Domains/People/Panel/Pages/ListPeople.php",
+                                "line": 23
+                            },
+                            {
+                                "handle": "getComponents",
+                                "file": "app/Domains/People/Panel/Pages/ListPeople.php",
+                                "line": 67
+                            }
+                        ]
+                    }
+                },
+                "panel": {
+                    "handle": "people_panel_resource",
+                    "kind": "panel",
+                    "source": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                    "settings": {
+                        "navigation.activeColor": "primary",
+                        "navigation.borderRadius": "full",
+                        "navigation.outlined": true,
+                        "navigation.style": "pills",
+                        "registerNavigation": false,
+                        "slug": "people"
+                    },
+                    "opaque": [
+                        {
+                            "handle": "getPages",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 22
+                        },
+                        {
+                            "handle": "navigation.items.0.name",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 42
+                        },
+                        {
+                            "handle": "navigation.items.0.url",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 43
+                        },
+                        {
+                            "handle": "navigation.items.0.isActiveWhen",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 44
+                        },
+                        {
+                            "handle": "navigation.items.1.name",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 45
+                        },
+                        {
+                            "handle": "navigation.items.1.url",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 46
+                        },
+                        {
+                            "handle": "navigation.items.1.isActiveWhen",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 47
+                        },
+                        {
+                            "handle": "navigation.items.2.name",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 48
+                        },
+                        {
+                            "handle": "navigation.items.2.url",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 49
+                        },
+                        {
+                            "handle": "navigation.items.2.isActiveWhen",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 50
+                        },
+                        {
+                            "handle": "navigation.items.3.name",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 51
+                        },
+                        {
+                            "handle": "navigation.items.3.url",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 52
+                        },
+                        {
+                            "handle": "navigation.items.3.isActiveWhen",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 53
+                        },
+                        {
+                            "handle": "navigation.items.4.name",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 54
+                        },
+                        {
+                            "handle": "navigation.items.4.url",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 55
+                        },
+                        {
+                            "handle": "navigation.items.4.isActiveWhen",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 56
+                        },
+                        {
+                            "handle": "navigation.items.5.name",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 57
+                        },
+                        {
+                            "handle": "navigation.items.5.url",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 58
+                        },
+                        {
+                            "handle": "navigation.items.5.isActiveWhen",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 59
+                        },
+                        {
+                            "handle": "breadcrumbs.Breadcrumbs",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 65
+                        },
+                        {
+                            "handle": "scopedQuery",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 77
+                        },
+                        {
+                            "handle": "scopedQuery.where",
+                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
+                            "line": 78
+                        }
+                    ]
+                },
+                "table": {
+                    "handle": "people_table",
+                    "kind": "table",
+                    "source": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                    "settings": {
+                        "columns.email.searchable": true,
+                        "columns.email.sortable": true,
+                        "columns.first_name.searchable": [
+                            "first_name",
+                            "last_name"
+                        ],
+                        "columns.first_name.sortable": true,
+                        "columns.phone_number.searchable": true,
+                        "columns.phone_number.sortable": true,
+                        "columns.status.sortable": true,
+                        "defaultSort": -1,
+                        "emptyStateIcon": "heroicon-o-users",
+                        "paginationPageOptions": [
+                            5,
+                            10,
+                            25
+                        ],
+                        "pollingInterval": null
+                    },
+                    "opaque": [
+                        {
+                            "handle": "DeactivateSelectedPeople",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 21
+                        },
+                        {
+                            "handle": "RestoreSelectedPeople",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 22
+                        },
+                        {
+                            "handle": "DeleteSelectedPeople",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 23
+                        },
+                        {
+                            "handle": "filters.first_name.placeholder",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 28
+                        },
+                        {
+                            "handle": "filters.last_name.placeholder",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 30
+                        },
+                        {
+                            "handle": "filters.email.placeholder",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 32
+                        },
+                        {
+                            "handle": "filters.status.label",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 34
+                        },
+                        {
+                            "handle": "filters.status.placeholder",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 35
+                        },
+                        {
+                            "handle": "filters.status.options.active",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 37
+                        },
+                        {
+                            "handle": "filters.status.options.inactive",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 38
+                        },
+                        {
+                            "handle": "filters.status.options.invited",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 39
+                        },
+                        {
+                            "handle": "columns.status.label",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 44
+                        },
+                        {
+                            "handle": "columns.status.color",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 45
+                        },
+                        {
+                            "handle": "columns.status.title",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 51
+                        },
+                        {
+                            "handle": "columns.first_name.label",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 59
+                        },
+                        {
+                            "handle": "columns.first_name.value",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 60
+                        },
+                        {
+                            "handle": "columns.first_name.url",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 61
+                        },
+                        {
+                            "handle": "columns.email.label",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 67
+                        },
+                        {
+                            "handle": "columns.phone_number.label",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 69
+                        },
+                        {
+                            "handle": "columns.tags.label",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 73
+                        },
+                        {
+                            "handle": "columns.tags.value",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 74
+                        },
+                        {
+                            "handle": "bulkActions.0.DeactivateSelectedPeople",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 88
+                        },
+                        {
+                            "handle": "bulkActions.1.RestoreSelectedPeople",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 89
+                        },
+                        {
+                            "handle": "bulkActions.2.DeleteSelectedPeople",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 90
+                        },
+                        {
+                            "handle": "query",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 92
+                        },
+                        {
+                            "handle": "emptyStateDescription",
+                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+                            "line": 93
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

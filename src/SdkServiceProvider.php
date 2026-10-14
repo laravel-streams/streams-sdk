@@ -10,6 +10,7 @@ use Streams\Sdk\Console\Commands\CatalogGenerate;
 use Streams\Sdk\Console\Commands\ListEntries;
 use Streams\Sdk\Console\Commands\ListStreams;
 use Streams\Sdk\Console\Commands\ShowEntry;
+use Streams\Sdk\Console\Commands\StreamsCapture;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Commands\StreamsTap;
@@ -33,6 +34,7 @@ class SdkServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 StreamsMake::class,
+                StreamsCapture::class,
                 CatalogGenerate::class,
                 StreamsSchema::class,
                 StreamsTap::class,

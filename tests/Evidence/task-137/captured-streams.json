@@ -171,11 +171,6 @@
                         },
                         "opaque": [
                             {
-                                "handle": "",
-                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
-                                "line": 17
-                            },
-                            {
                                 "handle": "PersonCreateForm",
                                 "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
                                 "line": 18
@@ -224,6 +219,7 @@
                         "kind": "page",
                         "source": "app/Domains/People/Panel/Pages/ListPeople.php",
                         "settings": {
+                            "navigationBadge": null,
                             "navigationGroup": "People",
                             "navigationLabel": "domains/people.navigation.manage",
                             "navigationSort": 1,
@@ -238,7 +234,7 @@
                             {
                                 "handle": "getComponents",
                                 "file": "app/Domains/People/Panel/Pages/ListPeople.php",
-                                "line": 64
+                                "line": 67
                             }
                         ]
                     }
@@ -250,7 +246,6 @@
                     "settings": {
                         "navigation.activeColor": "primary",
                         "navigation.borderRadius": "full",
-                        "navigation.make": true,
                         "navigation.outlined": true,
                         "navigation.style": "pills",
                         "registerNavigation": false,
@@ -358,11 +353,6 @@
                             "line": 65
                         },
                         {
-                            "handle": "",
-                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
-                            "line": 75
-                        },
-                        {
                             "handle": "scopedQuery",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 77
@@ -379,26 +369,24 @@
                     "kind": "table",
                     "source": "app/Domains/People/Panel/Tables/PeopleTable.php",
                     "settings": {
-                        "columns.email.make": true,
                         "columns.email.searchable": true,
                         "columns.email.sortable": true,
-                        "columns.first_name.make": true,
                         "columns.first_name.searchable": [
                             "first_name",
                             "last_name"
                         ],
                         "columns.first_name.sortable": true,
-                        "columns.phone_number.make": true,
                         "columns.phone_number.searchable": true,
                         "columns.phone_number.sortable": true,
-                        "columns.status.make": true,
                         "columns.status.sortable": true,
-                        "columns.tags.make": true,
+                        "defaultSort": -1,
                         "emptyStateIcon": "heroicon-o-users",
-                        "filters.email.make": true,
-                        "filters.first_name.make": true,
-                        "filters.last_name.make": true,
-                        "filters.status.make": true
+                        "paginationPageOptions": [
+                            5,
+                            10,
+                            25
+                        ],
+                        "pollingInterval": null
                     },
                     "opaque": [
                         {

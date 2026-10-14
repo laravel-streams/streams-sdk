@@ -57,6 +57,43 @@ synthetic classifier edge cases (null / negative / integer array); the
 reference fixture imports were left untouched to stay faithful to the
 GroupVitals source.
 
+Latest review-finding response (this revision): computed builder settings and
+literal arrays are no longer misrepresented.
+
+- A computed `make()` name (a translation call such as
+  `NavigationItem::make(__('...'))`) is a builder item's constructor, not a
+  setting: the chain walker now swallows `X::make(...)` for container items
+  and captures a non-literal name as an opaque `navigation.items.<n>.name`
+  node instead of leaking a bogus `navigation.items.<n>.NavigationItem`
+  constructor node with a positional key. `captured-streams.json` shows the
+  panel items as `navigation.items.0.name/.url/.isActiveWhen`, ..., with
+  `breadcrumbs.Breadcrumbs` and the root `Navigation::make('...')` swallow
+  unchanged.
+- Spreads are runtime merges, not literals: `isLiteralArray` rejects
+  `ArrayItem::$unpack` (so `[...[3, 4]]` is never flattened into a nested
+  literal array), and the container walker reports an unpacked item as an
+  opaque node at its position while its literal siblings stay data.
+- Literal items inside a mixed builder array stay data: `chain()` now
+  captures a literal expression in a container as a setting, so
+  `->options(['en' => 'English', 'fr' => __('...')])` yields
+  `settings.options.en = "English"` and an opaque `options.fr`, instead of
+  demoting the literal to opaque.
+- A literal array is data everywhere: `literalOrOpaque` now routes through
+  `literalArrayValue`, so a static property default such as
+  `protected static array $columns = ['first_name', 'last_name']` is captured
+  as data rather than an opaque node; a mixed property default stays a single
+  opaque node (it depends on a computed sibling) instead of splitting into
+  fragments.
+- A multi-argument call that depends on any computed value is opaque as a
+  whole — one entry, never duplicate opaque handles with the literal parts
+  silently dropped.
+- New coverage: `test_spread_arrays_and_literal_items_inside_mixed_arrays_are_captured_honestly`
+  writes a synthetic `EdgeCases` action builder at test runtime (temp root
+  only) and asserts each case above plus schema validation;
+  `test_closures_and_callbacks_become_opaque_nodes_with_file_and_line` now
+  asserts the computed item name is `navigation.items.0.name` and that no
+  `.NavigationItem` node leaks.
+
 `captured-streams.json` is the actual capture of the people reference
 fixtures. `git-diff.patch` is the full implementation/test diff from the
 starting revision. `pint.txt` is Laravel Pint scoped to the changed source
@@ -65,7 +102,7 @@ and test files (passed). `full-suite.txt` is the raw full-suite run.
 Suite notes:
 
 - Full PHPUnit gate with `php -d error_reporting=22527 vendor/bin/phpunit
-  --colors=never`: 132 tests, 3,544 assertions, zero errors/failures, one
+  --colors=never`: 137 tests, 3,692 assertions, zero errors/failures, one
   pre-existing skip.
 - No streams/ui or streams-core edits; no pushes; local commits only.
 - Repo has no `artisan` entrypoint and composer.json defines no scripts, so
@@ -80,4 +117,5 @@ Suite notes:
 
 Review boundary: implementation and evidence are prepared for review; no
 review approval is claimed by the implementing agent. Rollback is to revert
-the local commits in the worktree (`git revert 86e4687 7e17ac5 f50855d`).
+the local commits in the worktree (`git revert <latest> 86e4687 7e17ac5
+f50855d`).

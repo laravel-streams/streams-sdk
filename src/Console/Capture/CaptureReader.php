@@ -414,14 +414,17 @@ class CaptureReader
      * Walk a builder call chain. Literal arguments become settings; closures,
      * callbacks, resolvers and computed values become opaque nodes.
      *
+     * When $item is true the chain starts at one entry of a builder container,
+     * so a terminal X::make(...) is that item's constructor, not a setting.
+     *
      * @param  array<string, mixed>  $settings
      * @param  list<array{handle: string, file: string, line: int}>  $opaque
      */
-    protected function chain(Expr $expr, string $file, string $prefix, array &$settings, array &$opaque): void
+    protected function chain(Expr $expr, string $file, string $prefix, array &$settings, array &$opaque, bool $item = false): void
     {
         if ($expr instanceof MethodCall) {
             // Deeper in the chain first: ->filters([...])->columns([...]).
-            $this->chain($expr->var, $file, $prefix, $settings, $opaque);
+            $this->chain($expr->var, $file, $prefix, $settings, $opaque, $item);
 
             $method = $expr->name instanceof Node\Identifier ? $expr->name->toString() : null;
 
@@ -434,6 +437,17 @@ class CaptureReader
 
         if ($expr instanceof StaticCall) {
             $method = $expr->name instanceof Node\Identifier ? $expr->name->toString() : null;
+
+            // A container item's X::make(...) is its constructor, not a
+            // setting. A literal name is the item key; a computed name
+            // (translation, variable) is an opaque node under `name`.
+            if ($item && $method === 'make' && isset($expr->args[0]) && $expr->args[0] instanceof Arg) {
+                if (! $this->literal($expr->args[0]->value)[0]) {
+                    $opaque[] = $this->opaque($this->joined($prefix, 'name'), $file, $expr->args[0]->value->getStartLine());
+                }
+
+                return;
+            }
 
             // X::make('handle') names the builder item already captured by the
             // container walker. It is not itself a setting.
@@ -463,6 +477,15 @@ class CaptureReader
             return;
         }
 
+        // A literal item inside a builder container is data, not opaque.
+        $literal = $this->literalArrayValue($expr);
+
+        if ($literal[0]) {
+            $settings[$prefix] = $literal[1];
+
+            return;
+        }
+
         // Translation, route, criteria and other computed values are opaque.
         $opaque[] = $this->opaque($prefix, $file, $expr->getStartLine());
     }
@@ -489,24 +512,24 @@ class CaptureReader
             return;
         }
 
-        // Multiple arguments: keep them when every argument is a literal.
+        // Multiple arguments: keep them as data only when every argument is a
+        // literal. A call that depends on any computed argument is opaque as a
+        // whole, never split into duplicate opaque handles.
         $values = [];
 
         foreach ($args as $arg) {
-            [$found, $value, $entries] = $this->literalOrOpaque($arg->value, $file, $key);
+            $literal = $this->literalArrayValue($arg->value);
 
-            if ($found) {
-                $values[] = $value;
+            if (! $literal[0]) {
+                $opaque[] = $this->opaque($key, $file, $arg->value->getStartLine());
+
+                return;
             }
 
-            foreach ($entries as $entry) {
-                $opaque[] = $entry;
-            }
+            $values[] = $literal[1];
         }
 
-        if (count($values) === count($args)) {
-            $settings[$key] = $values;
-        }
+        $settings[$key] = $values;
     }
 
     /**
@@ -530,7 +553,15 @@ class CaptureReader
 
                 $itemKey = $this->itemHandle($item, (string) $index);
 
-                $this->chain($item->value, $file, $this->joined($key, $itemKey), $settings, $opaque);
+                // A spread (...$x) merges items at runtime; it cannot be
+                // expanded here, so it is opaque rather than literal data.
+                if ($item->unpack) {
+                    $opaque[] = $this->opaque($this->joined($key, $itemKey), $file, $item->getStartLine());
+
+                    continue;
+                }
+
+                $this->chain($item->value, $file, $this->joined($key, $itemKey), $settings, $opaque, true);
             }
 
             return;
@@ -585,7 +616,7 @@ class CaptureReader
      */
     protected function literalOrOpaque(Expr $expr, string $file, string $key): array
     {
-        $literal = $this->literal($expr);
+        $literal = $this->literalArrayValue($expr);
 
         if ($literal[0]) {
             return [true, $literal[1], []];
@@ -645,7 +676,7 @@ class CaptureReader
     protected function isLiteralArray(Array_ $array): bool
     {
         foreach ($array->items as $item) {
-            if (! $item instanceof ArrayItem) {
+            if (! $item instanceof ArrayItem || $item->unpack) {
                 return false;
             }
 
@@ -669,7 +700,7 @@ class CaptureReader
         $out = [];
 
         foreach ($array->items as $item) {
-            if (! $item instanceof ArrayItem) {
+            if (! $item instanceof ArrayItem || $item->unpack) {
                 continue;
             }
 

@@ -105,6 +105,13 @@ class StreamsCaptureTest extends SdkTestCase
         $actionHandles = array_column($actionOpaque, 'handle');
         $this->assertContains('authorize', $actionHandles);
         $this->assertContains('action', $actionHandles);
+
+        // A computed make() name (a translation call) is opaque under the
+        // item's `name`, never mislabeled as a bare constructor node.
+        $panelOpaque = $tree->node('people.panel')['opaque'] ?? [];
+        $panelHandles = array_column($panelOpaque, 'handle');
+        $this->assertContains('navigation.items.0.name', $panelHandles);
+        $this->assertNotContains('navigation.items.0.NavigationItem', $panelHandles);
     }
 
     public function test_literal_settings_including_null_and_negative_numbers_are_captured(): void
@@ -135,6 +142,75 @@ class StreamsCaptureTest extends SdkTestCase
             $this->assertNotEmpty($node['opaque'] ?? []);
             $this->assertNotContains('', array_column($node['opaque'], 'handle'));
         }
+    }
+
+    /**
+     * Spread arrays merge items at runtime and mixed builder arrays depend on
+     * computed siblings: capture keeps literal items as data and reports the
+     * computed parts as opaque nodes, never the reverse.
+     */
+    public function test_spread_arrays_and_literal_items_inside_mixed_arrays_are_captured_honestly(): void
+    {
+        File::put($this->root.'/app/Domains/People/Panel/Actions/EdgeCases.php', <<<'PHP'
+            <?php
+
+            namespace App\Domains\People\Panel\Actions;
+
+            class EdgeCases extends \Streams\Ui\Builders\Actions\Action
+            {
+                protected static array $columns = ['first_name', 'last_name'];
+
+                protected static array $withComputed = [
+                    'en' => 'English',
+                    'fr' => __('domains.people.french'),
+                ];
+
+                protected function setUp(): void
+                {
+                    $this
+                        ->defaults([5, 10, 25])
+                        ->options([
+                            'en' => 'English',
+                            'fr' => __('domains.people.french'),
+                        ])
+                        ->labels(['a', 'b', ...[3, 4]]);
+                }
+            }
+            PHP);
+
+        $exit = Artisan::call('streams:capture');
+        $this->assertSame(0, $exit, Artisan::output());
+
+        $tree = AppTree::load($this->root.'/streams.json');
+        $node = $tree->node('people.actions.edge_cases');
+        $settings = $node['settings'];
+        $handles = array_column($node['opaque'], 'handle');
+
+        // Literal arrays are data: a property default and a single argument.
+        $this->assertSame(['first_name', 'last_name'], $settings['columns'] ?? null);
+        $this->assertSame([5, 10, 25], $settings['defaults'] ?? null);
+
+        // A literal item inside a mixed builder array stays data...
+        $this->assertSame('English', $settings['options.en'] ?? null);
+
+        // ...while its computed sibling is opaque, never literal data.
+        $this->assertContains('options.fr', $handles);
+
+        // A spread merges items at runtime: the surrounding literal items stay
+        // data and the spread itself is opaque, never a flattened literal.
+        $this->assertArrayNotHasKey('labels', $settings);
+        $this->assertSame('a', $settings['labels.0'] ?? null);
+        $this->assertSame('b', $settings['labels.1'] ?? null);
+        $this->assertContains('labels.2', $handles);
+
+        // A mixed property default depends on a computed sibling: the whole
+        // property is opaque, not split into literal + opaque fragments.
+        $this->assertArrayNotHasKey('withComputed', $settings);
+        $this->assertContains('withComputed', $handles);
+
+        // The tree still validates against the app schema.
+        $validator = new SchemaValidator($this->schemaDir);
+        $validator->assertValid(json_decode((string) File::get($this->root.'/streams.json')), 'https://streams.dev/schema/app.schema.json', 'streams.json');
     }
 
     public function test_unreadable_builder_files_are_reported_not_silently_dropped(): void

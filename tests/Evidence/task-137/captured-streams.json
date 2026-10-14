@@ -258,7 +258,7 @@
                             "line": 22
                         },
                         {
-                            "handle": "navigation.items.0.NavigationItem",
+                            "handle": "navigation.items.0.name",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 42
                         },
@@ -273,7 +273,7 @@
                             "line": 44
                         },
                         {
-                            "handle": "navigation.items.1.NavigationItem",
+                            "handle": "navigation.items.1.name",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 45
                         },
@@ -288,7 +288,7 @@
                             "line": 47
                         },
                         {
-                            "handle": "navigation.items.2.NavigationItem",
+                            "handle": "navigation.items.2.name",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 48
                         },
@@ -303,7 +303,7 @@
                             "line": 50
                         },
                         {
-                            "handle": "navigation.items.3.NavigationItem",
+                            "handle": "navigation.items.3.name",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 51
                         },
@@ -318,7 +318,7 @@
                             "line": 53
                         },
                         {
-                            "handle": "navigation.items.4.NavigationItem",
+                            "handle": "navigation.items.4.name",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 54
                         },
@@ -333,7 +333,7 @@
                             "line": 56
                         },
                         {
-                            "handle": "navigation.items.5.NavigationItem",
+                            "handle": "navigation.items.5.name",
                             "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
                             "line": 57
                         },

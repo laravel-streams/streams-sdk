@@ -922,10 +922,58 @@ index 0000000..1f25b00
 +    }
 +}
 diff --git a/src/Console/Make/BuildStage.php b/src/Console/Make/BuildStage.php
-index ac2192a..5aab718 100644
+index ac2192a..88bd8b6 100644
 --- a/src/Console/Make/BuildStage.php
 +++ b/src/Console/Make/BuildStage.php
-@@ -259,6 +259,12 @@ class BuildStage
+@@ -51,8 +51,8 @@ class BuildStage
+      */
+     public function plan(AppTree $tree, ?string $only, string $outputRoot): BuildPlan
+     {
+-        $this->memory = $this->compile($tree, $only, $outputRoot);
+         $this->lock = StreamLock::read($outputRoot);
++        $this->memory = $this->compile($tree, $only, $outputRoot);
+         $this->lockUpdates = [];
+ 
+         $plan = new BuildPlan;
+@@ -149,11 +149,15 @@ class BuildStage
+             }
+ 
+             $plan->skipped[] = $relative;
++            if (! $tree->has($nodePath)) {
++                $plan->orphans[] = ['path' => $nodePath, 'file' => $relative];
++            }
+         }
+ 
+         sort($plan->created);
+         sort($plan->modified);
+         sort($plan->skipped);
++        usort($plan->orphans, fn (array $left, array $right): int => [$left['path'], $left['file']] <=> [$right['path'], $right['file']]);
+ 
+         usort($plan->unapplied, function (array $left, array $right): int {
+             return [$left['path'], $left['file'], $left['reason']] <=> [$right['path'], $right['file'], $right['reason']];
+@@ -233,7 +237,7 @@ class BuildStage
+ 
+         // Adding the modal also attaches it to an existing manage page, even
+         // when the caller addresses only the action node.
+-        if ($only !== null && str_ends_with($only, '.actions.add')) {
++        if ($only !== null && $tree->type($only) === 'action') {
+             $page = explode('.', $only)[0].'.pages.manage';
+             if ($tree->has($page)) {
+                 $relative = $this->paths->resolve('page', Str::studly(explode('.', $only)[0]), $tree->classForPath($page));
+@@ -252,6 +256,12 @@ class BuildStage
+             $class = $this->className($tree, $path, $type);
+             $relative = $this->paths->resolve($type, $domain, $class);
+ 
++            $lockedFiles = array_keys($this->lock?->entries[$path] ?? []);
++            if (count($lockedFiles) === 1 && StreamLock::validFile($lockedFiles[0])) {
++                $relative = $lockedFiles[0];
++                $class = pathinfo($relative, PATHINFO_FILENAME);
++            }
++
+             if ($relative === null) {
+                 continue;
+             }
+@@ -259,10 +269,16 @@ class BuildStage
              $node = $tree->node($path);
              $label = $this->label($node, $path);
  
@@ -938,7 +986,12 @@ index ac2192a..5aab718 100644
              $memory->add(new CompiledFile(
                  $path,
                  $relative,
-@@ -273,6 +279,28 @@ class BuildStage
+-                (new ComponentRenderer($this->paths))->render(
++                (new ComponentRenderer($this->paths, $this->lock))->render(
+                     $tree, $path, $type, $this->paths->namespaceFor($relative), $class,
+                     $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
+                 ),
+@@ -273,6 +289,28 @@ class BuildStage
          return $memory;
      }
  
@@ -967,6 +1020,21 @@ index ac2192a..5aab718 100644
      /** Dependencies of a manage page are built through the same command. */
      protected function scope(AppTree $tree, ?string $only): array
      {
+@@ -290,8 +328,13 @@ class BuildStage
+         $table = str_contains($table, '.') ? $table : $stream.'.'.$table;
+         $paths = [$table];
+         foreach ($tree->types() as $path => $type) {
+-            if ($path === $stream.'.actions.add' || str_starts_with($path, $stream.'.actions.add.')) {
++            if ($type === 'action' && str_starts_with($path, $stream.'.actions.') && ($tree->node($path)['type'] ?? null) === 'modal') {
+                 $paths[] = $path;
++                foreach (array_keys($tree->types()) as $child) {
++                    if (str_starts_with($child, $path.'.')) {
++                        $paths[] = $child;
++                    }
++                }
+             }
+         }
+ 
 diff --git a/src/SdkServiceProvider.php b/src/SdkServiceProvider.php
 index b180d27..d2e1246 100644
 --- a/src/SdkServiceProvider.php
@@ -2103,10 +2171,10 @@ index 0000000..a8d1a1d
 +Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFilesOnDisk(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 49
 diff --git a/tests/Evidence/task-137/git-diff.patch b/tests/Evidence/task-137/git-diff.patch
 new file mode 100644
-index 0000000..17e9b2f
+index 0000000..62ab465
 --- /dev/null
 +++ b/tests/Evidence/task-137/git-diff.patch
-@@ -0,0 +1,2085 @@
+@@ -0,0 +1,4252 @@
 +diff --git a/resources/schemas/nodes/opaque.schema.json b/resources/schemas/nodes/opaque.schema.json
 +new file mode 100644
 +index 0000000..4f435f5
@@ -4191,8 +4259,2174 @@ index 0000000..17e9b2f
 ++
 ++Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/laravel-ray/src/Ray.php on line 45
 ++
-++Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/
-\ No newline at end of file
+++Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/laravel-ray/src/Ray.php on line 45
+++
+++Deprecated: Spatie\LaravelRay\Ray::handleWatcherCallable(): Implicitly marking parameter $callable as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/laravel-ray/src/Ray.php on line 434
+++
+++Deprecated: Spatie\Ray\Ray::create(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Ray.php on line 105
+++
+++Deprecated: Spatie\Ray\Ray::create(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Ray.php on line 105
+++
+++Deprecated: Spatie\Ray\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Ray.php on line 112
+++
+++Deprecated: Spatie\Ray\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Ray.php on line 112
+++
+++Deprecated: Spatie\Ray\Settings\SettingsFactory::createFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 14
+++
+++Deprecated: Spatie\Ray\Settings\SettingsFactory::getSettingsFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 27
+++
+++Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFiles(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 40
+++
+++Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFilesOnDisk(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 49
++diff --git a/tests/Evidence/task-137/git-diff.patch b/tests/Evidence/task-137/git-diff.patch
++new file mode 100644
++index 0000000..17e9b2f
++--- /dev/null
+++++ b/tests/Evidence/task-137/git-diff.patch
++@@ -0,0 +1,2085 @@
+++diff --git a/resources/schemas/nodes/opaque.schema.json b/resources/schemas/nodes/opaque.schema.json
+++new file mode 100644
+++index 0000000..4f435f5
+++--- /dev/null
++++++ b/resources/schemas/nodes/opaque.schema.json
+++@@ -0,0 +1,26 @@
++++{
++++    "$schema": "http://json-schema.org/draft-07/schema#",
++++    "$id": "https://streams.dev/schema/node/opaque.schema.json",
++++    "title": "Opaque node",
++++    "description": "A captured setting that cannot be represented as JSON data: a closure, permission callback, computed option, or other callback. It points at its source location and is owned by people; streams:make never rewrites it.",
++++    "type": "object",
++++    "required": [
++++        "handle",
++++        "file",
++++        "line"
++++    ],
++++    "properties": {
++++        "handle": {
++++            "type": "string",
++++            "description": "The dot path of the setting inside its node (columns.status.color)."
++++        },
++++        "file": {
++++            "type": "string",
++++            "description": "The source file the callback came from, relative to the app root."
++++        },
++++        "line": {
++++            "type": "integer",
++++            "description": "The line in the source file where the callback starts."
++++        }
++++    }
++++}
+++diff --git a/src/Console/Capture/CaptureException.php b/src/Console/Capture/CaptureException.php
+++new file mode 100644
+++index 0000000..81833a9
+++--- /dev/null
++++++ b/src/Console/Capture/CaptureException.php
+++@@ -0,0 +1,5 @@
++++<?php
++++
++++namespace Streams\Sdk\Console\Capture;
++++
++++class CaptureException extends \RuntimeException {}
+++diff --git a/src/Console/Capture/CaptureReader.php b/src/Console/Capture/CaptureReader.php
+++new file mode 100644
+++index 0000000..76c3334
+++--- /dev/null
++++++ b/src/Console/Capture/CaptureReader.php
+++@@ -0,0 +1,781 @@
++++<?php
++++
++++namespace Streams\Sdk\Console\Capture;
++++
++++use PhpParser\Node;
++++use PhpParser\Node\Arg;
++++use PhpParser\Node\Expr;
++++use PhpParser\Node\Expr\Array_;
++++use PhpParser\Node\Expr\ArrayItem;
++++use PhpParser\Node\Expr\ArrowFunction;
++++use PhpParser\Node\Expr\Assign;
++++use PhpParser\Node\Expr\Closure;
++++use PhpParser\Node\Expr\ConstFetch;
++++use PhpParser\Node\Expr\MethodCall;
++++use PhpParser\Node\Expr\StaticCall;
++++use PhpParser\Node\Expr\UnaryMinus;
++++use PhpParser\Node\Expr\UnaryPlus;
++++use PhpParser\Node\Expr\Variable;
++++use PhpParser\Node\Name;
++++use PhpParser\Node\Scalar\DNumber;
++++use PhpParser\Node\Scalar\LNumber;
++++use PhpParser\Node\Scalar\String_;
++++use PhpParser\Node\Stmt;
++++use PhpParser\Node\Stmt\Class_;
++++use PhpParser\Node\Stmt\ClassMethod;
++++use PhpParser\Node\Stmt\Expression;
++++use PhpParser\Node\Stmt\Foreach_;
++++use PhpParser\Node\Stmt\If_;
++++use PhpParser\Node\Stmt\Namespace_;
++++use PhpParser\Node\Stmt\Property;
++++use PhpParser\Node\Stmt\Return_;
++++use PhpParser\ParserFactory;
++++
++++/**
++++ * Reads existing builder settings into the app tree.
++++ *
++++ * Capture is not arbitrary PHP parsing. It reads the class-level builder
++++ * settings — static properties and the setUp()/getPages()/navigation()
++++ * builder chains — from the known reference layout
++++ * (app/Domains/{Domain}/Panel/{Tables,Pages,Actions,Resources,Forms,Public}).
++++ * Literal settings become JSON data in the node. Closures, permission
++++ * callbacks, class-string resolvers, translation calls and computed options
++++ * become opaque nodes pointing at their source file and line. Opaque nodes
++++ * are owned by people; streams:make never rewrites them.
++++ */
++++class CaptureReader
++++{
++++    /**
++++     * Builder methods whose chained calls are captured as settings.
++++     *
++++     * @var list<string>
++++     */
++++    public const BUILDER_METHODS = [
++++        'setUp',
++++        'getPages',
++++        'getComponents',
++++        'navigation',
++++        'breadcrumbs',
++++        'scopedQuery',
++++    ];
++++
++++    /**
++++     * Panel directory => captured node kind.
++++     *
++++     * @var array<string, string>
++++     */
++++    protected const KIND_BY_DIRECTORY = [
++++        'Tables' => 'table',
++++        'Pages' => 'page',
++++        'Actions' => 'action',
++++        'Resources' => 'panel',
++++        'Forms' => 'form',
++++        'Public' => 'public_page',
++++    ];
++++
++++    /**
++++     * Captured node kind => ui container name.
++++     *
++++     * @var array<string, string>
++++     */
++++    protected const CONTAINER_BY_KIND = [
++++        'table' => 'table',
++++        'panel' => 'panel',
++++        'page' => 'pages',
++++        'action' => 'actions',
++++        'form' => 'forms',
++++        'public_page' => 'public_pages',
++++    ];
++++
++++    public function __construct(protected string $root) {}
++++
++++    /**
++++     * Builder files that could not be captured, with the reason.
++++     *
++++     * @return list<array{file: string, reason: string}>
++++     */
++++    public function skipped(): array
++++    {
++++        return $this->skipped;
++++    }
++++
++++    /**
++++     * Capture the reference layout into an app tree payload.
++++     *
++++     * Builder files that cannot be read are never dropped silently: they are
++++     * reported through skipped() and surfaced by the streams:capture command.
++++     *
++++     * @return array{name: string, streams: array<string, array<string, mixed>>}
++++     */
++++    public function capture(): array
++++    {
++++        $streams = $this->streams();
++++
++++        foreach ($this->builderFiles() as $file) {
++++            $relative = $this->relative($file);
++++            $mapped = $this->mapPath($relative);
++++
++++            if ($mapped === null) {
++++                continue;
++++            }
++++
++++            [$stream, $container, $handle, $kind] = $mapped;
++++
++++            $node = $this->captureFile($file, $relative, $kind, $handle);
++++
++++            if ($node === null) {
++++                $this->skipped[] = [
++++                    'file' => $relative,
++++                    'reason' => $this->skipReason ?? 'unrecognized builder file',
++++                ];
++++                $this->skipReason = null;
++++
++++                continue;
++++            }
++++
++++            $streams[$stream] = $this->place($streams[$stream] ?? [], $container, $handle, $node);
++++        }
++++
++++        return [
++++            'name' => 'Captured',
++++            'streams' => $streams,
++++        ];
++++    }
++++
++++    /**
++++     * @var list<array{file: string, reason: string}>
++++     */
++++    protected array $skipped = [];
++++
++++    protected ?string $skipReason = null;
++++
++++    /**
++++     * Stream definitions under streams/ become stream nodes.
++++     *
++++     * @return array<string, array<string, mixed>>
++++     */
++++    protected function streams(): array
++++    {
++++        $streams = [];
++++
++++        foreach (glob($this->root.'/streams/*.json') ?: [] as $file) {
++++            $data = json_decode((string) file_get_contents($file), true);
++++
++++            if (! is_array($data)) {
++++                throw new CaptureException("Stream file [{$file}] is not a JSON object.");
++++            }
++++
++++            $handle = $data['handle'] ?? basename($file, '.json');
++++            $data['handle'] = $handle;
++++            $data['name'] = $data['name'] ?? ucfirst($handle);
++++
++++            $streams[$handle] = $data;
++++        }
++++
++++        return $streams;
++++    }
++++
++++    /**
++++     * @return array<int, string>
++++     */
++++    protected function builderFiles(): array
++++    {
++++        return glob($this->root.'/app/Domains/*/Panel/{Tables,Pages,Actions,Resources,Forms,Public}/*.php', GLOB_BRACE) ?: [];
++++    }
++++
++++    /**
++++     * Map a relative builder path to its tree location.
++++     *
++++     * @return array{0: string, 1: string, 2: string, 3: string}|null
++++     */
++++    protected function mapPath(string $relative): ?array
++++    {
++++        if (preg_match('#^app/Domains/([^/]+)/Panel/([^/]+)/([^/]+)\.php$#', $relative, $matches) !== 1) {
++++            return null;
++++        }
++++
++++        $domain = $matches[1];
++++        $directory = $matches[2];
++++        $class = $matches[3];
++++
++++        $kind = self::KIND_BY_DIRECTORY[$directory] ?? null;
++++
++++        if ($kind === null) {
++++            return null;
++++        }
++++
++++        $stream = strtolower($domain);
++++        $handle = $this->snake($class);
++++
++++        return [$stream, self::CONTAINER_BY_KIND[$kind], $handle, $kind];
++++    }
++++
++++    /**
++++     * Place a captured node under its stream's ui subtree.
++++     *
++++     * @param  array<string, mixed>  $stream
++++     * @param  array<string, mixed>  $node
++++     * @return array<string, mixed>
++++     */
++++    protected function place(array $stream, string $container, string $handle, array $node): array
++++    {
++++        if ($container === 'table' || $container === 'panel') {
++++            $stream['ui'][$container] = $node;
++++
++++            return $stream;
++++        }
++++
++++        $stream['ui'][$container][$handle] = $node;
++++
++++        return $stream;
++++    }
++++
++++    /**
++++     * Capture one builder file into a node payload.
++++     *
++++     * @return array{handle: string, kind: string, source: string, settings: array<string, mixed>, opaque: list<array{handle: string, file: string, line: int}>}|null
++++     */
++++    protected function captureFile(string $file, string $relative, string $kind, string $handle): ?array
++++    {
++++        $statements = $this->parse($file);
++++
++++        if ($statements === null) {
++++            $this->skipReason = 'file could not be parsed';
++++
++++            return null;
++++        }
++++
++++        $class = $this->findClass($statements);
++++
++++        if ($class === null) {
++++            $this->skipReason = 'no builder class found';
++++
++++            return null;
++++        }
++++
++++        $settings = [];
++++        $opaque = [];
++++
++++        foreach ($class->stmts ?? [] as $stmt) {
++++            if ($stmt instanceof Property && $stmt->isStatic()) {
++++                $this->captureProperties($stmt, $relative, $settings, $opaque);
++++            }
++++
++++            if ($stmt instanceof ClassMethod && in_array($stmt->name->toString(), self::BUILDER_METHODS, true)) {
++++                $this->captureMethod($stmt, $relative, $settings, $opaque);
++++            }
++++        }
++++
++++        ksort($settings);
++++
++++        usort($opaque, function (array $left, array $right): int {
++++            return [$left['line'], $left['handle']] <=> [$right['line'], $right['handle']];
++++        });
++++
++++        return [
++++            'handle' => $handle,
++++            'kind' => $kind,
++++            'source' => $relative,
++++            'settings' => $settings,
++++            'opaque' => $opaque,
++++        ];
++++    }
++++
++++    /**
++++     * @return list<Node>|null
++++     */
++++    protected function parse(string $file): ?array
++++    {
++++        $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
++++
++++        try {
++++            return $parser->parse((string) file_get_contents($file)) ?: null;
++++        } catch (\Throwable) {
++++            return null;
++++        }
++++    }
++++
++++    /**
++++     * @param  array<Node>  $statements
++++     */
++++    protected function findClass(array $statements): ?Class_
++++    {
++++        foreach ($statements as $statement) {
++++            if ($statement instanceof Class_) {
++++                return $statement;
++++            }
++++
++++            if ($statement instanceof Namespace_) {
++++                $class = $this->findClass($statement->stmts);
++++
++++                if ($class !== null) {
++++                    return $class;
++++                }
++++            }
++++        }
++++
++++        return null;
++++    }
++++
++++    /**
++++     * Static properties are builder settings: literal values are data,
++++     * class constants and other computed values are opaque.
++++     *
++++     * @param  array<string, mixed>  $settings
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     */
++++    protected function captureProperties(Property $property, string $file, array &$settings, array &$opaque): void
++++    {
++++        foreach ($property->props as $prop) {
++++            $name = $prop->name->toString();
++++
++++            if ($prop->default === null) {
++++                continue;
++++            }
++++
++++            [$found, $value, $entries] = $this->literalOrOpaque($prop->default, $file, $name);
++++
++++            if ($found) {
++++                $settings[$name] = $value;
++++            }
++++
++++            foreach ($entries as $entry) {
++++                $opaque[] = $entry;
++++            }
++++        }
++++    }
++++
++++    /**
++++     * @param  array<string, mixed>  $settings
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     */
++++    protected function captureMethod(ClassMethod $method, string $file, array &$settings, array &$opaque): void
++++    {
++++        foreach ($method->stmts ?? [] as $stmt) {
++++            $this->captureStatement($stmt, $file, $method->name->toString(), $settings, $opaque);
++++        }
++++    }
++++
++++    /**
++++     * Capture one statement inside a builder method. Assignments are local
++++     * scaffolding, not builder settings, and never become opaque nodes.
++++     * Builder calls inside control flow are still walked so they are not
++++     * silently discarded.
++++     *
++++     * @param  array<string, mixed>  $settings
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     */
++++    protected function captureStatement(Stmt $stmt, string $file, string $prefix, array &$settings, array &$opaque): void
++++    {
++++        if ($stmt instanceof Expression) {
++++            if ($stmt->expr instanceof Assign) {
++++                return;
++++            }
++++
++++            $this->chain($stmt->expr, $file, '', $settings, $opaque);
++++
++++            return;
++++        }
++++
++++        if ($stmt instanceof Return_ && $stmt->expr !== null) {
++++            $this->chain($stmt->expr, $file, $prefix, $settings, $opaque);
++++
++++            return;
++++        }
++++
++++        if ($stmt instanceof If_) {
++++            foreach ($stmt->stmts as $inner) {
++++                $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
++++            }
++++
++++            foreach ($stmt->elseifs as $elseif) {
++++                foreach ($elseif->stmts as $inner) {
++++                    $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
++++                }
++++            }
++++
++++            if ($stmt->else !== null) {
++++                foreach ($stmt->else->stmts as $inner) {
++++                    $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
++++                }
++++            }
++++
++++            return;
++++        }
++++
++++        if ($stmt instanceof Foreach_) {
++++            foreach ($stmt->stmts as $inner) {
++++                $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
++++            }
++++        }
++++    }
++++
++++    /**
++++     * Walk a builder call chain. Literal arguments become settings; closures,
++++     * callbacks, resolvers and computed values become opaque nodes.
++++     *
++++     * @param  array<string, mixed>  $settings
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     */
++++    protected function chain(Expr $expr, string $file, string $prefix, array &$settings, array &$opaque): void
++++    {
++++        if ($expr instanceof MethodCall) {
++++            // Deeper in the chain first: ->filters([...])->columns([...]).
++++            $this->chain($expr->var, $file, $prefix, $settings, $opaque);
++++
++++            $method = $expr->name instanceof Node\Identifier ? $expr->name->toString() : null;
++++
++++            if ($method !== null) {
++++                $this->call($method, $this->filterArgs($expr->args), $file, $prefix, $settings, $opaque);
++++            }
++++
++++            return;
++++        }
++++
++++        if ($expr instanceof StaticCall) {
++++            $method = $expr->name instanceof Node\Identifier ? $expr->name->toString() : null;
++++
++++            // X::make('handle') names the builder item already captured by the
++++            // container walker. It is not itself a setting.
++++            if ($method === 'make' && isset($expr->args[0]) && $expr->args[0] instanceof Arg && $expr->args[0]->value instanceof String_) {
++++                return;
++++            }
++++
++++            // A resolver/route class call is computed: opaque.
++++            $opaque[] = $this->opaque($this->joined($prefix, $this->classLabel($expr->class)), $file, $expr->getStartLine());
++++
++++            return;
++++        }
++++
++++        if ($expr instanceof Closure || $expr instanceof ArrowFunction) {
++++            $opaque[] = $this->opaque($prefix, $file, $expr->getStartLine());
++++
++++            return;
++++        }
++++
++++        // The chain root itself ($this or a variable) is not a setting.
++++        if ($expr instanceof Variable) {
++++            return;
++++        }
++++
++++        // Assignment scaffolding is not a builder setting.
++++        if ($expr instanceof Assign) {
++++            return;
++++        }
++++
++++        // Translation, route, criteria and other computed values are opaque.
++++        $opaque[] = $this->opaque($prefix, $file, $expr->getStartLine());
++++    }
++++
++++    /**
++++     * @param  list<Arg>  $args
++++     * @param  array<string, mixed>  $settings
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     */
++++    protected function call(string $method, array $args, string $file, string $prefix, array &$settings, array &$opaque): void
++++    {
++++        $key = $this->joined($prefix, $method);
++++
++++        if ($args === []) {
++++            // ->sortable() is a boolean setting.
++++            $settings[$key] = true;
++++
++++            return;
++++        }
++++
++++        if (count($args) === 1) {
++++            $this->argument($args[0]->value, $key, $file, $settings, $opaque);
++++
++++            return;
++++        }
++++
++++        // Multiple arguments: keep them when every argument is a literal.
++++        $values = [];
++++
++++        foreach ($args as $arg) {
++++            [$found, $value, $entries] = $this->literalOrOpaque($arg->value, $file, $key);
++++
++++            if ($found) {
++++                $values[] = $value;
++++            }
++++
++++            foreach ($entries as $entry) {
++++                $opaque[] = $entry;
++++            }
++++        }
++++
++++        if (count($values) === count($args)) {
++++            $settings[$key] = $values;
++++        }
++++    }
++++
++++    /**
++++     * @param  array<string, mixed>  $settings
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     */
++++    protected function argument(Expr $arg, string $key, string $file, array &$settings, array &$opaque): void
++++    {
++++        if ($arg instanceof Array_) {
++++            if ($this->isLiteralArray($arg)) {
++++                $settings[$key] = $this->literalArray($arg);
++++
++++                return;
++++            }
++++
++++            // A builder container: columns, filters, actions, components.
++++            foreach ($arg->items as $index => $item) {
++++                if (! $item instanceof ArrayItem) {
++++                    continue;
++++                }
++++
++++                $itemKey = $this->itemHandle($item, (string) $index);
++++
++++                $this->chain($item->value, $file, $this->joined($key, $itemKey), $settings, $opaque);
++++            }
++++
++++            return;
++++        }
++++
++++        [$found, $value, $entries] = $this->literalOrOpaque($arg, $file, $key);
++++
++++        if ($found) {
++++            $settings[$key] = $value;
++++
++++            return;
++++        }
++++
++++        foreach ($entries as $entry) {
++++            $opaque[] = $entry;
++++        }
++++    }
++++
++++    /**
++++     * The handle of one builder container item: its make() name, its
++++     * array key, or its position.
++++     */
++++    protected function itemHandle(ArrayItem $item, string $index): string
++++    {
++++        if ($item->key instanceof String_) {
++++            return $item->key->value;
++++        }
++++
++++        $value = $item->value;
++++
++++        // ->make('handle')->label(...) chains start at a make() static call.
++++        while ($value instanceof MethodCall) {
++++            $value = $value->var;
++++        }
++++
++++        if ($value instanceof StaticCall && $value->name instanceof Node\Identifier && $value->name->toString() === 'make') {
++++            if (isset($value->args[0]) && $value->args[0] instanceof Arg && $value->args[0]->value instanceof String_) {
++++                return $value->args[0]->value->value;
++++            }
++++        }
++++
++++        return $index;
++++    }
++++
++++    /**
++++     * A literal value or opaque entries for a non-literal expression.
++++     *
++++     * The first element reports whether the expression is a literal at all,
++++     * so a literal null is data, not opaque.
++++     *
++++     * @return array{0: bool, 1: mixed, 2: list<array{handle: string, file: string, line: int}>}
++++     */
++++    protected function literalOrOpaque(Expr $expr, string $file, string $key): array
++++    {
++++        $literal = $this->literal($expr);
++++
++++        if ($literal[0]) {
++++            return [true, $literal[1], []];
++++        }
++++
++++        return [false, null, [$this->opaque($key, $file, $expr->getStartLine())]];
++++    }
++++
++++    /**
++++     * Whether an expression is a JSON-representable literal and its value.
++++     *
++++     * @return array{0: bool, 1: mixed}
++++     */
++++    protected function literal(Expr $expr): array
++++    {
++++        if ($expr instanceof String_) {
++++            return [true, $expr->value];
++++        }
++++
++++        if ($expr instanceof LNumber) {
++++            return [true, $expr->value];
++++        }
++++
++++        if ($expr instanceof DNumber) {
++++            return [true, $expr->value];
++++        }
++++
++++        if ($expr instanceof ConstFetch) {
++++            $name = $expr->name->toString();
++++
++++            return match ($name) {
++++                'true' => [true, true],
++++                'false' => [true, false],
++++                'null' => [true, null],
++++                default => [false, null],
++++            };
++++        }
++++
++++        // A signed numeric literal (-5, +1.5) is still a literal.
++++        if ($expr instanceof UnaryMinus || $expr instanceof UnaryPlus) {
++++            $operand = $expr->expr;
++++
++++            if ($operand instanceof LNumber) {
++++                return [true, $expr instanceof UnaryMinus ? -$operand->value : $operand->value];
++++            }
++++
++++            if ($operand instanceof DNumber) {
++++                return [true, $expr instanceof UnaryMinus ? -$operand->value : $operand->value];
++++            }
++++
++++            return [false, null];
++++        }
++++
++++        return [false, null];
++++    }
++++
++++    protected function isLiteralArray(Array_ $array): bool
++++    {
++++        foreach ($array->items as $item) {
++++            if (! $item instanceof ArrayItem) {
++++                return false;
++++            }
++++
++++            if ($item->key !== null && ! $item->key instanceof String_ && ! $item->key instanceof LNumber) {
++++                return false;
++++            }
++++
++++            if (! $this->literalArrayValue($item->value)[0]) {
++++                return false;
++++            }
++++        }
++++
++++        return true;
++++    }
++++
++++    /**
++++     * @return array<int|string, mixed>
++++     */
++++    protected function literalArray(Array_ $array): array
++++    {
++++        $out = [];
++++
++++        foreach ($array->items as $item) {
++++            if (! $item instanceof ArrayItem) {
++++                continue;
++++            }
++++
++++            $value = $this->literalArrayValue($item->value);
++++
++++            if ($item->key === null) {
++++                $out[] = $value[1];
++++            } elseif ($item->key instanceof String_ || $item->key instanceof LNumber) {
++++                $out[$item->key->value] = $value[1];
++++            }
++++        }
++++
++++        return $out;
++++    }
++++
++++    /**
++++     * @return array{0: bool, 1: mixed}
++++     */
++++    protected function literalArrayValue(Expr $expr): array
++++    {
++++        if ($expr instanceof Array_ && $this->isLiteralArray($expr)) {
++++            return [true, $this->literalArray($expr)];
++++        }
++++
++++        return $this->literal($expr);
++++    }
++++
++++    protected function joined(string $prefix, string $segment): string
++++    {
++++        return $prefix === '' ? $segment : $prefix.'.'.$segment;
++++    }
++++
++++    /**
++++     * @return array{handle: string, file: string, line: int}
++++     */
++++    protected function opaque(string $handle, string $file, int $line): array
++++    {
++++        return [
++++            'handle' => $handle,
++++            'file' => $file,
++++            'line' => $line,
++++        ];
++++    }
++++
++++    protected function shortClass(Name $name): string
++++    {
++++        $class = $name->toString();
++++        $position = strrpos($class, '\\');
++++
++++        return $position === false ? $class : substr($class, $position + 1);
++++    }
++++
++++    /**
++++     * A readable label for a static call target: the short class for a plain
++++     * class name, or the source line for a computed expression.
++++     */
++++    protected function classLabel(Node $class): string
++++    {
++++        if ($class instanceof Name) {
++++            return $this->shortClass($class);
++++        }
++++
++++        return 'expression at line '.$class->getStartLine();
++++    }
++++
++++    /**
++++     * Call arguments that carry a value. Static calls may end with a
++++     * variadic placeholder, which has no ->value.
++++     *
++++     * @param  array<int, Arg|Node\VariadicPlaceholder|Node\ArgPlaceholder>  $args
++++     * @return list<Arg>
++++     */
++++    protected function filterArgs(array $args): array
++++    {
++++        $values = [];
++++
++++        foreach ($args as $arg) {
++++            if ($arg instanceof Arg) {
++++                $values[] = $arg;
++++            }
++++        }
++++
++++        return $values;
++++    }
++++
++++    protected function relative(string $file): string
++++    {
++++        $root = rtrim($this->root, '/').'/';
++++
++++        if (str_starts_with($file, $root)) {
++++            return substr($file, strlen($root));
++++        }
++++
++++        $real = rtrim(realpath($this->root) ?: $this->root, '/').'/';
++++
++++        if (str_starts_with($file, $real)) {
++++            return substr($file, strlen($real));
++++        }
++++
++++        return basename($file);
++++    }
++++
++++    protected function snake(string $value): string
++++    {
++++        $snake = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $value));
++++
++++        return str_replace('-', '_', $snake);
++++    }
++++}
+++diff --git a/src/Console/Commands/StreamsCapture.php b/src/Console/Commands/StreamsCapture.php
+++new file mode 100644
+++index 0000000..1f25b00
+++--- /dev/null
++++++ b/src/Console/Commands/StreamsCapture.php
+++@@ -0,0 +1,87 @@
++++<?php
++++
++++namespace Streams\Sdk\Console\Commands;
++++
++++use Illuminate\Console\Command;
++++use Streams\Sdk\Console\Capture\CaptureException;
++++use Streams\Sdk\Console\Capture\CaptureReader;
++++
++++/**
++++ * Capture existing builder settings into the app JSON tree.
++++ *
++++ * Reads panels, pages, tables and actions from builder settings (static
++++ * properties and setUp()/getPages()/navigation() chains) in the known
++++ * reference layout, and writes a streams.json. Literal settings become
++++ * data; closures, permission callbacks, class resolvers and computed
++++ * options become opaque nodes pointing at their source file and line.
++++ * Opaque nodes are owned by people and streams:make never rewrites them.
++++ */
++++class StreamsCapture extends Command
++++{
++++    protected $signature = 'streams:capture
++++        {--root= : App root to read builder files from. Defaults to config streams.sdk.capture.root, then base_path().}
++++        {--tree= : Where to write the captured streams.json. Defaults to config streams.sdk.capture.tree, then base_path(streams.json).}
++++        {--dry-run : Print the captured tree without writing it.}
++++        {--json : Print the captured tree as JSON.}';
++++
++++    protected $description = 'Capture existing builder settings into the app JSON tree.';
++++
++++    public function handle(): int
++++    {
++++        $root = (string) ($this->option('root') ?: config('streams.sdk.capture.root', base_path()));
++++        $treeFile = (string) ($this->option('tree') ?: config('streams.sdk.capture.tree', base_path('streams.json')));
++++
++++        try {
++++            $reader = new CaptureReader($this->locate($root));
++++            $tree = $reader->capture();
++++        } catch (CaptureException $e) {
++++            $this->error($e->getMessage());
++++
++++            return self::FAILURE;
++++        }
++++
++++        foreach ($reader->skipped() as $skip) {
++++            $this->warn("skipped builder [{$skip['file']}]: {$skip['reason']}");
++++        }
++++
++++        $json = json_encode($tree, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
++++
++++        if ($json === false) {
++++            $this->error('The captured tree could not be encoded as JSON.');
++++
++++            return self::FAILURE;
++++        }
++++
++++        if ($this->option('json') || $this->option('dry-run')) {
++++            $this->output->writeln($json);
++++
++++            return self::SUCCESS;
++++        }
++++
++++        $directory = dirname($this->locate($treeFile));
++++
++++        if (! is_dir($directory)) {
++++            $this->error("Cannot write the tree: directory [{$directory}] does not exist.");
++++
++++            return self::FAILURE;
++++        }
++++
++++        file_put_contents($this->locate($treeFile), $json."\n");
++++
++++        $this->line("<info>captured:</info> {$this->locate($treeFile)}");
++++
++++        return self::SUCCESS;
++++    }
++++
++++    /**
++++     * Absolute paths are used as given. Relative paths resolve from the app base.
++++     */
++++    protected function locate(string $path): string
++++    {
++++        if ($path === '' || str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1) {
++++            return $path;
++++        }
++++
++++        return base_path($path);
++++    }
++++}
+++diff --git a/src/Console/Make/BuildStage.php b/src/Console/Make/BuildStage.php
+++index ac2192a..5aab718 100644
+++--- a/src/Console/Make/BuildStage.php
++++++ b/src/Console/Make/BuildStage.php
+++@@ -259,6 +259,12 @@ class BuildStage
+++             $node = $tree->node($path);
+++             $label = $this->label($node, $path);
+++ 
++++            // Opaque nodes are owned by people. A code-bearing node whose
++++            // subtree holds any captured closure/callback is never rewritten.
++++            if ($this->isOpaqueSubtree($tree, $path)) {
++++                continue;
++++            }
++++
+++             $memory->add(new CompiledFile(
+++                 $path,
+++                 $relative,
+++@@ -273,6 +279,28 @@ class BuildStage
+++         return $memory;
+++     }
+++ 
++++    /**
++++     * Whether a code-bearing node is owned by people: its own node or any
++++     * descendant carries a non-empty `opaque` list (captured closures,
++++     * permission callbacks or computed options). Build never rewrites those.
++++     */
++++    protected function isOpaqueSubtree(AppTree $tree, string $path): bool
++++    {
++++        foreach ($tree->types() as $nodePath => $type) {
++++            if ($nodePath !== $path && ! str_starts_with($nodePath, $path.'.')) {
++++                continue;
++++            }
++++
++++            $node = $tree->node($nodePath);
++++
++++            if (isset($node['opaque']) && is_array($node['opaque']) && $node['opaque'] !== []) {
++++                return true;
++++            }
++++        }
++++
++++        return false;
++++    }
++++
+++     /** Dependencies of a manage page are built through the same command. */
+++     protected function scope(AppTree $tree, ?string $only): array
+++     {
+++diff --git a/src/SdkServiceProvider.php b/src/SdkServiceProvider.php
+++index b180d27..d2e1246 100644
+++--- a/src/SdkServiceProvider.php
++++++ b/src/SdkServiceProvider.php
+++@@ -10,6 +10,7 @@ use Streams\Sdk\Console\Commands\CatalogGenerate;
+++ use Streams\Sdk\Console\Commands\ListEntries;
+++ use Streams\Sdk\Console\Commands\ListStreams;
+++ use Streams\Sdk\Console\Commands\ShowEntry;
++++use Streams\Sdk\Console\Commands\StreamsCapture;
+++ use Streams\Sdk\Console\Commands\StreamsMake;
+++ use Streams\Sdk\Console\Commands\StreamsSchema;
+++ use Streams\Sdk\Console\Commands\StreamsTap;
+++@@ -33,6 +34,7 @@ class SdkServiceProvider extends ServiceProvider
+++         if ($this->app->runningInConsole()) {
+++             $this->commands([
+++                 StreamsMake::class,
++++                StreamsCapture::class,
+++                 CatalogGenerate::class,
+++                 StreamsSchema::class,
+++                 StreamsTap::class,
+++diff --git a/tests/Console/Commands/StreamsCaptureTest.php b/tests/Console/Commands/StreamsCaptureTest.php
+++new file mode 100644
+++index 0000000..21d8cc3
+++--- /dev/null
++++++ b/tests/Console/Commands/StreamsCaptureTest.php
+++@@ -0,0 +1,248 @@
++++<?php
++++
++++namespace Streams\Sdk\Tests\Console\Commands;
++++
++++use Illuminate\Support\Facades\Artisan;
++++use Illuminate\Support\Facades\File;
++++use Streams\Sdk\Support\AppTree;
++++use Streams\Sdk\Tests\SdkTestCase;
++++use Streams\Sdk\Tests\Support\SchemaValidator;
++++
++++/**
++++ * streams:capture reads the people reference builders into a streams.json:
++++ * literal builder settings become data, closures/callbacks become opaque
++++ * nodes with file + line, and streams:make never rewrites an opaque node.
++++ */
++++class StreamsCaptureTest extends SdkTestCase
++++{
++++    protected string $schemaDir = __DIR__.'/../../../resources/schemas';
++++
++++    protected string $root;
++++
++++    protected string $output;
++++
++++    protected function setUp(): void
++++    {
++++        parent::setUp();
++++
++++        $this->root = sys_get_temp_dir().'/streams-sdk-capture-'.bin2hex(random_bytes(8));
++++        $this->output = $this->root.'/build';
++++
++++        File::copyDirectory(__DIR__.'/../../Fixtures/References/v1/app', $this->root.'/app');
++++        File::copyDirectory(__DIR__.'/../../Fixtures/References/v1/streams', $this->root.'/streams');
++++        File::ensureDirectoryExists($this->output);
++++
++++        config([
++++            'streams.sdk.capture.root' => $this->root,
++++            'streams.sdk.capture.tree' => $this->root.'/streams.json',
++++            'streams.sdk.make.tree' => $this->root.'/streams.json',
++++            'streams.sdk.make.output' => $this->output,
++++        ]);
++++    }
++++
++++    protected function tearDown(): void
++++    {
++++        File::deleteDirectory($this->root);
++++
++++        parent::tearDown();
++++    }
++++
++++    public function test_capturing_the_people_fixtures_produces_a_streams_json_that_validates(): void
++++    {
++++        $exit = Artisan::call('streams:capture');
++++        $this->assertSame(0, $exit, Artisan::output());
++++
++++        $treeFile = $this->root.'/streams.json';
++++        $this->assertFileExists($treeFile);
++++
++++        $data = json_decode((string) File::get($treeFile));
++++        $this->assertIsObject($data);
++++
++++        $validator = new SchemaValidator($this->schemaDir);
++++        $validator->assertValid($data, 'https://streams.dev/schema/app.schema.json', 'streams.json');
++++
++++        $tree = AppTree::load($treeFile);
++++        $this->assertSame('stream', $tree->type('people'));
++++        $this->assertSame('table', $tree->type('people.table'));
++++        $this->assertSame('panel', $tree->type('people.panel'));
++++        $this->assertSame('page', $tree->type('people.pages.list_people'));
++++        $this->assertSame('action', $tree->type('people.actions.add_person_modal'));
++++    }
++++
++++    public function test_closures_and_callbacks_become_opaque_nodes_with_file_and_line(): void
++++    {
++++        Artisan::call('streams:capture');
++++        $tree = AppTree::load($this->root.'/streams.json');
++++
++++        $opaque = $tree->node('people.table')['opaque'] ?? [];
++++        $this->assertNotEmpty($opaque);
++++
++++        foreach ($opaque as $entry) {
++++            $this->assertArrayHasKey('handle', $entry);
++++            $this->assertArrayHasKey('file', $entry);
++++            $this->assertArrayHasKey('line', $entry);
++++            $this->assertIsInt($entry['line']);
++++            $this->assertSame('app/Domains/People/Panel/Tables/PeopleTable.php', $entry['file']);
++++        }
++++
++++        // The status column's color() and title() closures are opaque nodes.
++++        $handles = array_column($opaque, 'handle');
++++        $this->assertContains('columns.status.color', $handles);
++++        $this->assertContains('columns.status.title', $handles);
++++        $this->assertContains('query', $handles);
++++
++++        $color = $this->findOpaque($opaque, 'columns.status.color');
++++        $this->assertNotNull($color);
++++        $this->assertSame(45, $color['line']);
++++
++++        // Literal builder settings are still captured as data.
++++        $settings = $tree->node('people.table')['settings'] ?? [];
++++        $this->assertTrue($settings['columns.status.sortable'] ?? false);
++++        $this->assertSame(['first_name', 'last_name'], $settings['columns.first_name.searchable'] ?? null);
++++
++++        // The action's permission callback is opaque too.
++++        $actionOpaque = $tree->node('people.actions.add_person_modal')['opaque'] ?? [];
++++        $actionHandles = array_column($actionOpaque, 'handle');
++++        $this->assertContains('authorize', $actionHandles);
++++        $this->assertContains('action', $actionHandles);
++++    }
++++
++++    public function test_literal_settings_including_null_and_negative_numbers_are_captured(): void
++++    {
++++        Artisan::call('streams:capture');
++++        $tree = AppTree::load($this->root.'/streams.json');
++++
++++        // Literal null, negative and integer-array settings stay data.
++++        $table = $tree->node('people.table');
++++        $this->assertArrayHasKey('pollingInterval', $table['settings']);
++++        $this->assertNull($table['settings']['pollingInterval']);
++++        $this->assertSame(-1, $table['settings']['defaultSort'] ?? null);
++++        $this->assertSame([5, 10, 25], $table['settings']['paginationPageOptions'] ?? null);
++++
++++        // A literal null property default is data too.
++++        $page = $tree->node('people.pages.list_people');
++++        $this->assertArrayHasKey('navigationBadge', $page['settings']);
++++        $this->assertNull($page['settings']['navigationBadge']);
++++
++++        // make() names an item; it is not a literal setting.
++++        $this->assertArrayNotHasKey('columns.status.make', $table['settings']);
++++        $panel = $tree->node('people.panel');
++++        $this->assertArrayNotHasKey('navigation.make', $panel['settings']);
++++
++++        // Assignment scaffolding never leaks an empty-handle opaque node.
++++        foreach (['people.table', 'people.panel', 'people.pages.list_people', 'people.actions.add_person_modal'] as $path) {
++++            $node = $tree->node($path);
++++            $this->assertNotEmpty($node['opaque'] ?? []);
++++            $this->assertNotContains('', array_column($node['opaque'], 'handle'));
++++        }
++++    }
++++
++++    public function test_unreadable_builder_files_are_reported_not_silently_dropped(): void
++++    {
++++        File::put($this->root.'/app/Domains/People/Panel/Tables/BrokenTable.php', "<?php\n\nthis is not valid php (((\n");
++++        File::put($this->root.'/app/Domains/People/Panel/Tables/NoClassTable.php', "<?php\n\n\$shared = 1;\n");
++++
++++        $exit = Artisan::call('streams:capture');
++++        $output = Artisan::output();
++++
++++        $this->assertSame(0, $exit, $output);
++++        $this->assertStringContainsString('BrokenTable.php', $output);
++++        $this->assertStringContainsString('could not be parsed', $output);
++++        $this->assertStringContainsString('NoClassTable.php', $output);
++++        $this->assertStringContainsString('no builder class found', $output);
++++
++++        // The healthy builders are still captured and the tree still validates.
++++        $treeFile = $this->root.'/streams.json';
++++        $this->assertFileExists($treeFile);
++++        $data = json_decode((string) File::get($treeFile));
++++        $validator = new SchemaValidator($this->schemaDir);
++++        $validator->assertValid($data, 'https://streams.dev/schema/app.schema.json', 'streams.json');
++++        $tree = AppTree::load($treeFile);
++++        $this->assertSame('table', $tree->type('people.table'));
++++        $this->assertSame('people_table', $tree->node('people.table')['handle'] ?? null);
++++    }
++++
++++    public function test_capture_then_build_produces_zero_changes_because_opaque_nodes_are_never_rewritten(): void
++++    {
++++        Artisan::call('streams:capture');
++++
++++        $exit = Artisan::call('streams:make', ['--json' => true]);
++++        $output = Artisan::output();
++++
++++        $this->assertSame(0, $exit, $output);
++++        $report = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
++++        $this->assertIsArray($report);
++++
++++        foreach (['created', 'modified', 'skipped', 'unapplied', 'conflicts'] as $key) {
++++            $this->assertSame([], $report[$key]);
++++        }
++++        $this->assertSame('', $report['diff']);
++++        File::delete($this->output.'/streams.lock');
++++        $this->assertSame([], File::allFiles($this->output));
++++
++++        // Once the owned builder files already exist, build still never
++++        // rewrites an opaque node: every file stays byte-for-byte intact.
++++        foreach (File::allFiles(__DIR__.'/../../Fixtures/References/v1/app') as $file) {
++++            $relative = $file->getRelativePathname();
++++            File::ensureDirectoryExists(dirname($this->output.'/'.$relative));
++++            File::copy($file->getPathname(), $this->output.'/'.$relative);
++++        }
++++
++++        $before = $this->snapshot();
++++        $second = $this->make();
++++
++++        foreach (['created', 'modified', 'skipped', 'unapplied', 'conflicts'] as $key) {
++++            $this->assertSame([], $second[$key]);
++++        }
++++        $this->assertSame('', $second['diff']);
++++        $this->assertSame($before, $this->snapshot());
++++    }
++++
++++    /**
++++     * @param  array<string, mixed>  $arguments
++++     * @return array<string, mixed>
++++     */
++++    protected function make(array $arguments = []): array
++++    {
++++        $exit = Artisan::call('streams:make', array_merge(['--json' => true], $arguments));
++++        $output = Artisan::output();
++++
++++        $this->assertSame(0, $exit, $output);
++++        $report = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
++++        $this->assertIsArray($report);
++++
++++        return $report;
++++    }
++++
++++    /**
++++     * @return array<string, string>
++++     */
++++    protected function snapshot(): array
++++    {
++++        $files = [];
++++        foreach (File::allFiles($this->output) as $file) {
++++            if ($file->getRelativePathname() === 'streams.lock') {
++++                continue;
++++            }
++++            $files[$file->getRelativePathname()] = $file->getContents();
++++        }
++++        ksort($files);
++++
++++        return $files;
++++    }
++++
++++    /**
++++     * @param  list<array{handle: string, file: string, line: int}>  $opaque
++++     * @return array{handle: string, file: string, line: int}|null
++++     */
++++    protected function findOpaque(array $opaque, string $handle): ?array
++++    {
++++        foreach ($opaque as $entry) {
++++            if ($entry['handle'] === $handle) {
++++                return $entry;
++++            }
++++        }
++++
++++        return null;
++++    }
++++}
+++diff --git a/tests/Evidence/task-137/README.md b/tests/Evidence/task-137/README.md
+++new file mode 100644
+++index 0000000..bd6da78
+++--- /dev/null
++++++ b/tests/Evidence/task-137/README.md
+++@@ -0,0 +1,83 @@
++++# Task 137 evidence — streams:capture
++++
++++Starting revision: `65f42bc` (parent of this task's first commit). Local
++++commits were added on top (`f50855d`, `7e17ac5`, `86e4687`); nothing was
++++pushed. No streams/ui or streams-core changes; GroupVitals
++++(`~/Sites/_gv/app`) was not touched. All app outputs used disposable temp
++++directories.
++++
++++Acceptance reconciliation:
++++
++++- `StreamsCaptureTest::test_capturing_the_people_fixtures_produces_a_streams_json_that_validates`
++++  runs `streams:capture` against the Reference v1 people fixtures, then
++++  validates the written `streams.json` with `SchemaValidator` against
++++  `https://streams.dev/schema/app.schema.json` (#125 app schema), and loads
++++  it with `AppTree` to confirm the nodes are addressable
++++  (`people.table`, `people.panel`, `people.pages.list_people`,
++++  `people.actions.add_person_modal`).
++++- `test_closures_and_callbacks_become_opaque_nodes_with_file_and_line` proves
++++  the core behavior: translation calls (`__()`), permission callbacks,
++++  class resolvers, `route()`, and computed closures are captured as opaque
++++  entries `{handle, file, line}` and never as JSON data; literal builder
++++  settings (`->sortable()`, `->searchable([...])`, `->emptyStateIcon(...)`)
++++  become data in the node's `settings` map. Every opaque entry carries the
++++  source file and a real line number.
++++- `test_literal_settings_including_null_and_negative_numbers_are_captured`
++++  covers the review finding on literal classification: a literal `null`
++++  (single-arg call and static property default) and a negative numeric
++++  literal (`-1`) are captured as data, not opaque; a `make()` call names its
++++  container item and no longer leaks a fake `make: true` setting; and
++++  assignment scaffolding (`$name = $this->getName()`) never leaks an
++++  empty-handle opaque node.
++++- `test_unreadable_builder_files_are_reported_not_silently_dropped` covers
++++  the review finding on silent builder loss: a builder file that fails to
++++  parse, and one with no class, are reported by `streams:capture` (file +
++++  reason) instead of being dropped silently, while the healthy builders are
++++  still captured and the tree still validates.
++++- `test_capture_then_build_produces_zero_changes_because_opaque_nodes_are_never_rewritten`
++++  is the capture→build 0-change gate. After capture, `streams:make` on the
++++  captured tree reports empty `created`, `modified`, `skipped`, `unapplied`,
++++  `conflicts`, and `diff` — the build writes only the ownership lock. With
++++  the original builder PHP files copied into the output first, a second full
++++  build still rewrites nothing: every file stays byte-for-byte intact
++++  (`BuildStage::isOpaqueSubtree` skips any code-bearing node whose subtree
++++  carries a non-empty `opaque` list).
++++- The captured tree nests nodes under each stream's `ui` container
++++  (table/panel single nodes; pages/actions/forms maps) so `AppTree::load`
++++  can address them, and plays nicely with the existing make/build pipeline.
++++
++++Review-finding response (this revision): capture no longer silently drops
++++builders — unreadable files are tracked with a reason and warned by the
++++command, and builder calls inside `if`/`foreach` control flow are walked
++++instead of discarded. Literal classification is exact: literal `null` and
++++signed numeric literals are data; assignments never produce opaque nodes;
++++`make()` calls are item markers, not settings. The `TransformGoldenTest`
++++golden was regenerated from the reference after the fixtures gained the
++++synthetic classifier edge cases (null / negative / integer array); the
++++reference fixture imports were left untouched to stay faithful to the
++++GroupVitals source.
++++
++++`captured-streams.json` is the actual capture of the people reference
++++fixtures. `git-diff.patch` is the full implementation/test diff from the
++++starting revision. `pint.txt` is Laravel Pint scoped to the changed source
++++and test files (passed). `full-suite.txt` is the raw full-suite run.
++++
++++Suite notes:
++++
++++- Full PHPUnit gate with `php -d error_reporting=22527 vendor/bin/phpunit
++++  --colors=never`: 132 tests, 3,544 assertions, zero errors/failures, one
++++  pre-existing skip.
++++- No streams/ui or streams-core edits; no pushes; local commits only.
++++- Repo has no `artisan` entrypoint and composer.json defines no scripts, so
++++  `composer test:affected` reports "There are no commands defined in the
++++  'test' namespace"; the full `vendor/bin/phpunit` suite is the gate.
++++- This package ships no `vendor/bin/phpstan` or `vendor/bin/pint`. PHPStan
++++  was run via the host binary with a scoped temp config against the changed
++++  files; its remaining findings are pre-existing (`SdkServiceProvider`,
++++  `BuildStage::scope()`) or artifacts of the host phar resolving a different
++++  php-parser API than the package's installed v4 parser. PHPStan is not a
++++  gate for this repository, and none of its real findings touch new code.
++++
++++Review boundary: implementation and evidence are prepared for review; no
++++review approval is claimed by the implementing agent. Rollback is to revert
++++the local commits in the worktree (`git revert 86e4687 7e17ac5 f50855d`).
+++diff --git a/tests/Evidence/task-137/captured-streams.json b/tests/Evidence/task-137/captured-streams.json
+++new file mode 100644
+++index 0000000..c682279
+++--- /dev/null
++++++ b/tests/Evidence/task-137/captured-streams.json
+++@@ -0,0 +1,527 @@
++++{
++++    "name": "Captured",
++++    "streams": {
++++        "people": {
++++            "config": {
++++                "source": {
++++                    "type": "database",
++++                    "table": "people"
++++                },
++++                "abstract": "App\\Domains\\People\\Models\\Person"
++++            },
++++            "fields": [
++++                {
++++                    "handle": "id",
++++                    "type": "integer",
++++                    "required": true,
++++                    "unique": true,
++++                    "config": {
++++                        "default": "increment"
++++                    }
++++                },
++++                {
++++                    "handle": "created_at",
++++                    "type": "datetime",
++++                    "required": true,
++++                    "config": {
++++                        "default": "now"
++++                    }
++++                },
++++                {
++++                    "handle": "identity_id",
++++                    "type": "relationship",
++++                    "config": {
++++                        "related": "identities"
++++                    }
++++                },
++++                {
++++                    "handle": "organization_id",
++++                    "type": "relationship",
++++                    "config": {
++++                        "related": "organizations"
++++                    }
++++                },
++++                {
++++                    "handle": "location_id",
++++                    "type": "relationship",
++++                    "config": {
++++                        "related": "locations"
++++                    }
++++                },
++++                {
++++                    "handle": "first_name",
++++                    "type": "string",
++++                    "required": true,
++++                    "rules": [
++++                        "max:40"
++++                    ]
++++                },
++++                {
++++                    "handle": "last_name",
++++                    "type": "string",
++++                    "required": true,
++++                    "rules": [
++++                        "max:40"
++++                    ]
++++                },
++++                {
++++                    "handle": "status",
++++                    "type": "select",
++++                    "config": {
++++                        "default": "active",
++++                        "options": {
++++                            "active": "Active",
++++                            "inactive": "Inactive",
++++                            "invited": "Invited"
++++                        }
++++                    }
++++                },
++++                {
++++                    "handle": "prefix",
++++                    "type": "string"
++++                },
++++                {
++++                    "handle": "given_name",
++++                    "type": "string",
++++                    "rules": [
++++                        "max:40"
++++                    ]
++++                },
++++                {
++++                    "handle": "nickname",
++++                    "type": "string",
++++                    "rules": [
++++                        "max:40"
++++                    ]
++++                },
++++                {
++++                    "handle": "middle_name",
++++                    "type": "string",
++++                    "rules": [
++++                        "max:40"
++++                    ]
++++                },
++++                {
++++                    "handle": "suffix",
++++                    "type": "string"
++++                },
++++                {
++++                    "handle": "email",
++++                    "type": "email"
++++                },
++++                {
++++                    "handle": "phone_number",
++++                    "type": "string"
++++                },
++++                {
++++                    "handle": "location_id",
++++                    "type": "relationship",
++++                    "config": {
++++                        "related": "locations"
++++                    }
++++                },
++++                {
++++                    "handle": "is_child",
++++                    "type": "boolean"
++++                },
++++                {
++++                    "handle": "gender",
++++                    "type": "select",
++++                    "config": {
++++                        "options": {
++++                            "male": "Male",
++++                            "female": "Female"
++++                        }
++++                    }
++++                },
++++                {
++++                    "handle": "birthday",
++++                    "type": "date"
++++                },
++++                {
++++                    "handle": "marital_status",
++++                    "type": "select",
++++                    "config": {
++++                        "options": {
++++                            "single": "Single",
++++                            "married": "Married",
++++                            "divorced": "Divorced",
++++                            "widowed": "Widowed"
++++                        }
++++                    }
++++                },
++++                {
++++                    "handle": "household_id",
++++                    "type": "string",
++++                    "config": {
++++                        "nullable": true
++++                    }
++++                }
++++            ],
++++            "handle": "people",
++++            "name": "People",
++++            "ui": {
++++                "actions": {
++++                    "add_person_modal": {
++++                        "handle": "add_person_modal",
++++                        "kind": "action",
++++                        "source": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                        "settings": {
++++                            "modalWidth": "xl"
++++                        },
++++                        "opaque": [
++++                            {
++++                                "handle": "PersonCreateForm",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 18
++++                            },
++++                            {
++++                                "handle": "label",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 21
++++                            },
++++                            {
++++                                "handle": "modalHeading",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 23
++++                            },
++++                            {
++++                                "handle": "modalComponents",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 24
++++                            },
++++                            {
++++                                "handle": "action",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 43
++++                            },
++++                            {
++++                                "handle": "authorize",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 64
++++                            },
++++                            {
++++                                "handle": "disabled",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 65
++++                            },
++++                            {
++++                                "handle": "mergeHtmlAttributes.wire:click",
++++                                "file": "app/Domains/People/Panel/Actions/AddPersonModal.php",
++++                                "line": 67
++++                            }
++++                        ]
++++                    }
++++                },
++++                "pages": {
++++                    "list_people": {
++++                        "handle": "list_people",
++++                        "kind": "page",
++++                        "source": "app/Domains/People/Panel/Pages/ListPeople.php",
++++                        "settings": {
++++                            "navigationBadge": null,
++++                            "navigationGroup": "People",
++++                            "navigationLabel": "domains/people.navigation.manage",
++++                            "navigationSort": 1,
++++                            "registerNavigation": true
++++                        },
++++                        "opaque": [
++++                            {
++++                                "handle": "resource",
++++                                "file": "app/Domains/People/Panel/Pages/ListPeople.php",
++++                                "line": 23
++++                            },
++++                            {
++++                                "handle": "getComponents",
++++                                "file": "app/Domains/People/Panel/Pages/ListPeople.php",
++++                                "line": 67
++++                            }
++++                        ]
++++                    }
++++                },
++++                "panel": {
++++                    "handle": "people_panel_resource",
++++                    "kind": "panel",
++++                    "source": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                    "settings": {
++++                        "navigation.activeColor": "primary",
++++                        "navigation.borderRadius": "full",
++++                        "navigation.outlined": true,
++++                        "navigation.style": "pills",
++++                        "registerNavigation": false,
++++                        "slug": "people"
++++                    },
++++                    "opaque": [
++++                        {
++++                            "handle": "getPages",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 22
++++                        },
++++                        {
++++                            "handle": "navigation.items.0.NavigationItem",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 42
++++                        },
++++                        {
++++                            "handle": "navigation.items.0.url",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 43
++++                        },
++++                        {
++++                            "handle": "navigation.items.0.isActiveWhen",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 44
++++                        },
++++                        {
++++                            "handle": "navigation.items.1.NavigationItem",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 45
++++                        },
++++                        {
++++                            "handle": "navigation.items.1.url",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 46
++++                        },
++++                        {
++++                            "handle": "navigation.items.1.isActiveWhen",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 47
++++                        },
++++                        {
++++                            "handle": "navigation.items.2.NavigationItem",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 48
++++                        },
++++                        {
++++                            "handle": "navigation.items.2.url",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 49
++++                        },
++++                        {
++++                            "handle": "navigation.items.2.isActiveWhen",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 50
++++                        },
++++                        {
++++                            "handle": "navigation.items.3.NavigationItem",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 51
++++                        },
++++                        {
++++                            "handle": "navigation.items.3.url",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 52
++++                        },
++++                        {
++++                            "handle": "navigation.items.3.isActiveWhen",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 53
++++                        },
++++                        {
++++                            "handle": "navigation.items.4.NavigationItem",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 54
++++                        },
++++                        {
++++                            "handle": "navigation.items.4.url",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 55
++++                        },
++++                        {
++++                            "handle": "navigation.items.4.isActiveWhen",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 56
++++                        },
++++                        {
++++                            "handle": "navigation.items.5.NavigationItem",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 57
++++                        },
++++                        {
++++                            "handle": "navigation.items.5.url",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 58
++++                        },
++++                        {
++++                            "handle": "navigation.items.5.isActiveWhen",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 59
++++                        },
++++                        {
++++                            "handle": "breadcrumbs.Breadcrumbs",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 65
++++                        },
++++                        {
++++                            "handle": "scopedQuery",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 77
++++                        },
++++                        {
++++                            "handle": "scopedQuery.where",
++++                            "file": "app/Domains/People/Panel/Resources/PeoplePanelResource.php",
++++                            "line": 78
++++                        }
++++                    ]
++++                },
++++                "table": {
++++                    "handle": "people_table",
++++                    "kind": "table",
++++                    "source": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                    "settings": {
++++                        "columns.email.searchable": true,
++++                        "columns.email.sortable": true,
++++                        "columns.first_name.searchable": [
++++                            "first_name",
++++                            "last_name"
++++                        ],
++++                        "columns.first_name.sortable": true,
++++                        "columns.phone_number.searchable": true,
++++                        "columns.phone_number.sortable": true,
++++                        "columns.status.sortable": true,
++++                        "defaultSort": -1,
++++                        "emptyStateIcon": "heroicon-o-users",
++++                        "paginationPageOptions": [
++++                            5,
++++                            10,
++++                            25
++++                        ],
++++                        "pollingInterval": null
++++                    },
++++                    "opaque": [
++++                        {
++++                            "handle": "DeactivateSelectedPeople",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 21
++++                        },
++++                        {
++++                            "handle": "RestoreSelectedPeople",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 22
++++                        },
++++                        {
++++                            "handle": "DeleteSelectedPeople",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 23
++++                        },
++++                        {
++++                            "handle": "filters.first_name.placeholder",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 28
++++                        },
++++                        {
++++                            "handle": "filters.last_name.placeholder",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 30
++++                        },
++++                        {
++++                            "handle": "filters.email.placeholder",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 32
++++                        },
++++                        {
++++                            "handle": "filters.status.label",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 34
++++                        },
++++                        {
++++                            "handle": "filters.status.placeholder",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 35
++++                        },
++++                        {
++++                            "handle": "filters.status.options.active",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 37
++++                        },
++++                        {
++++                            "handle": "filters.status.options.inactive",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 38
++++                        },
++++                        {
++++                            "handle": "filters.status.options.invited",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 39
++++                        },
++++                        {
++++                            "handle": "columns.status.label",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 44
++++                        },
++++                        {
++++                            "handle": "columns.status.color",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 45
++++                        },
++++                        {
++++                            "handle": "columns.status.title",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 51
++++                        },
++++                        {
++++                            "handle": "columns.first_name.label",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 59
++++                        },
++++                        {
++++                            "handle": "columns.first_name.value",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 60
++++                        },
++++                        {
++++                            "handle": "columns.first_name.url",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 61
++++                        },
++++                        {
++++                            "handle": "columns.email.label",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 67
++++                        },
++++                        {
++++                            "handle": "columns.phone_number.label",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 69
++++                        },
++++                        {
++++                            "handle": "columns.tags.label",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 73
++++                        },
++++                        {
++++                            "handle": "columns.tags.value",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 74
++++                        },
++++                        {
++++                            "handle": "bulkActions.0.DeactivateSelectedPeople",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 88
++++                        },
++++                        {
++++                            "handle": "bulkActions.1.RestoreSelectedPeople",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 89
++++                        },
++++                        {
++++                            "handle": "bulkActions.2.DeleteSelectedPeople",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 90
++++                        },
++++                        {
++++                            "handle": "query",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 92
++++                        },
++++                        {
++++                            "handle": "emptyStateDescription",
++++                            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
++++                            "line": 93
++++                        }
++++                    ]
++++                }
++++            }
++++        }
++++    }
++++}
+++diff --git a/tests/Evidence/task-137/full-suite.txt b/tests/Evidence/task-137/full-suite.txt
+++new file mode 100644
+++index 0000000..a8d1a1d
+++--- /dev/null
++++++ b/tests/Evidence/task-137/full-suite.txt
+++@@ -0,0 +1,232 @@
++++PHPUnit 9.5.24 #StandWithUkraine
++++
++++
++++Deprecated: SebastianBergmann\Exporter\Exporter::shortenedRecursiveExport(): Implicitly marking parameter $context as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/sebastian/exporter/src/Exporter.php on line 78
++++Generated (Streams\Sdk\Tests\Attributes\Generated)
++++ ✔ The attribute records the dot path on a class and a method
++++ ✔ Path from source reads the attribute streams make writes
++++
++++List Entries (Streams\Sdk\Tests\Console\Commands\ListEntries)
++++ ✔ It can list entries
++++
++++List Streams (Streams\Sdk\Tests\Console\Commands\ListStreams)
++++ ✔ It can list streams
++++
++++Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
++++ ↩ It makes addons
++++
++++Make Table (Streams\Sdk\Tests\Console\Commands\MakeTable)
++++ ✔ It makes a table and registers it in the panel and on the page
++++ ✔ It is idempotent
++++ ✔ Dry run shows the diff the real run applies without writing
++++ ✔ It updates flags in place in an existing registry
++++ ✔ It keeps existing entries when registering more tables
++++ ✔ Written registry is pint formatted and stable
++++ ✔ It rejects invalid table ids
++++
++++People Pages Make (Streams\Sdk\Tests\Console\Commands\PeoplePagesMake)
++++ ✔ People fixture resolves the manage table and modal form
++++ ✔ Command input modes match the people golden files with data set "whole tree via configured defaults"
++++ ✔ Command input modes match the people golden files with data set "stream path via explicit tree"
++++ ✔ Command input modes match the people golden files with data set "manage component and dependencies"
++++ ✔ Add action is attached to an existing manage page with a minimal ast diff
++++ ✔ Second run preserves every byte and dry run matches the real change list
++++ ✔ Unapplied page edits are reported and no existing file is deleted with data set "missing component method"
++++ ✔ Unapplied page edits are reported and no existing file is deleted with data set "unparseable page"
++++ ✔ Unapplied page edits are reported and no existing file is deleted with data set "empty commented array"
++++ ✔ Unapplied page edits are reported and no existing file is deleted with data set "ambiguous heading actions"
++++ ✔ Table dot path builds only the table
++++ ✔ Hand edits to an attached page are preserved and reported as conflicts
++++
++++Show Entry (Streams\Sdk\Tests\Console\Commands\ShowEntry)
++++ ✔ It can show an entry
++++
++++Streams Capture (Streams\Sdk\Tests\Console\Commands\StreamsCapture)
++++ ✔ Capturing the people fixtures produces a streams json that validates
++++ ✔ Closures and callbacks become opaque nodes with file and line
++++ ✔ Literal settings including null and negative numbers are captured
++++ ✔ Unreadable builder files are reported not silently dropped
++++ ✔ Capture then build produces zero changes because opaque nodes are never rewritten
++++
++++Streams Make Define (Streams\Sdk\Tests\Console\Commands\StreamsMakeDefine)
++++ ✔ Prompts flags and a json recipe write the same tree
++++ ✔ List prints kinds and dot paths and json is machine readable
++++ ✔ No interaction with a missing required value exits with a json field error
++++ ✔ Tree editing does not change php files
++++ ✔ Every prompt has a flag
++++ ✔ Recipe only path flags override recipe and dry run does not write
++++ ✔ Invalid recipes return field errors without writing
++++
++++Streams Make (Streams\Sdk\Tests\Console\Commands\StreamsMake)
++++ ✔ Dry run prints a unified diff and writes nothing
++++ ✔ Dry run json matches the real run plan
++++ ✔ A second run with no tree changes reports nothing created or modified
++++ ✔ Streams lock is byte identical across two runs
++++ ✔ A matching lock hash is replaced when the tree changes
++++ ✔ A deleted lock allows tagged files to be rebuilt
++++ ✔ A missing lock entry allows its tagged file to be rebuilt
++++ ✔ A hand edit to a tagged member is a conflict and the file is left unchanged
++++ ✔ Removing a node leaves its file and lists it as skipped
++++ ✔ An unapplied edit reports path file and reason and writes nothing
++++ ✔ No separate build command is registered
++++
++++Streams Tap (Streams\Sdk\Tests\Console\Commands\StreamsTap)
++++ ✔ Streams tap is registered and calls the url with query string input
++++ ✔ Streams tap rejects a url that is not http
++++ ✔ Streams tap calls the url without input
++++ ✔ Streams tap input keys win over the url query string
++++ ✔ Streams tap fails when the tap responds with an error
++++ ✔ Streams tap fails when the tap responds with a redirect
++++
++++Built In Kinds (Streams\Sdk\Tests\Console\Make\Kinds\BuiltInKinds)
++++ ✔ Built in kinds cover the people pages
++++ ✔ The people fixture matches each built in kind
++++ ✔ Manage chains a page a table and a modal add action
++++
++++Component Kind Make (Streams\Sdk\Tests\Console\Make\Kinds\ComponentKindMake)
++++ ✔ Streams make reaches the people kinds
++++ ✔ A custom kind is reached through streams make without a new command
++++ ✔ Artisan list shows streams make and no component kind commands
++++
++++Kind Registry (Streams\Sdk\Tests\Console\Make\Kinds\KindRegistry)
++++ ✔ The sdk app and a package can register kinds
++++ ✔ Built in kinds are registered from the sdk
++++ ✔ Config registers app and package kinds on the shared registry
++++ ✔ A kind schema exposes prompts flags and json keys
++++ ✔ Duplicate names and unknown kinds are errors
++++ ✔ An unknown kind names the missing kind
++++ ✔ A package placement adds a tree container without replacing built ins
++++
++++Kind Schema (Streams\Sdk\Tests\Console\Make\Kinds\KindSchema)
++++ ✔ Stream errors name the missing fields
++++ ✔ Page errors name title
++++ ✔ Table errors name handle
++++ ✔ Table rejects a handle that is not a path segment
++++ ✔ Action errors name label and type
++++ ✔ A modal action requires form and names that field
++++ ✔ Action type must be a string and the error names type
++++ ✔ Manage errors name title add label and form
++++ ✔ A valid manage chain validates the page table and modal action
++++ ✔ Unknown keys are ignored
++++
++++Paths (Streams\Sdk\Tests\Console\Make\Paths)
++++ ✔ Reference defaults match the people layout
++++ ✔ Config overrides a path template and keeps the other defaults
++++
++++Stream Lock (Streams\Sdk\Tests\Console\Make\StreamLock)
++++ ✔ Round trip is path file hash and a second write matches
++++ ✔ Encode is identical when entries are inserted in a different order
++++ ✔ Hash is sha256 of the file bytes
++++ ✔ A missing or invalid lock reads as empty
++++
++++Php Editor Round Trip (Streams\Sdk\Tests\Console\Support\PhpEditorRoundTrip)
++++ ✔ Noop round trip is byte identical for every reference fixture
++++ ✔ Adding a mountable action to the page touches only the actions array
++++ ✔ Adding an attribute touches only the attributes array
++++ ✔ Appending to a long array touches only that array
++++
++++Php Editor (Streams\Sdk\Tests\Console\Support\PhpEditor)
++++ ✔ Editing one array entry changes only that entry
++++ ✔ Noop edit prints the file byte for byte
++++
++++Php File (Streams\Sdk\Tests\Console\Support\PhpFile)
++++ ✔ Puts an item into the returned array
++++ ✔ Second identical put changes nothing
++++ ✔ Updates flags in place without duplicates
++++ ✔ Preserves hand written entries
++++ ✔ Diff matches the change the save applies
++++ ✔ Renders the versioned table stub
++++
++++Add Attribute (Streams\Sdk\Tests\Console\Support\Transforms\AddAttribute)
++++ ✔ It adds an attribute group and touches only that line
++++
++++Add Member (Streams\Sdk\Tests\Console\Support\Transforms\AddMember)
++++ ✔ It adds a method and touches only the added member
++++
++++Remove Member (Streams\Sdk\Tests\Console\Support\Transforms\RemoveMember)
++++ ✔ It removes the named member and keeps everything else
++++
++++Rename Class (Streams\Sdk\Tests\Console\Support\Transforms\RenameClass)
++++ ✔ It renames the class and touches only the declaration
++++
++++Set Namespace (Streams\Sdk\Tests\Console\Support\Transforms\SetNamespace)
++++ ✔ It replaces an existing namespace and touches only that line
++++ ✔ It wraps a file that has no namespace
++++
++++Transform Golden (Streams\Sdk\Tests\Console\Support\Transforms\TransformGolden)
++++ ✔ Generating a people table from the reference matches the golden and passes pint and lint
++++
++++App Schema (Streams\Sdk\Tests\Support\AppSchema)
++++ ✔ The people fixture validates against the app schema
++++ ✔ The app schema covers every node type
++++ ✔ Streams schema outputs the app definition schema
++++
++++App Tree (Streams\Sdk\Tests\Support\AppTree)
++++ ✔ It resolves every dot path in the people fixture
++++ ✔ It loads root and ref files into one tree
++++ ✔ Unknown paths throw
++++ ✔ Duplicate class names in one map throw
++++ ✔ The same file cannot be loaded twice
++++ ✔ Path segments must be snake case or slug
++++ ✔ Studly case class names derive from dot paths
++++
++++Catalog Check (Streams\Sdk\Tests\Support\CatalogCheck)
++++ ✔ Check succeeds without changing current files
++++ ✔ Check fails on drift without changing any files
++++ ✔ Check does not create missing files or directories
++++
++++Catalog Drift (Streams\Sdk\Tests\Support\CatalogDrift)
++++ ✔ Catalog is up to date with field types and builders
++++ ✔ Catalog contents are sane
++++ ✔ Stream schema offers code derived field types
++++ ✔ Generated schemas validate
++++
++++Catalog Manifest Merge (Streams\Sdk\Tests\Support\CatalogManifestMerge)
++++ ✔ Installed ui preserves every manifest builder and its metadata
++++
++++Golden Files (Streams\Sdk\Tests\Support\GoldenFiles)
++++ ✔ Matches nested and hidden files and removes temporary directory
++++ ✔ Mismatch reports unified diff and cleans up
++++ ✔ Missing empty file fails
++++ ✔ Unexpected empty file fails
++++ ✔ Generator exception propagates and cleans up
++++ ✔ Each run gets an empty unique directory
++++ ✔ Missing nonempty file reports deletion diff
++++ ✔ Symbolic link is rejected without deleting its target
++++
++++Stream Source Validator (Streams\Sdk\Tests\Support\StreamSourceValidator)
++++ ✔ Filebase database and eloquent sources match runtime
++++ ✔ Legacy handle validation and implicit sort pagination are out of scope
++++ ✔ Streams validate fails the documented legacy configuration
++++ ✔ Streams validate passes the testing fixtures
++++
++++Time: 00:18.932, Memory: 50.00 MB
++++
++++Summary of non-successful tests:
++++
++++Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
++++ ↩ It makes addons
++++OK, but incomplete, skipped, or risky tests!
++++Tests: 132, Assertions: 3544, Skipped: 1.
++++
++++Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-110-a242-77e053ed/vendor/spatie/laravel-ray/src/Ray.php on line 45
++++
++++Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/
++\ No newline at end of file
++diff --git a/tests/Evidence/task-137/pint.txt b/tests/Evidence/task-137/pint.txt
++new file mode 100644
++index 0000000..11c0f82
++--- /dev/null
+++++ b/tests/Evidence/task-137/pint.txt
++@@ -0,0 +1 @@
+++{"tool":"pint","result":"passed"}
++\ No newline at end of file
++diff --git a/tests/Fixtures/Golden/transforms/PeopleTable.php b/tests/Fixtures/Golden/transforms/PeopleTable.php
++index d3e25fb..a14b54b 100644
++--- a/tests/Fixtures/Golden/transforms/PeopleTable.php
+++++ b/tests/Fixtures/Golden/transforms/PeopleTable.php
++@@ -93,6 +93,13 @@ class PeopleTable extends Table
++             ->query(PeoplePanelResource::scopedQuery())
++             ->emptyStateDescription(__('domains/people.empty_state_description'))
++             ->emptyStateIcon('heroicon-o-users');
+++
+++        // Synthetic classifier edge cases (not real GV settings): a literal
+++        // null, a literal negative number, and a literal integer array.
+++        $this
+++            ->pollingInterval(null)
+++            ->paginationPageOptions([5, 10, 25])
+++            ->defaultSort(-1);
++     }
++ 
++     public function heading(): string
++diff --git a/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php b/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php
++index 47bb1a6..3a3d019 100644
++--- a/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php
+++++ b/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php
++@@ -30,6 +30,9 @@ class ListPeople extends PanelPage
++ 
++     protected static ?int $navigationSort = 1;
++ 
+++    // Synthetic classifier edge case: a literal null property default.
+++    protected static ?string $navigationBadge = null;
+++
++     public string $first_name = '';
++ 
++     public string $last_name = '';
++diff --git a/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php b/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php
++index b2d3a40..f72e7bc 100644
++--- a/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php
+++++ b/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php
++@@ -92,5 +92,12 @@ class PeopleTable extends Table
++             ->query(PeoplePanelResource::scopedQuery())
++             ->emptyStateDescription(__('domains/people.empty_state_description'))
++             ->emptyStateIcon('heroicon-o-users');
+++
+++        // Synthetic classifier edge cases (not real GV settings): a literal
+++        // null, a literal negative number, and a literal integer array.
+++        $this
+++            ->pollingInterval(null)
+++            ->paginationPageOptions([5, 10, 25])
+++            ->defaultSort(-1);
++     }
++ }
 diff --git a/tests/Evidence/task-137/pint.txt b/tests/Evidence/task-137/pint.txt
 new file mode 100644
 index 0000000..11c0f82

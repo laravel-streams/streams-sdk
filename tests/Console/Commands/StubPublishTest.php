@@ -52,15 +52,22 @@ class StubPublishTest extends SdkTestCase
         $this->assertFileExists($table);
         $this->assertFileExists($this->stubsDir . '/composer.stub');
 
-        // Published stubs now exist; a second run skips them.
+        // The published copy matches the SDK stub.
+        $this->assertSame($this->sdkStub('table/v1/table.stub'), File::get($table));
+
+        // A second run skips the now-existing files.
         $this->artisan('streams:stub:publish')
             ->expectsOutputToContain('exists (skipped)')
             ->assertSuccessful();
 
-        $this->assertSame(
-            $this->assertStubContents($table),
-            File::get($table)
-        );
+        // Skipped files keep the app's content, not the SDK copy.
+        File::put($table, "app change\n");
+
+        $this->artisan('streams:stub:publish')
+            ->expectsOutputToContain('exists (skipped)')
+            ->assertSuccessful();
+
+        $this->assertSame("app change\n", File::get($table));
     }
 
     public function test_it_replaces_published_stubs_with_force()
@@ -73,9 +80,18 @@ class StubPublishTest extends SdkTestCase
             ->assertSuccessful();
 
         $this->assertSame(
-            $this->assertStubContents($this->stubsDir . '/table/v1/table.stub'),
+            $this->sdkStub('table/v1/table.stub'),
             File::get($this->stubsDir . '/table/v1/table.stub')
         );
+    }
+
+    public function test_it_refuses_to_publish_into_the_sdk_source_directory()
+    {
+        config(['streams.sdk.make.stubs_dir' => dirname(__DIR__, 3) . '/src/Console/Commands/stubs']);
+
+        $this->artisan('streams:stub:publish')
+            ->expectsOutputToContain('Refusing to publish stubs')
+            ->assertFailed();
     }
 
     public function test_a_published_stub_overrides_the_generated_output()
@@ -105,10 +121,13 @@ class StubPublishTest extends SdkTestCase
         $this->assertStringNotContainsString('table stub v1', $output);
     }
 
-    protected function assertStubContents(string $path): string
+    /**
+     * The SDK's own copy of a relative stub path.
+     */
+    protected function sdkStub(string $relative): string
     {
-        $this->assertFileExists($path);
-
-        return (string) File::get($path);
+        return (string) File::get(
+            __DIR__ . '/../../../src/Console/Commands/stubs/' . $relative
+        );
     }
 }

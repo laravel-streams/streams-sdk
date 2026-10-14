@@ -54,7 +54,7 @@ class SdkServiceProvider extends ServiceProvider
         ], ['examples', 'files-example']);
 
         $this->publishes([
-            __DIR__.'/Console/Commands/stubs' => base_path('streams/stubs'),
+            __DIR__.'/Console/Commands/stubs' => (string) config('streams.sdk.make.stubs_dir', base_path('streams/stubs')),
         ], ['stubs', 'streams-stubs']);
     }
 

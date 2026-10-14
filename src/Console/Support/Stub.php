@@ -2,8 +2,6 @@
 
 namespace Streams\Sdk\Console\Support;
 
-namespace Streams\Sdk\Console\Support;
-
 use Illuminate\Support\Facades\File;
 
 /**

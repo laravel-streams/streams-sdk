@@ -21,6 +21,12 @@ class StubPublish extends Command
 
         $target = rtrim((string) config('streams.sdk.make.stubs_dir', base_path('streams/stubs')), '/');
 
+        if (realpath($target) === realpath($source)) {
+            $this->error('Refusing to publish stubs into the SDK source directory itself.');
+
+            return self::FAILURE;
+        }
+
         $files = $this->files($source);
 
         if (!$files) {

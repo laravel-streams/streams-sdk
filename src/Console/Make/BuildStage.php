@@ -51,8 +51,8 @@ class BuildStage
      */
     public function plan(AppTree $tree, ?string $only, string $outputRoot): BuildPlan
     {
-        $this->memory = $this->compile($tree, $only, $outputRoot);
         $this->lock = StreamLock::read($outputRoot);
+        $this->memory = $this->compile($tree, $only, $outputRoot);
         $this->lockUpdates = [];
 
         $plan = new BuildPlan;
@@ -149,11 +149,15 @@ class BuildStage
             }
 
             $plan->skipped[] = $relative;
+            if (! $tree->has($nodePath)) {
+                $plan->orphans[] = ['path' => $nodePath, 'file' => $relative];
+            }
         }
 
         sort($plan->created);
         sort($plan->modified);
         sort($plan->skipped);
+        usort($plan->orphans, fn (array $left, array $right): int => [$left['path'], $left['file']] <=> [$right['path'], $right['file']]);
 
         usort($plan->unapplied, function (array $left, array $right): int {
             return [$left['path'], $left['file'], $left['reason']] <=> [$right['path'], $right['file'], $right['reason']];
@@ -233,7 +237,7 @@ class BuildStage
 
         // Adding the modal also attaches it to an existing manage page, even
         // when the caller addresses only the action node.
-        if ($only !== null && str_ends_with($only, '.actions.add')) {
+        if ($only !== null && $tree->type($only) === 'action') {
             $page = explode('.', $only)[0].'.pages.manage';
             if ($tree->has($page)) {
                 $relative = $this->paths->resolve('page', Str::studly(explode('.', $only)[0]), $tree->classForPath($page));
@@ -252,6 +256,12 @@ class BuildStage
             $class = $this->className($tree, $path, $type);
             $relative = $this->paths->resolve($type, $domain, $class);
 
+            $lockedFiles = array_keys($this->lock?->entries[$path] ?? []);
+            if (count($lockedFiles) === 1 && StreamLock::validFile($lockedFiles[0])) {
+                $relative = $lockedFiles[0];
+                $class = pathinfo($relative, PATHINFO_FILENAME);
+            }
+
             if ($relative === null) {
                 continue;
             }
@@ -268,7 +278,7 @@ class BuildStage
             $memory->add(new CompiledFile(
                 $path,
                 $relative,
-                (new ComponentRenderer($this->paths))->render(
+                (new ComponentRenderer($this->paths, $this->lock))->render(
                     $tree, $path, $type, $this->paths->namespaceFor($relative), $class,
                     $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
                 ),
@@ -318,8 +328,13 @@ class BuildStage
         $table = str_contains($table, '.') ? $table : $stream.'.'.$table;
         $paths = [$table];
         foreach ($tree->types() as $path => $type) {
-            if ($path === $stream.'.actions.add' || str_starts_with($path, $stream.'.actions.add.')) {
+            if ($type === 'action' && str_starts_with($path, $stream.'.actions.') && ($tree->node($path)['type'] ?? null) === 'modal') {
                 $paths[] = $path;
+                foreach (array_keys($tree->types()) as $child) {
+                    if (str_starts_with($child, $path.'.')) {
+                        $paths[] = $child;
+                    }
+                }
             }
         }
 

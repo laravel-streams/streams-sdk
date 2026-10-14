@@ -32,6 +32,9 @@ class BuildPlan
      */
     public array $skipped = [];
 
+    /** @var list<array{path: string, file: string}> */
+    public array $orphans = [];
+
     /**
      * Edits that were not written. Each item has path, file, and reason.
      *
@@ -63,6 +66,7 @@ class BuildPlan
             'created' => $this->created,
             'modified' => $this->modified,
             'skipped' => $this->skipped,
+            'still in code, no longer in the config' => $this->orphans,
             'unapplied' => $this->unapplied,
             'conflicts' => $this->conflicts,
             'diff' => $this->unifiedDiff(),

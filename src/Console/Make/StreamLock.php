@@ -60,6 +60,17 @@ class StreamLock
         return $this->entries[$nodePath][$file] ?? null;
     }
 
+    /** Lock mappings may only select relative PHP files inside the output root. */
+    public static function validFile(string $file): bool
+    {
+        return $file !== ''
+            && ! str_starts_with($file, '/')
+            && ! str_contains($file, '\\')
+            && preg_match('/^[A-Za-z]:/', $file) !== 1
+            && ! in_array('..', explode('/', $file), true)
+            && str_ends_with($file, '.php');
+    }
+
     public function put(string $nodePath, string $file, string $hash): void
     {
         $this->entries[$nodePath][$file] = $hash;

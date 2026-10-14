@@ -16,6 +16,7 @@ use Streams\Sdk\Console\Commands\MakeTable;
 use Streams\Sdk\Console\Commands\ShowEntry;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
+use Streams\Sdk\Console\Commands\StreamsTap;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
 use Streams\Sdk\Console\Inputs\BooleanConsoleInput;
 use Streams\Sdk\Console\Inputs\IntegerConsoleInput;
@@ -36,6 +37,7 @@ class SdkServiceProvider extends ServiceProvider
                 StreamsMake::class,
                 CatalogGenerate::class,
                 StreamsSchema::class,
+                StreamsTap::class,
                 ShowEntry::class,
                 ListEntries::class,
                 ListStreams::class,

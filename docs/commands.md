@@ -143,8 +143,9 @@ The app-definition schema is the same set of committed files that ships in the S
 ### streams:make
 
 ```bash
-php artisan streams:make {path?} {--list} {--json=file} {--tree=} {--output=} {--dry-run}
+php artisan streams:make {path?} {--list} {--json=file} {--menu} {--tree=} {--output=} {--dry-run}
 php artisan streams:make --list
+php artisan streams:make --menu
 php artisan streams:make people.actions.add --label="Add person" --type=modal --form=people.actions.add.form
 php artisan streams:make people.actions.add --json=recipe.json
 ```
@@ -177,6 +178,20 @@ Every prompt comes from the kind's input schema. The same definition supplies th
 php artisan streams:make people.actions.add --no-interaction --label="Add person" --type=modal --form=people.actions.add.form
 php artisan streams:make people.actions.add --json=add.json --dry-run
 ```
+
+### The page menu
+
+```bash
+php artisan streams:make --menu
+php artisan streams:make --menu --json
+php artisan streams:make --menu --no-interaction
+```
+
+`--menu` opens an interactive menu over the page nodes in `streams.json`. It lists the pages by dot path, asks for one, lists that page's components by path (every node under the page's stream that a registered kind fits, including the page itself), asks for one, and asks whether to save or override the component's settings into the tree. `save` and `override` both write the component's settings into the tree at that dot path — overriding a stock blueprint *is* putting settings on that node, not generating code.
+
+After the component is chosen, the menu prompts exactly like defining a node, validates the answer, and writes only the JSON tree (`streams.json` and its `$ref` files). It never writes PHP: building remains the separate build step, and a second run with the same answers leaves the tree unchanged.
+
+`--menu --json` (no recipe file) and `--menu --no-interaction` print the same listing as machine-readable JSON without prompting: one object with a `pages` array, each entry holding `path` and `components` (`path`, `type`, `kind`). The non-interactive equivalent of a menu save/override is `streams:make <path> --no-interaction --flags` or `--json=recipe.json` on the same command; all three write the same tree. `--menu` cannot be combined with a path, a recipe, or authoring flags.
 
 ### Component kinds
 

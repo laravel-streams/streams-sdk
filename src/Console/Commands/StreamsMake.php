@@ -10,6 +10,7 @@ use Streams\Sdk\Console\Make\Kinds\InputField;
 use Streams\Sdk\Console\Make\Kinds\Kind;
 use Streams\Sdk\Console\Make\Kinds\KindRegistry;
 use Streams\Sdk\Console\Make\Kinds\KindRegistryException;
+use Streams\Sdk\Console\Make\PageMenu;
 use Streams\Sdk\Console\Make\Paths;
 use Streams\Sdk\Console\Make\RenameStage;
 use Streams\Sdk\Console\Make\Reports\BuildReport;
@@ -43,7 +44,8 @@ class StreamsMake extends Command
         {--output= : Directory generated files are written under. Defaults to config streams.sdk.make.output.}
         {--dry-run : Print the plan or tree edit without writing files.}
         {--fix : Apply fix provider solutions to failed edits. With --dry-run, preview them.}
-        {--json= : JSON recipe file. With no file, print machine-readable JSON.}';
+        {--json= : JSON recipe file. With no file, print machine-readable JSON.}
+        {--menu : Open the page menu: list pages, pick a component, save or override its settings.}';
 
     protected $description = 'Make a node in the app JSON tree, or build generated files from that tree.';
 
@@ -72,6 +74,9 @@ class StreamsMake extends Command
         }
         if ($this->argument('from') !== null || $this->argument('to') !== null) {
             return $this->failJson('Extra paths are only accepted in rename mode.', 'path');
+        }
+        if ($this->option('menu')) {
+            return $this->pageMenu();
         }
         if ($this->option('list') || $this->shouldList()) {
             return $this->listKinds();
@@ -306,6 +311,111 @@ class StreamsMake extends Command
             $this->line('  '.$row['description']);
             $this->newLine();
         }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * The interactive page menu: list pages from the tree, pick one, show
+     * its components by path, and save or override a component's settings
+     * into the tree. --menu --json lists the pages and components without
+     * prompting. The non-interactive equivalent for writing a component is
+     * streams:make <path> --no-interaction --flags or --json=recipe.
+     */
+    protected function pageMenu(): int
+    {
+        $registry = $this->laravel->make(KindRegistry::class);
+
+        if ($this->pathArgument() !== null || $this->recipePath() !== null || $this->hasAuthoringFlags()) {
+            return $this->failJson('The page menu cannot be combined with a path, recipe, or authoring flags.', 'menu');
+        }
+
+        try {
+            $treeFile = $this->treeFile();
+            $tree = AppTree::load($treeFile, $registry->treeContainers());
+        } catch (AppTreeException|KindRegistryException $e) {
+            return $this->failJson($e->getMessage());
+        }
+
+        $menu = PageMenu::forRegistry($registry);
+        $pages = $menu->pages($tree);
+
+        if ($pages === []) {
+            return $this->failJson('No pages in the app tree.', 'page');
+        }
+
+        if ($this->wantsJsonOutput() || ! $this->input->isInteractive() || $this->option('no-interaction')) {
+            $payload = ['pages' => []];
+
+            foreach ($pages as $page) {
+                $payload['pages'][] = [
+                    'path' => $page,
+                    'components' => $menu->components($tree, $page),
+                ];
+            }
+
+            $this->output->writeln(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+            return self::SUCCESS;
+        }
+
+        $page = $this->choice('Which page?', $pages);
+        $components = $menu->components($tree, $page);
+
+        if ($components === []) {
+            return $this->failJson("Page [{$page}] has no components.", 'path');
+        }
+
+        $labels = array_map(
+            fn (array $component): string => $component['path'].' ('.$component['kind'].')',
+            $components,
+        );
+        $picked = $this->choice('Which component?', $labels);
+
+        $path = null;
+
+        foreach ($components as $component) {
+            if ($component['path'].' ('.$component['kind'].')' === $picked) {
+                $path = $component['path'];
+            }
+        }
+
+        if ($path === null) {
+            return $this->failJson('Unknown component.', 'path');
+        }
+
+        $action = $this->choice('Save or override?', ['save', 'override']);
+
+        $editor = TreeEditor::forRegistry($registry);
+        $kind = $registry->forType($editor->typeAt($treeFile, $path));
+
+        if ($kind === null) {
+            return $this->failJson("No component kind fits at [{$path}].", 'path');
+        }
+
+        $definition = (new DefinitionCollector)->collect(
+            $path,
+            $kind,
+            $this->flagValues($kind),
+            null,
+            true,
+            fn (InputField $field, mixed $default): mixed => $this->promptFor($field, $default),
+        );
+
+        $errors = $kind->validate($definition->input);
+
+        if ($errors !== []) {
+            return $this->failJson('Invalid component definition.', $errors[0]['field'], $errors);
+        }
+
+        $written = $editor->apply($this->treeFile(), $path, $definition->input, (bool) $this->option('dry-run'));
+
+        $payload = $definition->toArray();
+        $payload['action'] = $action;
+        $payload['file'] = $written['file'];
+        $payload['written'] = $written['written'];
+
+        $this->output->writeln(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         return self::SUCCESS;
     }

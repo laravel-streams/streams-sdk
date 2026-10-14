@@ -23,7 +23,7 @@ class StreamsMake extends Command
         {--tree= : App streams.json. Defaults to config streams.sdk.make.tree.}
         {--output= : Directory generated files are written under. Defaults to config streams.sdk.make.output.}
         {--dry-run : Print the unified diff and plan without writing files.}
-        {--json : Print the plan as JSON: created, modified, skipped, and unapplied.}';
+        {--json : Print the plan as JSON: created, modified, skipped, unapplied, and conflicts.}';
 
     protected $description = 'Compare the app JSON tree with the code, then add or edit generated files.';
 
@@ -81,12 +81,17 @@ class StreamsMake extends Command
             $this->line("<fg=yellow>unapplied:</> {$edit['path']} {$edit['file']} {$edit['reason']}");
         }
 
+        foreach ($plan->conflicts as $conflict) {
+            $this->line("<fg=yellow>conflict:</> {$conflict['path']} {$conflict['file']}");
+        }
+
         $this->line(sprintf(
-            'created: %d modified: %d skipped: %d unapplied: %d',
+            'created: %d modified: %d skipped: %d unapplied: %d conflicts: %d',
             count($plan->created),
             count($plan->modified),
             count($plan->skipped),
             count($plan->unapplied),
+            count($plan->conflicts),
         ));
 
         return self::SUCCESS;

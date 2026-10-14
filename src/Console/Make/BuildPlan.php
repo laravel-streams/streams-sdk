@@ -58,6 +58,13 @@ class BuildPlan
     public array $diffs = [];
 
     /**
+     * Relative path -> dot path, so the report can name applied edits.
+     *
+     * @var array<string, string>
+     */
+    public array $files = [];
+
+    /**
      * @return array{created: list<string>, modified: list<string>, skipped: list<string>, unapplied: list<array{path: string, file: string, reason: string}>, conflicts: list<array{path: string, file: string, reason: string}>, diff: string}
      */
     public function toArray(): array

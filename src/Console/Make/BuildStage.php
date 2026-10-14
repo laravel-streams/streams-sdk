@@ -60,6 +60,7 @@ class BuildStage
 
         foreach ($this->memory->files() as $file) {
             $compiled[$file->nodePath] = $file->relative;
+            $plan->files[$file->relative] = $file->nodePath;
             $absolute = $this->absolute($outputRoot, $file->relative);
             $actual = is_file($absolute) ? (string) file_get_contents($absolute) : null;
 
@@ -204,6 +205,41 @@ class BuildStage
         }
 
         $this->lock->write($outputRoot);
+    }
+
+    /**
+     * Apply one fix: write the generated contents for a file the plan left
+     * unapplied or conflicted, and record the owned hash in streams.lock.
+     * Returns false when the compiled tree has no such file.
+     */
+    public function regenerate(string $nodePath, string $relative, string $outputRoot): bool
+    {
+        if ($this->memory === null || $this->lock === null) {
+            throw new \RuntimeException('BuildStage::plan() must run before regenerate().');
+        }
+
+        $file = null;
+
+        foreach ($this->memory->files() as $candidate) {
+            if ($candidate->nodePath === $nodePath && $candidate->relative === $relative) {
+                $file = $candidate;
+
+                break;
+            }
+        }
+
+        if ($file === null) {
+            return false;
+        }
+
+        $absolute = $this->absolute($outputRoot, $relative);
+
+        File::ensureDirectoryExists(dirname($absolute));
+        File::put($absolute, $file->contents);
+        $this->own($file);
+        $this->lock->write($outputRoot);
+
+        return true;
     }
 
     /**

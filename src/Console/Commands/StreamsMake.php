@@ -12,6 +12,9 @@ use Streams\Sdk\Console\Make\Kinds\KindRegistry;
 use Streams\Sdk\Console\Make\Kinds\KindRegistryException;
 use Streams\Sdk\Console\Make\Paths;
 use Streams\Sdk\Console\Make\RenameStage;
+use Streams\Sdk\Console\Make\Reports\BuildReport;
+use Streams\Sdk\Console\Make\Reports\Fixes\RegenerateConflictFixProvider;
+use Streams\Sdk\Console\Make\Reports\FixRegistry;
 use Streams\Sdk\Console\Make\TreeEditException;
 use Streams\Sdk\Console\Make\TreeEditor;
 use Streams\Sdk\Support\AppTree;
@@ -39,6 +42,7 @@ class StreamsMake extends Command
         {--tree= : App streams.json. Defaults to config streams.sdk.make.tree.}
         {--output= : Directory generated files are written under. Defaults to config streams.sdk.make.output.}
         {--dry-run : Print the plan or tree edit without writing files.}
+        {--fix : Apply fix provider solutions to failed edits. With --dry-run, preview them.}
         {--json= : JSON recipe file. With no file, print machine-readable JSON.}';
 
     protected $description = 'Make a node in the app JSON tree, or build generated files from that tree.';
@@ -109,8 +113,8 @@ class StreamsMake extends Command
 
     /**
      * No path, no recipe, and no field flags: show what can be made.
-     * --dry-run and --json without a recipe still build, which is the
-     * existing plan/apply path.
+     * --dry-run, --json, and --fix without a recipe still build, which is
+     * the existing plan/apply path.
      */
     protected function shouldList(): bool
     {
@@ -118,7 +122,7 @@ class StreamsMake extends Command
             return false;
         }
 
-        return ! $this->option('dry-run') && ! $this->wantsJsonOutput();
+        return ! $this->option('dry-run') && ! $this->wantsJsonOutput() && ! $this->option('fix');
     }
 
     /**
@@ -167,8 +171,26 @@ class StreamsMake extends Command
             $stage->apply($plan, $output);
         }
 
+        $fixes = new FixRegistry;
+        $fixes->add(new RegenerateConflictFixProvider($stage, $output));
+        $report = new BuildReport($plan, $fixes);
+
+        if ($this->option('fix') && ! $this->option('dry-run')) {
+            foreach ($report->failed() as $edit) {
+                foreach ($fixes->solutionsFor($edit) as $solution) {
+                    if ($solution->apply()) {
+                        $report->recordFixed($edit);
+                    }
+                }
+            }
+
+            $plan = $stage->plan($tree, $only, $output);
+            $report->setPlan($plan);
+        }
+
         if ($this->wantsJsonOutput()) {
             $payload = $plan->toArray();
+            $payload['report'] = $report->toArray();
             $payload['kinds'] = $this->resolvedKinds($registry, $tree, $only);
 
             $this->output->writeln(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -180,12 +202,8 @@ class StreamsMake extends Command
             $diff = $plan->unifiedDiff();
             $this->line($diff === '' ? '(no changes)' : $diff);
         } else {
-            foreach ($plan->created as $file) {
-                $this->line("<info>created:</info> {$file}");
-            }
-
-            foreach ($plan->modified as $file) {
-                $this->line("<info>modified:</info> {$file}");
+            foreach ($report->applied() as $applied) {
+                $this->line("<info>{$applied['reason']}:</info> {$applied['path']} {$applied['file']}");
             }
         }
 
@@ -200,18 +218,47 @@ class StreamsMake extends Command
             }
         }
 
-        foreach ($plan->unapplied as $edit) {
-            $this->line("<fg=yellow>unapplied:</> {$edit['path']} {$edit['file']} {$edit['reason']}");
+        foreach ($report->unapplied() as $edit) {
+            $line = "<fg=yellow>unapplied:</> {$edit->path} {$edit->file} ({$edit->reason})";
+
+            if ($edit->suggestedChange !== null) {
+                $line .= " — {$edit->suggestedChange}";
+            }
+
+            $this->line($line);
         }
 
-        foreach ($plan->conflicts as $conflict) {
-            $this->line("<fg=yellow>conflict:</> {$conflict['path']} {$conflict['file']}");
+        foreach ($report->conflicts() as $edit) {
+            $line = "<fg=yellow>conflict:</> {$edit->path} {$edit->file} ({$edit->reason})";
+
+            if ($edit->suggestedChange !== null) {
+                $line .= " — {$edit->suggestedChange}";
+            }
+
+            $this->line($line);
+        }
+
+        if ($this->option('fix')) {
+            if ($this->option('dry-run')) {
+                foreach ($report->failed() as $edit) {
+                    if ($edit->suggestedChange === null) {
+                        continue;
+                    }
+
+                    $this->line("<fg=green>would fix:</> {$edit->path} {$edit->file} — {$edit->suggestedChange}");
+                }
+            }
+
+            foreach ($report->fixed() as $edit) {
+                $this->line("<fg=green>fixed:</> {$edit->path} {$edit->file} — {$edit->suggestedChange}");
+            }
         }
 
         $this->line(sprintf(
-            'created: %d modified: %d skipped: %d unapplied: %d conflicts: %d',
+            'created: %d modified: %d fixed: %d skipped: %d unapplied: %d conflicts: %d',
             count($plan->created),
             count($plan->modified),
+            count($report->fixed()),
             count($plan->skipped),
             count($plan->unapplied),
             count($plan->conflicts),

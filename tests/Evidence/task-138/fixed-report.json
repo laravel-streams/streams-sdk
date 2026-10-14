@@ -1,0 +1,67 @@
+{
+    "created": [],
+    "modified": [],
+    "skipped": [],
+    "unapplied": [],
+    "conflicts": [],
+    "diff": "",
+    "report": {
+        "applied": [],
+        "fixed": [
+            {
+                "path": "people.actions.add",
+                "file": "app/Domains/People/Panel/Actions/PeopleActionsAdd.php",
+                "reason": "hand edit; hash does not match streams.lock",
+                "suggestedChange": "regenerate app/Domains/People/Panel/Actions/PeopleActionsAdd.php from the app tree"
+            }
+        ],
+        "failed": []
+    },
+    "kinds": {
+        "people": {
+            "kind": "stream",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.actions.add": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.actions.add.actions.more": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.actions.add.actions.more.actions.export": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.actions.add.actions.more.actions.import": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.pages.manage": {
+            "kind": "page",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.table": {
+            "kind": "table",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.table.actions.delete": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        },
+        "people.table.actions.edit": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        }
+    }
+}

@@ -1,0 +1,9 @@
+Task 136 merge closeout: APPROVED
+Merge commit: 5abe233; merged local 1.0 with two parents.
+Conflict resolved in BuildStage.php: read streams.lock before compilation, preserving rename mappings, and pass outputRoot required by incoming component renderer.
+Integration fix: renderer uses validated retained file/class mappings for table/action/form references and discovers renamed modal actions; page scope includes action descendants.
+Independent reviewer rename_review approved merge and evidence with no substantive remaining findings.
+Acceptance reconciliation: tree/lock/tags rename in place remains tested; removed nodes report the requested orphan heading and unchanged file bytes; no new command registered; all original acceptance tests pass alongside incoming component tests. New assertions preserve manage-page/action/form linkage after rename and clean scoped rebuild.
+Focused PHPUnit: exit 0, 34 tests, 1088 assertions. Full vendor/bin/phpunit: exit 0, 131 tests, 3471 assertions, one existing MakeAddon skip, zero errors/failures.
+PHP syntax checks and git diff --check passed. Pint and PHPStan were attempted but remain absent. composer test:affected attempted but no such script is defined, so it did not execute tests. Raw attempt logs attached.
+Final diff against merged 1.0 is evidence/task-136-merge.diff. No pushes, production changes, servers started, or processes stopped.

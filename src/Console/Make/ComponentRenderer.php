@@ -8,7 +8,7 @@ use Streams\Sdk\Support\AppTree;
 /** The people manage slice uses the same builder shape as the pinned references. */
 class ComponentRenderer
 {
-    public function __construct(protected Paths $paths) {}
+    public function __construct(protected Paths $paths, protected ?StreamLock $lock = null) {}
 
     public function render(AppTree $tree, string $path, string $type, string $namespace, string $class, string $fallback): string
     {
@@ -45,7 +45,7 @@ PHP;
             if (! $tree->has($tablePath) || $tree->type($tablePath) !== 'table') {
                 return $fallback;
             }
-            $table = $tree->classForPath($tablePath);
+            $table = $this->classForPath($tree, $tablePath);
             $imports = [
                 $this->qualified($tree, $tablePath, 'table'),
                 'App\\Livewire\\PanelPage',
@@ -57,9 +57,17 @@ PHP;
             $actions = '';
             $register = '';
             $trait = '';
-            if ($tree->has($stream.'.actions.add')) {
-                $actionPath = $stream.'.actions.add';
-                $action = $tree->classForPath($actionPath);
+            $actionPath = $tree->has($stream.'.actions.add') ? $stream.'.actions.add' : null;
+            if ($actionPath === null) {
+                foreach ($tree->types() as $candidate => $candidateType) {
+                    if ($candidateType === 'action' && str_starts_with($candidate, $stream.'.actions.') && ($tree->node($candidate)['type'] ?? null) === 'modal') {
+                        $actionPath = $candidate;
+                        break;
+                    }
+                }
+            }
+            if ($actionPath !== null) {
+                $action = $this->classForPath($tree, $actionPath);
                 $imports[] = $this->qualified($tree, $actionPath, 'action');
                 $imports[] = 'Streams\\Ui\\Livewire\\Actions\\InteractsWithActions';
                 $trait = "    use InteractsWithActions;\n";
@@ -89,7 +97,7 @@ PHP;
     }
 PHP;
         } elseif ($type === 'action' && ($node['type'] ?? null) === 'modal' && $tree->has($path.'.form')) {
-            $form = $tree->classForPath($path.'.form');
+            $form = $this->classForPath($tree, $path.'.form');
             $imports = [$this->qualified($tree, $path.'.form', 'form'), 'Streams\\Ui\\Builders\\Actions\\MountableAction'];
             $extends = 'MountableAction';
             $label = var_export($node['label'] ?? $path, true);
@@ -151,13 +159,27 @@ PHP;
 
     public function qualified(AppTree $tree, string $path, string $type): string
     {
-        $class = $tree->classForPath($path);
-        $relative = $this->paths->resolve($type, Str::studly(explode('.', $path)[0]), $class);
+        $class = $this->classForPath($tree, $path);
+        $relative = $this->lockedFile($path) ?? $this->paths->resolve($type, Str::studly(explode('.', $path)[0]), $class);
 
         if ($relative === null) {
             throw new \RuntimeException('No output path for ['.$path.'].');
         }
 
         return $this->paths->namespaceFor($relative).'\\'.$class;
+    }
+
+    protected function classForPath(AppTree $tree, string $path): string
+    {
+        $file = $this->lockedFile($path);
+
+        return $file === null ? $tree->classForPath($path) : pathinfo($file, PATHINFO_FILENAME);
+    }
+
+    protected function lockedFile(string $path): ?string
+    {
+        $files = array_keys($this->lock?->entries[$path] ?? []);
+
+        return count($files) === 1 && StreamLock::validFile($files[0]) ? $files[0] : null;
     }
 }

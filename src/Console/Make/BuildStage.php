@@ -302,7 +302,8 @@ class BuildStage
     }
 
     /** Dependencies of a manage page are built through the same command. */
-    protected function scope(AppTree $tree, ?string $only): array    {
+    protected function scope(AppTree $tree, ?string $only): array
+    {
         if ($only === null || $tree->type($only) !== 'page') {
             return [];
         }

@@ -143,6 +143,10 @@ class StreamsCaptureTest extends SdkTestCase
         $this->assertSame($before, $this->snapshot());
     }
 
+    /**
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
     protected function make(array $arguments = []): array
     {
         $exit = Artisan::call('streams:make', array_merge(['--json' => true], $arguments));
@@ -155,6 +159,9 @@ class StreamsCaptureTest extends SdkTestCase
         return $report;
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function snapshot(): array
     {
         $files = [];

@@ -3,11 +3,11 @@
 namespace Streams\Sdk\Console\Capture;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\ArrowFunction;
-use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
@@ -20,6 +20,7 @@ use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\ParserFactory;
@@ -64,6 +65,20 @@ class CaptureReader
         'Resources' => 'panel',
         'Forms' => 'form',
         'Public' => 'public_page',
+    ];
+
+    /**
+     * Captured node kind => ui container name.
+     *
+     * @var array<string, string>
+     */
+    protected const CONTAINER_BY_KIND = [
+        'table' => 'table',
+        'panel' => 'panel',
+        'page' => 'pages',
+        'action' => 'actions',
+        'form' => 'forms',
+        'public_page' => 'public_pages',
     ];
 
     public function __construct(protected string $root) {}
@@ -160,27 +175,14 @@ class CaptureReader
         $stream = strtolower($domain);
         $handle = $this->snake($class);
 
-        $container = match ($kind) {
-            'table' => 'table',
-            'panel' => 'panel',
-            'page' => 'pages',
-            'action' => 'actions',
-            'form' => 'forms',
-            'public_page' => 'public_pages',
-            default => null,
-        };
-
-        if ($container === null) {
-            return null;
-        }
-
-        return [$stream, $container, $handle, $kind];
+        return [$stream, self::CONTAINER_BY_KIND[$kind], $handle, $kind];
     }
 
     /**
      * Place a captured node under its stream's ui subtree.
      *
      * @param  array<string, mixed>  $stream
+     * @param  array<string, mixed>  $node
      * @return array<string, mixed>
      */
     protected function place(array $stream, string $container, string $handle, array $node): array
@@ -258,7 +260,7 @@ class CaptureReader
     }
 
     /**
-     * @param  list<Node>  $statements
+     * @param  array<Node>  $statements
      */
     protected function findClass(array $statements): ?Class_
     {
@@ -267,8 +269,8 @@ class CaptureReader
                 return $statement;
             }
 
-            if ($statement instanceof \PhpParser\Node\Stmt\Namespace_) {
-                $class = $this->findClass($statement->stmts ?? []);
+            if ($statement instanceof Namespace_) {
+                $class = $this->findClass($statement->stmts);
 
                 if ($class !== null) {
                     return $class;
@@ -314,11 +316,11 @@ class CaptureReader
     protected function captureMethod(ClassMethod $method, string $file, array &$settings, array &$opaque): void
     {
         foreach ($method->stmts ?? [] as $stmt) {
-            if ($stmt instanceof Expression && $stmt->expr instanceof Expr) {
+            if ($stmt instanceof Expression) {
                 $this->chain($stmt->expr, $file, '', $settings, $opaque);
             }
 
-            if ($stmt instanceof Return_ && $stmt->expr instanceof Expr) {
+            if ($stmt instanceof Return_ && $stmt->expr !== null) {
                 $this->chain($stmt->expr, $file, $method->name->toString(), $settings, $opaque);
             }
         }
@@ -340,7 +342,7 @@ class CaptureReader
             $method = $expr->name instanceof Node\Identifier ? $expr->name->toString() : null;
 
             if ($method !== null) {
-                $this->call($method, $expr->args, $file, $prefix, $settings, $opaque);
+                $this->call($method, $this->filterArgs($expr->args), $file, $prefix, $settings, $opaque);
             }
 
             return;
@@ -351,14 +353,14 @@ class CaptureReader
 
             // X::make('handle') names the builder item already captured by the
             // container walker, so the make call itself is just a marker.
-            if ($method === 'make' && isset($expr->args[0]) && $expr->args[0]->value instanceof String_) {
+            if ($method === 'make' && isset($expr->args[0]) && $expr->args[0] instanceof Arg && $expr->args[0]->value instanceof String_) {
                 $settings[$this->joined($prefix, 'make')] = true;
 
                 return;
             }
 
             // A resolver/route class call is computed: opaque.
-            $opaque[] = $this->opaque($this->joined($prefix, $this->shortClass($expr->class)), $file, $expr->getStartLine());
+            $opaque[] = $this->opaque($this->joined($prefix, $this->classLabel($expr->class)), $file, $expr->getStartLine());
 
             return;
         }
@@ -379,7 +381,7 @@ class CaptureReader
     }
 
     /**
-     * @param  list<\PhpParser\Node\Arg>  $args
+     * @param  list<Arg>  $args
      * @param  array<string, mixed>  $settings
      * @param  list<array{handle: string, file: string, line: int}>  $opaque
      */
@@ -435,7 +437,7 @@ class CaptureReader
 
             // A builder container: columns, filters, actions, components.
             foreach ($arg->items as $index => $item) {
-                if (! $item instanceof ArrayItem || ! $item->value instanceof Expr) {
+                if (! $item instanceof ArrayItem) {
                     continue;
                 }
 
@@ -478,7 +480,7 @@ class CaptureReader
         }
 
         if ($value instanceof StaticCall && $value->name instanceof Node\Identifier && $value->name->toString() === 'make') {
-            if (isset($value->args[0]) && $value->args[0]->value instanceof String_) {
+            if (isset($value->args[0]) && $value->args[0] instanceof Arg && $value->args[0]->value instanceof String_) {
                 return $value->args[0]->value->value;
             }
         }
@@ -542,7 +544,7 @@ class CaptureReader
     protected function isLiteralArray(Array_ $array): bool
     {
         foreach ($array->items as $item) {
-            if (! $item instanceof ArrayItem || ! $item->value instanceof Expr) {
+            if (! $item instanceof ArrayItem) {
                 return false;
             }
 
@@ -566,7 +568,7 @@ class CaptureReader
         $out = [];
 
         foreach ($array->items as $item) {
-            if (! $item instanceof ArrayItem || ! $item->value instanceof Expr) {
+            if (! $item instanceof ArrayItem) {
                 continue;
             }
 
@@ -620,6 +622,39 @@ class CaptureReader
         $position = strrpos($class, '\\');
 
         return $position === false ? $class : substr($class, $position + 1);
+    }
+
+    /**
+     * A readable label for a static call target: the short class for a plain
+     * class name, or the source line for a computed expression.
+     */
+    protected function classLabel(Node $class): string
+    {
+        if ($class instanceof Name) {
+            return $this->shortClass($class);
+        }
+
+        return 'expression at line '.$class->getStartLine();
+    }
+
+    /**
+     * Call arguments that carry a value. Static calls may end with a
+     * variadic placeholder, which has no ->value.
+     *
+     * @param  array<int, Arg|Node\VariadicPlaceholder|Node\ArgPlaceholder>  $args
+     * @return list<Arg>
+     */
+    protected function filterArgs(array $args): array
+    {
+        $values = [];
+
+        foreach ($args as $arg) {
+            if ($arg instanceof Arg) {
+                $values[] = $arg;
+            }
+        }
+
+        return $values;
     }
 
     protected function relative(string $file): string

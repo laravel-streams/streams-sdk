@@ -28,8 +28,8 @@ class StreamsCapture extends Command
 
     public function handle(): int
     {
-        $root = $this->option('root') ?: (string) config('streams.sdk.capture.root', base_path());
-        $treeFile = $this->option('tree') ?: (string) config('streams.sdk.capture.tree', base_path('streams.json'));
+        $root = (string) ($this->option('root') ?: config('streams.sdk.capture.root', base_path()));
+        $treeFile = (string) ($this->option('tree') ?: config('streams.sdk.capture.tree', base_path('streams.json')));
 
         try {
             $reader = new CaptureReader($this->locate($root));

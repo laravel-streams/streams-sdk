@@ -2,9 +2,6 @@
 
 namespace Streams\Sdk\Console\Support;
 
-use SebastianBergmann\Diff\Differ;
-use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
-
 /**
  * @deprecated Use PhpEditor directly. This wrapper exists for backward
  *             compatibility with callers of the #66 whole-file reprint.
@@ -67,8 +64,6 @@ class PhpFile
      */
     public function diff(string $original): string
     {
-        $differ = new Differ(new UnifiedDiffOutputBuilder("--- {$this->path}\n+++ {$this->path}\n"));
-
-        return $differ->diff($original, $this->contents());
+        return $this->editor->diff($original);
     }
 }

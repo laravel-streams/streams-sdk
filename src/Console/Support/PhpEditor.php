@@ -16,6 +16,8 @@ use PhpParser\NodeVisitorAbstract;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
+use SebastianBergmann\Diff\Differ;
+use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
 
 /**
  * Edits a PHP file through nikic/php-parser and writes it back with the
@@ -226,6 +228,17 @@ class PhpEditor
             $this->originalStatements,
             $this->tokens,
         );
+    }
+
+    /**
+     * The unified diff between the original contents and the edited
+     * contents — exactly what saving the file would apply.
+     */
+    public function diff(string $original): string
+    {
+        $differ = new Differ(new UnifiedDiffOutputBuilder("--- {$this->path}\n+++ {$this->path}\n"));
+
+        return $differ->diff($original, $this->print());
     }
 
     protected static function parser(Lexer $lexer): Parser

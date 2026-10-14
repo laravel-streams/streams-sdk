@@ -15,6 +15,7 @@ use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Commands\StreamsTap;
 use Streams\Sdk\Console\Commands\StreamsValidate;
+use Streams\Sdk\Console\Commands\StubPublish;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
 use Streams\Sdk\Console\Inputs\BooleanConsoleInput;
 use Streams\Sdk\Console\Inputs\IntegerConsoleInput;
@@ -39,6 +40,7 @@ class SdkServiceProvider extends ServiceProvider
                 StreamsSchema::class,
                 StreamsTap::class,
                 StreamsValidate::class,
+                StubPublish::class,
                 ShowEntry::class,
                 ListEntries::class,
                 ListStreams::class,
@@ -50,6 +52,10 @@ class SdkServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../streams/files.json' => base_path('streams/files.json'),
         ], ['examples', 'files-example']);
+
+        $this->publishes([
+            __DIR__.'/Console/Commands/stubs' => base_path('streams/stubs'),
+        ], ['stubs', 'streams-stubs']);
     }
 
     public function boot()

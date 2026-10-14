@@ -88,6 +88,33 @@ class AppTree
     protected string $root;
 
     /**
+     * Built-in containers plus kind placements.
+     *
+     * @param  array<string, array<string, array{type: string, map: bool, map_of?: string}>>  $extra
+     * @return array<string, array<string, array{type: string, map: bool, map_of?: string}>>
+     */
+    public static function containersIncluding(array $extra = []): array
+    {
+        $tree = new static;
+
+        foreach ($extra as $parent => $specs) {
+            if (! is_string($parent) || ! is_array($specs)) {
+                continue;
+            }
+
+            foreach ($specs as $key => $spec) {
+                if (! is_string($key) || ! is_array($spec)) {
+                    continue;
+                }
+
+                $tree->containers[$parent][$key] = $spec;
+            }
+        }
+
+        return $tree->containers;
+    }
+
+    /**
      * Load the app tree.
      *
      * $extraContainers are containers a component kind adds on top of the

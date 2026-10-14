@@ -22,6 +22,7 @@ class InputField
         public readonly array $enum = [],
         public readonly ?string $pattern = null,
         public readonly ?string $description = null,
+        public readonly mixed $default = null,
     ) {}
 
     public static function make(string $key, string $type): self
@@ -72,6 +73,11 @@ class InputField
         return $this->copy(description: $description);
     }
 
+    public function default(mixed $default): self
+    {
+        return $this->copy(default: $default, setDefault: true);
+    }
+
     /**
      * @param  list<string>|null  $enum
      */
@@ -83,6 +89,8 @@ class InputField
         ?array $enum = null,
         ?string $pattern = null,
         ?string $description = null,
+        mixed $default = null,
+        bool $setDefault = false,
     ): self {
         return new self(
             $this->key,
@@ -93,6 +101,7 @@ class InputField
             $enum ?? $this->enum,
             $pattern ?? $this->pattern,
             $description ?? $this->description,
+            $setDefault ? $default : $this->default,
         );
     }
 }

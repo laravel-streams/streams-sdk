@@ -143,10 +143,40 @@ The app-definition schema is the same set of committed files that ships in the S
 ### streams:make
 
 ```bash
-php artisan streams:make {path?} {--tree=} {--output=} {--dry-run} {--json}
+php artisan streams:make {path?} {--list} {--json=file} {--tree=} {--output=} {--dry-run}
+php artisan streams:make --list
+php artisan streams:make people.actions.add --label="Add person" --type=modal --form=people.actions.add.form
+php artisan streams:make people.actions.add --json=recipe.json
 ```
 
-`streams:make` is the only build command. Component kinds are nodes in the app tree, addressed by dot path (`people`, `people.table`, `people.pages.manage`, `people.actions.add`). There is no `streams:build` command and no per-component `make:page`, `make:action`, or `make:form` command. `make:stream`, `make:entry`, `make:addon`, and `make:table` are command classes in this package and are not registered. `php artisan list` shows `streams:make` and no `make:*` command from streams-sdk. Laravel's own `make:*` commands are unchanged.
+`streams:make` is the only registered command for making and building. Component kinds are nodes in the app tree, addressed by dot path (`people`, `people.table`, `people.pages.manage`, `people.actions.add`). There is no `streams:build` command and no per-component `make:page`, `make:action`, or `make:form` command. `make:stream`, `make:entry`, `make:addon`, and `make:table` are command classes in this package and are not registered. `php artisan list` shows `streams:make` and no `make:*` command from streams-sdk. Laravel's own `make:*` commands are unchanged.
+
+### What can be made
+
+With no path, or with `--list`, the command prints each makeable kind and the dot paths where it fits. Patterns use the stream handle from the loaded tree (`people.actions.{handle}`, `people.pages.{handle}`, `people.table`). Existing nodes are listed too (`people.actions.add`, `people.pages.manage`). `--list --json` prints one object with a `kinds` array. Each entry has `kind`, `source`, `description`, `paths`, `nodes`, and `inputs` (`field`, `flag`, `required`, `default`, `prompt`).
+
+### Defining a node
+
+Interactive prompts, flags, and a JSON recipe fill one validated definition and edit the JSON tree at that dot path. They do not write PHP. The build below runs only when you are not authoring: `--dry-run`, or `--json` with no recipe file, and no field flags.
+
+Every prompt comes from the kind's input schema. The same definition supplies the JSON key, the prompt label, the flag, and the default. The `handle` default is the last segment of the dot path (`people.actions.add` defaults handle to `add`). Omit a flag to keep that default. `--no-interaction` never prompts. A missing required value exits non-zero and prints JSON naming the field:
+
+```json
+{
+    "message": "Missing required value.",
+    "field": "label",
+    "errors": [
+        {"field": "label", "message": "The label field is required."}
+    ]
+}
+```
+
+`--json=recipe.json` is the recipe. The file is either the node object or `{"path": "people.actions.add", "input": { ... }}`. Field flags override recipe keys. `--dry-run` with a recipe or flags prints the edit and does not write the JSON file.
+
+```bash
+php artisan streams:make people.actions.add --no-interaction --label="Add person" --type=modal --form=people.actions.add.form
+php artisan streams:make people.actions.add --json=add.json --dry-run
+```
 
 ### Component kinds
 

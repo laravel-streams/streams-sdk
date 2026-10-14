@@ -51,8 +51,8 @@ class BuildStage
      */
     public function plan(AppTree $tree, ?string $only, string $outputRoot): BuildPlan
     {
-        $this->memory = $this->compile($tree, $only);
         $this->lock = StreamLock::read($outputRoot);
+        $this->memory = $this->compile($tree, $only);
         $this->lockUpdates = [];
 
         $plan = new BuildPlan;
@@ -112,11 +112,15 @@ class BuildStage
             }
 
             $plan->skipped[] = $relative;
+            if (! $tree->has($nodePath)) {
+                $plan->orphans[] = ['path' => $nodePath, 'file' => $relative];
+            }
         }
 
         sort($plan->created);
         sort($plan->modified);
         sort($plan->skipped);
+        usort($plan->orphans, fn (array $left, array $right): int => [$left['path'], $left['file']] <=> [$right['path'], $right['file']]);
 
         usort($plan->unapplied, function (array $left, array $right): int {
             return [$left['path'], $left['file'], $left['reason']] <=> [$right['path'], $right['file'], $right['reason']];
@@ -201,6 +205,12 @@ class BuildStage
             $domain = Str::studly(explode('.', $path)[0]);
             $class = $this->className($tree, $path, $type);
             $relative = $this->paths->resolve($type, $domain, $class);
+
+            $lockedFiles = array_keys($this->lock?->entries[$path] ?? []);
+            if (count($lockedFiles) === 1) {
+                $relative = $lockedFiles[0];
+                $class = pathinfo($relative, PATHINFO_FILENAME);
+            }
 
             if ($relative === null) {
                 continue;

@@ -31,6 +31,41 @@ class TreeEditor
         return $this->walk($rootFile, $path)['type'];
     }
 
+    /** Plan a single map-key rename, retaining any $ref and its contents. */
+    public function rename(string $rootFile, string $from, string $to): array
+    {
+        $parent = substr($from, 0, (int) strrpos($from, '.'));
+        $targetParent = substr($to, 0, (int) strrpos($to, '.'));
+
+        if (! $this->segmentsValid($from) || ! $this->segmentsValid($to) || $parent === '' || $parent !== $targetParent || $from === $to) {
+            throw new TreeEditException('Rename requires two distinct sibling dot paths.', 'path');
+        }
+
+        $state = $this->walk($rootFile, $parent);
+        $map = $this->dig($state['data'], $state['keyPath']);
+        $old = substr($from, strlen($parent) + 1);
+        $new = substr($to, strlen($parent) + 1);
+
+        if ($state['entry'] === null || ! is_array($map) || ! array_key_exists($old, $map) || array_key_exists($new, $map)) {
+            throw new TreeEditException('Rename source must exist in a map and destination must be absent.', 'path');
+        }
+
+        $renamed = [];
+        foreach ($map as $key => $value) {
+            $renamed[$key === $old ? $new : $key] = $value;
+        }
+
+        $data = $state['data'];
+        $cursor = &$data;
+        foreach ($state['keyPath'] as $key) {
+            $cursor = &$cursor[$key];
+        }
+        $cursor = $renamed;
+        unset($cursor);
+
+        return ['file' => $state['file'], 'contents' => $this->encode($data)];
+    }
+
     /**
      * Merge the definition onto the node and write that JSON file.
      *

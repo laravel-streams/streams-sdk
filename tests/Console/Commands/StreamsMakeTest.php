@@ -298,6 +298,10 @@ class StreamsMakeTest extends SdkTestCase
         $this->assertFileExists($absolute);
         $this->assertSame($before, File::get($absolute));
         $this->assertContains($action, $report['skipped']);
+        $this->assertContains(['path' => 'people.actions.add', 'file' => $action], $report['still in code, no longer in the config']);
+        $this->assertSame(0, Artisan::call('streams:make', ['--tree' => $copy.'/streams.json', '--output' => $this->output, '--dry-run' => true]));
+        $this->assertStringContainsString('still in code, no longer in the config:', Artisan::output());
+        $this->assertSame($before, File::get($absolute));
         $this->assertNotContains($action, $report['created']);
         $this->assertNotContains($action, $report['modified']);
         $this->assertGreaterThanOrEqual($beforeCount, count($this->phpFiles()));
@@ -353,6 +357,8 @@ PHP;
 
         $this->assertContains('streams:make', $names);
         $this->assertNotContains('streams:build', $names);
+        $this->assertNotContains('streams:rename', $names);
+        $this->assertNotContains('streams:make:rename', $names);
 
         foreach ($names as $name) {
             $this->assertFalse(str_starts_with($name, 'streams:build'), $name);
@@ -360,6 +366,56 @@ PHP;
             $this->assertStringNotContainsString('make:action', $name);
             $this->assertStringNotContainsString('make:form', $name);
         }
+    }
+
+    public function test_rename_updates_tree_lock_and_tag_in_place_and_rebuild_is_stable(): void
+    {
+        $copy = $this->copyFixture();
+        $this->runJson(['--tree' => $copy.'/streams.json']);
+        $relative = 'app/Domains/People/Panel/Actions/PeopleActionsAdd.php';
+        $before = File::get($this->output.'/'.$relative);
+        $files = $this->phpFiles();
+        $code = Artisan::call('streams:make', [
+            'path' => 'rename', 'from' => 'people.actions.add', 'to' => 'people.actions.create',
+            '--tree' => $copy.'/streams.json', '--output' => $this->output,
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
+        $tree = \Streams\Sdk\Support\AppTree::load($copy.'/streams.json');
+        $this->assertFalse($tree->has('people.actions.add'));
+        $this->assertTrue($tree->has('people.actions.create'));
+        $after = File::get($this->output.'/'.$relative);
+        $this->assertSame(str_replace('people.actions.add', 'people.actions.create', $before), $after);
+        $this->assertStringContainsString("#[Generated('people.actions.create')]", $after);
+        $this->assertSame($files, $this->phpFiles());
+        $lock = StreamLock::read($this->output);
+        $this->assertArrayNotHasKey('people.actions.add', $lock->entries);
+        $this->assertSame(StreamLock::hashContents($after), $lock->hash('people.actions.create', $relative));
+        $report = $this->runJson(['--tree' => $copy.'/streams.json']);
+        $this->assertSame([], $report['created']);
+        $this->assertSame([], $report['modified']);
+        $this->assertSame([], $report['skipped']);
+        $this->assertSame($after, File::get($this->output.'/'.$relative));
+    }
+
+    public function test_rename_dry_run_and_hand_edit_failure_leave_all_files_unchanged(): void
+    {
+        $copy = $this->copyFixture();
+        $this->runJson(['--tree' => $copy.'/streams.json']);
+        $file = $this->output.'/app/Domains/People/Panel/Actions/PeopleActionsAdd.php';
+        $treeBefore = File::get($copy.'/streams/people.json');
+        $lockBefore = File::get(StreamLock::path($this->output));
+        $codeBefore = File::get($file);
+        $args = ['path' => 'rename', 'from' => 'people.actions.add', 'to' => 'people.actions.create',
+            '--tree' => $copy.'/streams.json', '--output' => $this->output];
+        $this->assertSame(0, Artisan::call('streams:make', $args + ['--dry-run' => true]), Artisan::output());
+        $this->assertSame($codeBefore, File::get($file));
+        $this->assertSame($treeBefore, File::get($copy.'/streams/people.json'));
+        $this->assertSame($lockBefore, File::get(StreamLock::path($this->output)));
+        File::put($file, $codeBefore."// user edit\n");
+        $this->assertSame(1, Artisan::call('streams:make', $args));
+        $this->assertSame($codeBefore."// user edit\n", File::get($file));
+        $this->assertSame($treeBefore, File::get($copy.'/streams/people.json'));
+        $this->assertSame($lockBefore, File::get(StreamLock::path($this->output)));
     }
 
     /**

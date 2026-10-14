@@ -311,13 +311,20 @@ class CatalogGenerator
      */
     public function uiBuilders(): array
     {
+        $builders = array_column($this->uiBuildersFromManifest(), null, 'id');
         $path = $this->uiInstallPath();
 
         if (is_dir($path)) {
-            return $this->uiBuildersFromCode($path);
+            foreach ($this->uiBuildersFromCode($path) as $builder) {
+                $id = $builder['id'];
+
+                // The manifest remains authoritative for descriptive metadata.
+                // Retain entries that this version of streams/ui does not ship.
+                $builders[$id] = array_replace($builder, $builders[$id] ?? [], ['source' => 'code']);
+            }
         }
 
-        return $this->uiBuildersFromManifest();
+        return array_values($builders);
     }
 
     /**
@@ -468,8 +475,20 @@ class CatalogGenerator
             // Builders in streams/ui currently mirror the manifest ids by
             // class short name; keep the manifest table authoritative for
             // options until the package exports them.
+            $short = substr(basename($file), 0, -4);
+            $id = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $short) ?? $short);
+            $group = strtolower(basename(dirname($file)));
+
+            // Input/Text and Livewire/Table use group-qualified manifest ids.
+            if (in_array($group, ['input', 'livewire'], true) && !str_starts_with($id, $group . '-')) {
+                $id = $group . '-' . $id;
+            }
+
             $builders[] = [
-                'id' => strtolower(substr(basename($file), 0, -4)),
+                'id' => $id,
+                'group' => $group,
+                'options' => new \stdClass(),
+                'allowed_parents' => [],
                 'source' => 'code',
             ];
         }

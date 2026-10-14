@@ -1,0 +1,86 @@
+PHPUnit 9.5.24 [44;37m#StandWith[0m[43;30mUkraine[0m
+List Entries (Streams\Sdk\Tests\Console\Commands\ListEntries)
+ ✔ It can list entries
+List Streams (Streams\Sdk\Tests\Console\Commands\ListStreams)
+ ✔ It can list streams
+Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
+ ↩ It makes addons
+Make Table (Streams\Sdk\Tests\Console\Commands\MakeTable)
+ ✔ It makes a table and registers it in the panel and on the page
+ ✔ It is idempotent
+ ✔ Dry run shows the diff the real run applies without writing
+ ✔ It updates flags in place in an existing registry
+ ✔ It keeps existing entries when registering more tables
+ ✔ Written registry is pint formatted and stable
+ ✔ It rejects invalid table ids
+Show Entry (Streams\Sdk\Tests\Console\Commands\ShowEntry)
+ ✔ It can show an entry
+Streams Make (Streams\Sdk\Tests\Console\Commands\StreamsMake)
+ ✔ Dry run prints a unified diff and writes nothing
+ ✔ Dry run json matches the real run plan
+ ✔ A second run with no tree changes reports nothing created or modified
+ ✔ Removing a node leaves its file and lists it as skipped
+ ✔ An unapplied edit reports path file and reason and writes nothing
+ ✔ No separate build command is registered
+Paths (Streams\Sdk\Tests\Console\Make\Paths)
+ ✔ Reference defaults match the people layout
+ ✔ Config overrides a path template and keeps the other defaults
+Php Editor Round Trip (Streams\Sdk\Tests\Console\Support\PhpEditorRoundTrip)
+ ✔ Noop round trip is byte identical for every reference fixture
+ ✔ Adding a mountable action to the page touches only the actions array
+ ✔ Adding an attribute touches only the attributes array
+ ✔ Appending to a long array touches only that array
+Php Editor (Streams\Sdk\Tests\Console\Support\PhpEditor)
+ ✔ Editing one array entry changes only that entry
+ ✔ Noop edit prints the file byte for byte
+Php File (Streams\Sdk\Tests\Console\Support\PhpFile)
+ ✔ Puts an item into the returned array
+ ✔ Second identical put changes nothing
+ ✔ Updates flags in place without duplicates
+ ✔ Preserves hand written entries
+ ✔ Diff matches the change the save applies
+ ✔ Renders the versioned table stub
+Add Attribute (Streams\Sdk\Tests\Console\Support\Transforms\AddAttribute)
+ ✔ It adds an attribute group and touches only that line
+Add Member (Streams\Sdk\Tests\Console\Support\Transforms\AddMember)
+ ✔ It adds a method and touches only the added member
+Remove Member (Streams\Sdk\Tests\Console\Support\Transforms\RemoveMember)
+ ✔ It removes the named member and keeps everything else
+Rename Class (Streams\Sdk\Tests\Console\Support\Transforms\RenameClass)
+ ✔ It renames the class and touches only the declaration
+Set Namespace (Streams\Sdk\Tests\Console\Support\Transforms\SetNamespace)
+ ✔ It replaces an existing namespace and touches only that line
+ ✔ It wraps a file that has no namespace
+Transform Golden (Streams\Sdk\Tests\Console\Support\Transforms\TransformGolden)
+ ✔ Generating a people table from the reference matches the golden and passes pint and lint
+App Schema (Streams\Sdk\Tests\Support\AppSchema)
+ ✔ The people fixture validates against the app schema
+ ✔ The app schema covers every node type
+ ✔ Streams schema outputs the app definition schema
+App Tree (Streams\Sdk\Tests\Support\AppTree)
+ ✔ It resolves every dot path in the people fixture
+ ✔ It loads root and ref files into one tree
+ ✔ Unknown paths throw
+ ✔ Duplicate class names in one map throw
+ ✔ The same file cannot be loaded twice
+ ✔ Path segments must be snake case or slug
+ ✔ Studly case class names derive from dot paths
+Catalog Drift (Streams\Sdk\Tests\Support\CatalogDrift)
+ ✔ Catalog is up to date with field types and builders
+ ✔ Catalog contents are sane
+ ✔ Stream schema offers code derived field types
+ ✔ Generated schemas validate
+Golden Files (Streams\Sdk\Tests\Support\GoldenFiles)
+ ✔ Matches nested and hidden files and removes temporary directory
+ ✔ Mismatch reports unified diff and cleans up
+ ✔ Missing empty file fails
+ ✔ Unexpected empty file fails
+ ✔ Generator exception propagates and cleans up
+ ✔ Each run gets an empty unique directory
+ ✔ Missing nonempty file reports deletion diff
+ ✔ Symbolic link is rejected without deleting its target
+Summary of non-successful tests:
+Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
+ ↩ It makes addons
+OK, but incomplete, skipped, or risky tests!
+Tests: 60, Assertions: 2503, Skipped: 1.

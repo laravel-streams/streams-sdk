@@ -2,16 +2,26 @@
 
 namespace Streams\Sdk;
 
-use Streams\Core\Field\Field;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
+use Streams\Core\Field\Field;
+use Streams\Sdk\Console\Commands\CatalogGenerate;
+use Streams\Sdk\Console\Commands\ListEntries;
+use Streams\Sdk\Console\Commands\ListStreams;
+use Streams\Sdk\Console\Commands\MakeAddon;
+use Streams\Sdk\Console\Commands\MakeEntry;
+use Streams\Sdk\Console\Commands\MakeStream;
+use Streams\Sdk\Console\Commands\MakeTable;
+use Streams\Sdk\Console\Commands\ShowEntry;
+use Streams\Sdk\Console\Commands\StreamsMake;
+use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
+use Streams\Sdk\Console\Inputs\BooleanConsoleInput;
+use Streams\Sdk\Console\Inputs\IntegerConsoleInput;
 use Streams\Sdk\Console\Inputs\ObjectConsoleInput;
 use Streams\Sdk\Console\Inputs\SelectConsoleInput;
 use Streams\Sdk\Console\Inputs\StringConsoleInput;
-use Streams\Sdk\Console\Inputs\BooleanConsoleInput;
-use Streams\Sdk\Console\Inputs\IntegerConsoleInput;
 
 class SdkServiceProvider extends ServiceProvider
 {
@@ -19,22 +29,23 @@ class SdkServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Streams\Sdk\Console\Commands\MakeAddon::class,
-                \Streams\Sdk\Console\Commands\MakeEntry::class,
-                \Streams\Sdk\Console\Commands\MakeStream::class,
-                \Streams\Sdk\Console\Commands\MakeTable::class,
-                \Streams\Sdk\Console\Commands\CatalogGenerate::class,
-                \Streams\Sdk\Console\Commands\StreamsSchema::class,
-                \Streams\Sdk\Console\Commands\ShowEntry::class,
-                \Streams\Sdk\Console\Commands\ListEntries::class,
-                \Streams\Sdk\Console\Commands\ListStreams::class,
+                MakeAddon::class,
+                MakeEntry::class,
+                MakeStream::class,
+                MakeTable::class,
+                StreamsMake::class,
+                CatalogGenerate::class,
+                StreamsSchema::class,
+                ShowEntry::class,
+                ListEntries::class,
+                ListStreams::class,
                 // \Streams\Sdk\Console\Commands\ShowStream::class,     Necessary?
-                //\Streams\Sdk\Console\Commands\DescribeStream::class,
+                // \Streams\Sdk\Console\Commands\DescribeStream::class,
             ]);
         }
 
         $this->publishes([
-            __DIR__ . '/../streams/files.json' => base_path('streams/files.json'),
+            __DIR__.'/../streams/files.json' => base_path('streams/files.json'),
         ], ['examples', 'files-example']);
     }
 
@@ -44,7 +55,7 @@ class SdkServiceProvider extends ServiceProvider
 
         Field::macro('console', function () {
 
-            if (!App::has("streams.console.inputs.{$this->type}")) {
+            if (! App::has("streams.console.inputs.{$this->type}")) {
                 throw new \Exception("Missing SDK input [{$this->type}] required for field [{$this->handle}] in stream [{$this->stream->id}]");
             }
 

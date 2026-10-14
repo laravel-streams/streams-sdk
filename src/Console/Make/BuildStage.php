@@ -175,15 +175,15 @@ class BuildStage
 
     /**
      * A tagged file is a hand edit when its bytes are not the hash in streams.lock.
-     * No recorded hash and no Generated attribute keeps the older managed-file
-     * behavior: the build may still edit it.
+     * Without a recorded hash, keep the older managed-file behavior: the build
+     * may still edit it and restore the lock entry.
      */
     protected function isHandEdit(string $actual, CompiledFile $file): bool
     {
         $recorded = $this->lock?->hash($file->nodePath, $file->relative);
 
         if ($recorded === null) {
-            return Generated::pathFromSource($actual) !== null;
+            return false;
         }
 
         return $recorded !== StreamLock::hashContents($actual);

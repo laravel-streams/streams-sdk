@@ -171,6 +171,63 @@ class StreamsMakeTest extends SdkTestCase
         $this->assertSame(StreamLock::hashContents($updated), $lock['people.actions.add'][$relative]);
     }
 
+    public function test_a_deleted_lock_allows_tagged_files_to_be_rebuilt(): void
+    {
+        $this->assertMissingLockAllowsRebuild(true);
+    }
+
+    public function test_a_missing_lock_entry_allows_its_tagged_file_to_be_rebuilt(): void
+    {
+        $this->assertMissingLockAllowsRebuild(false);
+    }
+
+    protected function assertMissingLockAllowsRebuild(bool $deleteLock): void
+    {
+        $this->runJson();
+
+        $relative = 'app/Domains/People/Panel/Actions/PeopleActionsAdd.php';
+        $absolute = $this->output.'/'.$relative;
+        $lockPath = StreamLock::path($this->output);
+
+        if ($deleteLock) {
+            File::delete($lockPath);
+        } else {
+            $lock = StreamLock::read($this->output);
+            unset($lock->entries['people.actions.add'][$relative]);
+            $lock->write($this->output);
+        }
+
+        $copy = $this->copyFixture();
+        $actionFile = $copy.'/streams/people.actions.add.json';
+        $action = json_decode((string) file_get_contents($actionFile), true);
+        $action['label'] = 'Create person';
+        file_put_contents($actionFile, json_encode($action, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+
+        $before = File::get($absolute);
+        $lockBefore = is_file($lockPath) ? File::get($lockPath) : null;
+        $dry = $this->runJson(['--tree' => $copy.'/streams.json', '--dry-run' => true]);
+
+        $this->assertContains($relative, $dry['modified']);
+        $this->assertSame([], $dry['conflicts']);
+        $this->assertSame($before, File::get($absolute));
+        $this->assertSame($lockBefore, is_file($lockPath) ? File::get($lockPath) : null);
+
+        $real = $this->runJson(['--tree' => $copy.'/streams.json']);
+        $updated = File::get($absolute);
+
+        $this->assertSame($dry, $real);
+        $this->assertStringContainsString("#[Generated('people.actions.add')]", $updated);
+        $this->assertStringContainsString("return 'Create person';", $updated);
+        $this->assertSame(StreamLock::hashContents($updated), StreamLock::read($this->output)->hash('people.actions.add', $relative));
+
+        $lockAfter = File::get($lockPath);
+        $second = $this->runJson(['--tree' => $copy.'/streams.json']);
+
+        $this->assertSame([], $second['modified']);
+        $this->assertSame([], $second['conflicts']);
+        $this->assertSame($lockAfter, File::get($lockPath));
+    }
+
     public function test_a_hand_edit_to_a_tagged_member_is_a_conflict_and_the_file_is_left_unchanged(): void
     {
         $this->runJson();

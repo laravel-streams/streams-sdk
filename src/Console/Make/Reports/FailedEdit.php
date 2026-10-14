@@ -20,9 +20,9 @@ class FailedEdit
     public static function fromArray(array $row): self
     {
         return new self(
-            (string) ($row['path'] ?? ''),
-            (string) ($row['file'] ?? ''),
-            (string) ($row['reason'] ?? ''),
+            (string) $row['path'],
+            (string) $row['file'],
+            (string) $row['reason'],
             isset($row['suggestedChange']) ? (string) $row['suggestedChange'] : null,
         );
     }

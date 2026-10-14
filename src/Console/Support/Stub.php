@@ -2,12 +2,18 @@
 
 namespace Streams\Sdk\Console\Support;
 
+use Illuminate\Support\Facades\File;
+
 /**
  * Resolves and renders the versioned stub set shipped with the SDK.
  *
  * Stubs live under src/Console/Commands/stubs/{name}/{version}/{file}.stub.
  * The current version is resolved here so a new stub version can be added
  * without touching the commands that consume it.
+ *
+ * An app that runs `streams:stub:publish` gets the same set copied under
+ * config('streams.sdk.make.stubs_dir'); a published stub is preferred over
+ * the SDK copy so apps can override generated output for these trivial files.
  */
 class Stub
 {
@@ -35,14 +41,28 @@ class Stub
     {
         [$directory, $file] = array_pad(explode('.', $this->name, 2), 2, null);
 
-        return __DIR__ .
-            '/../Commands/stubs/' .
-            $directory .
+        $relative = $directory .
             '/' .
             $this->version .
             '/' .
             ($file ?: $directory) .
             '.stub';
+
+        $published = $this->publishedDir() . '/' . $relative;
+
+        if (File::exists($published)) {
+            return $published;
+        }
+
+        return __DIR__ . '/../Commands/stubs/' . $relative;
+    }
+
+    /**
+     * The app stub directory published stubs are copied to.
+     */
+    protected function publishedDir(): string
+    {
+        return rtrim((string) config('streams.sdk.make.stubs_dir', base_path('streams/stubs')), '/');
     }
 
     public function version(): string

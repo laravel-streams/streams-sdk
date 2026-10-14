@@ -31,6 +31,7 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 | [`streams:schema`](#streamsschema) | Writes per-stream `{id}.schema.json` entry schemas and the app-definition schema |
 | [`streams:make`](#streamsmake) | Compares the app JSON tree with generated code, prints a plan, then adds or edits files |
 | [`streams:livewire`](#streamslivewire) | Generates Livewire 3 index, form, and show components |
+| [`streams:tap`](#streamstap) | Calls a tap URL with query-string input |
 
 Agents can call the same operations through the [MCP server](/docs/mcp) (`php artisan mcp:start streams`), which needs `laravel/mcp` and Laravel 11.45+ or 12.41+.
 
@@ -214,6 +215,18 @@ The components are full-page, so they render inside your Livewire layout (`confi
 
 `streams:admin` has been removed. Generate the components with `streams:livewire` and put them behind your own layout and routes.
 
+### streams:tap
+
+```bash
+php artisan streams:tap {tap} {input?}
+```
+
+Calls `{tap}` with HTTP GET. `{tap}` must be an `http` or `https` URL. `{input}` is an optional query string (`name=Widgets&status=draft`). Those pairs are merged onto the URL's query string, and keys in `{input}` win. The command prints the response body. A non-2xx response, or a URL that cannot be reached, is an error and the command exits non-zero. Redirects are not followed.
+
+```bash
+php artisan streams:tap https://example.com/taps/widgets "name=Widgets&status=draft"
+```
+
 ## Not registered
 
 These command classes exist in the SDK source but are **not registered**, so `php artisan` won't find them:
@@ -222,7 +235,6 @@ These command classes exist in the SDK source but are **not registered**, so `ph
 |---------|------------------|-------|
 | `streams:show` | Show one stream's attributes | Implemented, registration commented out. Use the MCP `describe-stream` tool. |
 | `streams:describe` | Write `streams/{id}.json` by inspecting a URL, JSON, database table, or Eloquent model | Implemented, registration commented out |
-| `streams:tap` | Call a "tap" URL with query-string input | Not implemented (empty handler) |
 
 ## How to extend it
 

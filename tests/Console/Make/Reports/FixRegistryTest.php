@@ -102,7 +102,8 @@ class HandEditConflictProvider implements FixProvider
 
     public function getSolutions(FailedEdit $edit): array
     {
-        return [new class ($edit) implements FixSolution {
+        return [new class($edit) implements FixSolution
+        {
             public function __construct(protected FailedEdit $edit) {}
 
             public function apply(): bool

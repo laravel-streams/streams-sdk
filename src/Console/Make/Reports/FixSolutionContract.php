@@ -16,11 +16,7 @@ use Spatie\Ignition\Contracts\Solution as SpatieSolution;
  * spatie package.
  */
 if (interface_exists(SpatieSolution::class) && interface_exists(SpatieRunnableSolution::class)) {
-    interface FixSolutionContract extends FixSolution, SpatieSolution, SpatieRunnableSolution
-    {
-    }
+    interface FixSolutionContract extends FixSolution, SpatieRunnableSolution, SpatieSolution {}
 } else {
-    interface FixSolutionContract extends FixSolution
-    {
-    }
+    interface FixSolutionContract extends FixSolution {}
 }

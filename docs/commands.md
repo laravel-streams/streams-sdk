@@ -28,7 +28,7 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 | [`entries:list`](#entrieslist) | Paginated table of a stream's entries |
 | [`entries:show`](#entriesshow) | Shows one entry as a field and value table |
 | [`streams:validate`](#streamsvalidate) | Checks definitions against the JSON Schema and the running app |
-| [`streams:schema`](#streamsschema) | Writes a `{id}.schema.json` entry schema per stream |
+| [`streams:schema`](#streamsschema) | Writes per-stream `{id}.schema.json` entry schemas and the app-definition schema |
 | [`streams:livewire`](#streamslivewire) | Generates Livewire 3 index, form, and show components |
 
 Agents can call the same operations through the [MCP server](/docs/mcp) (`php artisan mcp:start streams`), which needs `laravel/mcp` and Laravel 11.45+ or 12.41+.
@@ -130,12 +130,14 @@ The table output ends with `N checked, M invalid.`. `--json` prints an object ke
 php artisan streams:schema {--include=} {--exclude=} {--path=}
 ```
 
-Writes a JSON schema (`{id}.schema.json`) for the *entries* of every registered stream, built from Core's `StreamSchema`: the stream's tag metadata merged with its object schema. This is not the definition schema that `$schema` points at. `--include` and `--exclude` take comma-separated stream IDs. `--path` is relative to the project root and must already exist; it defaults to the project root.
+Writes a JSON schema (`{id}.schema.json`) for the *entries* of every registered stream, built from Core's `StreamSchema`: the stream's tag metadata merged with its object schema. This is not the definition schema that `$schema` points at. It also writes the *app-definition* schema into `schemas/` under the same path: the root `app.schema.json` and the per-node `$ref` schemas that validate a `streams.json` app tree. `--include` and `--exclude` take comma-separated stream IDs. `--path` is relative to the project root and defaults to it; an absolute path is used as-is. Streams whose entry schema cannot be generated are skipped with a warning.
 
 ```bash
 mkdir -p storage/schemas
 php artisan streams:schema --include=posts,authors --path=storage/schemas
 ```
+
+The app-definition schema is the same set of committed files that ships in the SDK's `resources/schemas`. Each node type has its own `$ref` schema (`node/table.schema.json`, `node/action.schema.json`, ...) and every node is addressed by a dot path starting at the stream handle: `people`, `people.table`, `people.actions.add`, `people.pages.manage`.
 
 ### streams:livewire
 

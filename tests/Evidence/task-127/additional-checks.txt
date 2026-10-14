@@ -1,0 +1,16 @@
+Command: php artisan test --filter=GoldenFilesTest
+Could not open input file: artisan
+
+Exit: 1
+Command: vendor/bin/pint tests/Support/GoldenFiles.php tests/Support/GoldenFilesTest.php
+Unavailable: executable is not installed in this worktree.
+Command: vendor/bin/phpstan analyse --memory-limit=1G
+Unavailable: executable is not installed in this worktree.
+Command: php -l tests/Support/GoldenFiles.php
+No syntax errors detected in tests/Support/GoldenFiles.php
+
+Exit: 0
+Command: php -l tests/Support/GoldenFilesTest.php
+No syntax errors detected in tests/Support/GoldenFilesTest.php
+
+Exit: 0

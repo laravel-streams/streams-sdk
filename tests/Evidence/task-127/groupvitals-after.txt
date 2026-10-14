@@ -1,0 +1,10 @@
+ M app/Domains/Events/Panel/Pages/EventAttendance.php
+ M app/Domains/Events/Panel/Tables/EventsAttendanceTable.php
+ M app/Domains/Events/Panel/Tables/EventsTable.php
+ M app/Domains/Groups/Panel/Tables/GroupEventsTable.php
+ M app/Domains/Groups/Panel/Tables/GroupMeetingAttendanceSummaryTable.php
+ M database/migrations/2026_07_27_000001_simplify_resource_assignment_scopes.php
+ M lang/en/domains/events.php
+ M lang/es/domains/events.php
+ M tests/Feature/Events/EventAttendancePageTest.php
+?? database/migrations/2026_08_25_000001_backfill_default_user_role_for_roleless_users.php

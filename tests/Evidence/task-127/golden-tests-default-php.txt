@@ -1,0 +1,148 @@
+PHP Deprecated:  Symfony\Component\Translation\t(): Implicitly marking parameter $domain as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/symfony/translation/Resources/functions.php on line 18
+
+Deprecated: Symfony\Component\Translation\t(): Implicitly marking parameter $domain as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/symfony/translation/Resources/functions.php on line 18
+PHP Deprecated:  Termwind\style(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/nunomaduro/termwind/src/Functions.php on line 29
+
+Deprecated: Termwind\style(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/nunomaduro/termwind/src/Functions.php on line 29
+PHP Deprecated:  optional(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Support/helpers.php on line 185
+
+Deprecated: optional(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Support/helpers.php on line 185
+PHP Deprecated:  with(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Support/helpers.php on line 416
+
+Deprecated: with(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Support/helpers.php on line 416
+PHP Deprecated:  SebastianBergmann\CliParser\Parser::parse(): Implicitly marking parameter $longOptions as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/cli-parser/src/Parser.php on line 44
+
+Deprecated: SebastianBergmann\CliParser\Parser::parse(): Implicitly marking parameter $longOptions as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/cli-parser/src/Parser.php on line 44
+PHP Deprecated:  PHPUnit\Framework\TestSuite::run(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/TestSuite.php on line 590
+
+Deprecated: PHPUnit\Framework\TestSuite::run(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/TestSuite.php on line 590
+PHP Deprecated:  PHPUnit\Framework\Test::run(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Test.php on line 22
+
+Deprecated: PHPUnit\Framework\Test::run(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Test.php on line 22
+PHP Deprecated:  PHPUnit\Framework\TestCase::run(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/TestCase.php on line 752
+
+Deprecated: PHPUnit\Framework\TestCase::run(): Implicitly marking parameter $result as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/TestCase.php on line 752
+PHP Deprecated:  Illuminate\Foundation\Testing\Concerns\InteractsWithContainer::mock(): Implicitly marking parameter $mock as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/InteractsWithContainer.php on line 59
+
+Deprecated: Illuminate\Foundation\Testing\Concerns\InteractsWithContainer::mock(): Implicitly marking parameter $mock as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/InteractsWithContainer.php on line 59
+PHP Deprecated:  Illuminate\Foundation\Testing\Concerns\InteractsWithContainer::partialMock(): Implicitly marking parameter $mock as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/InteractsWithContainer.php on line 71
+
+Deprecated: Illuminate\Foundation\Testing\Concerns\InteractsWithContainer::partialMock(): Implicitly marking parameter $mock as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/InteractsWithContainer.php on line 71
+PHP Deprecated:  Illuminate\Foundation\Testing\Concerns\InteractsWithContainer::spy(): Implicitly marking parameter $mock as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/InteractsWithContainer.php on line 83
+
+Deprecated: Illuminate\Foundation\Testing\Concerns\InteractsWithContainer::spy(): Implicitly marking parameter $mock as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/InteractsWithContainer.php on line 83
+PHP Deprecated:  PHPUnit\TextUI\TestRunner::__construct(): Implicitly marking parameter $loader as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/TextUI/TestRunner.php on line 127
+
+Deprecated: PHPUnit\TextUI\TestRunner::__construct(): Implicitly marking parameter $loader as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/TextUI/TestRunner.php on line 127
+PHP Deprecated:  PHPUnit\TextUI\TestRunner::__construct(): Implicitly marking parameter $filter as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/TextUI/TestRunner.php on line 127
+
+Deprecated: PHPUnit\TextUI\TestRunner::__construct(): Implicitly marking parameter $filter as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/TextUI/TestRunner.php on line 127
+PHPUnit 9.5.24 #StandWithUkraine
+
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  PHPUnit\Framework\Constraint\Constraint::fail(): Implicitly marking parameter $comparisonFailure as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Constraint/Constraint.php on line 104
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  SebastianBergmann\Exporter\Exporter::shortenedRecursiveExport(): Implicitly marking parameter $context as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/exporter/src/Exporter.php on line 78
+
+Deprecated: SebastianBergmann\Exporter\Exporter::shortenedRecursiveExport(): Implicitly marking parameter $context as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/exporter/src/Exporter.php on line 78
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: PHPUnit\Framework\Constraint\Constraint::fail(): Implicitly marking parameter $comparisonFailure as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Constraint/Constraint.php on line 104
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  SebastianBergmann\Diff\Differ::diff(): Implicitly marking parameter $lcs as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/diff/src/Differ.php on line 85
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  SebastianBergmann\Diff\Differ::diffToArray(): Implicitly marking parameter $lcs as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/diff/src/Differ.php on line 111
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $comparisonFailure as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $previous as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+PHP Deprecated:  Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+PHP Deprecated:  PHPUnit\Framework\Exception::__construct(): Implicitly marking parameter $previous as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/Exception.php on line 47
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: SebastianBergmann\Diff\Differ::diff(): Implicitly marking parameter $lcs as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/diff/src/Differ.php on line 85
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: SebastianBergmann\Diff\Differ::diffToArray(): Implicitly marking parameter $lcs as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/diff/src/Differ.php on line 111
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $comparisonFailure as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $previous as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+
+Deprecated: Constant E_STRICT is deprecated in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Util/ErrorHandler.php on line 99
+
+Deprecated: PHPUnit\Framework\Exception::__construct(): Implicitly marking parameter $previous as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/Exception.php on line 47
+Golden Files (Streams\Sdk\Tests\Support\GoldenFiles)
+ ✔ Matches nested and hidden files and removes temporary directory
+ ✔ Mismatch reports unified diff and cleans up
+ ✔ Missing empty file fails
+ ✔ Unexpected empty file fails
+ ✔ Generator exception propagates and cleans up
+ ✔ Each run gets an empty unique directory
+
+Time: 00:00.023, Memory: 6.00 MB
+
+OK (6 tests, 106 assertions)
+PHP Deprecated:  Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+
+Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+PHP Deprecated:  Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+
+Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+PHP Deprecated:  Spatie\LaravelRay\Ray::handleWatcherCallable(): Implicitly marking parameter $callable as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 434
+
+Deprecated: Spatie\LaravelRay\Ray::handleWatcherCallable(): Implicitly marking parameter $callable as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 434
+PHP Deprecated:  Spatie\Ray\Ray::create(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+
+Deprecated: Spatie\Ray\Ray::create(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+PHP Deprecated:  Spatie\Ray\Ray::create(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+
+Deprecated: Spatie\Ray\Ray::create(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+PHP Deprecated:  Spatie\Ray\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+
+Deprecated: Spatie\Ray\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+PHP Deprecated:  Spatie\Ray\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+
+Deprecated: Spatie\Ray\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+PHP Deprecated:  Illuminate\Container\Container::beforeResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1116
+
+Deprecated: Illuminate\Container\Container::beforeResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1116
+PHP Deprecated:  Illuminate\Container\Container::resolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1136
+
+Deprecated: Illuminate\Container\Container::resolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1136
+PHP Deprecated:  Illuminate\Container\Container::afterResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1156
+
+Deprecated: Illuminate\Container\Container::afterResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1156
+PHP Deprecated:  Illuminate\Container\Container::setInstance(): Implicitly marking parameter $container as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1395
+
+Deprecated: Illuminate\Container\Container::setInstance(): Implicitly marking parameter $container as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1395
+PHP Deprecated:  Illuminate\Contracts\Container\Container::beforeResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Contracts/Container/Container.php on line 191
+
+Deprecated: Illuminate\Contracts\Container\Container::beforeResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Contracts/Container/Container.php on line 191
+PHP Deprecated:  Illuminate\Contracts\Container\Container::resolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Contracts/Container/Container.php on line 200
+
+Deprecated: Illuminate\Contracts\Container\Container::resolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Contracts/Container/Container.php on line 200
+PHP Deprecated:  Illuminate\Contracts\Container\Container::afterResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Contracts/Container/Container.php on line 209
+
+Deprecated: Illuminate\Contracts\Container\Container::afterResolving(): Implicitly marking parameter $callback as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/laravel/framework/src/Illuminate/Contracts/Container/Container.php on line 209
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::createFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 14
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::createFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 14
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::getSettingsFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 27
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::getSettingsFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 27
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::searchConfigFiles(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 40
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFiles(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 40
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::searchConfigFilesOnDisk(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 49
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFilesOnDisk(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 49

@@ -1,0 +1,15 @@
+PHPUnit 9.5.24 #StandWithUkraine
+
+Golden Files (Streams\Sdk\Tests\Support\GoldenFiles)
+ ✔ Matches nested and hidden files and removes temporary directory
+ ✔ Mismatch reports unified diff and cleans up
+ ✔ Missing empty file fails
+ ✔ Unexpected empty file fails
+ ✔ Generator exception propagates and cleans up
+ ✔ Each run gets an empty unique directory
+ ✔ Missing nonempty file reports deletion diff
+ ✔ Symbolic link is rejected without deleting its target
+
+Time: 00:00.023, Memory: 6.00 MB
+
+OK (8 tests, 132 assertions)

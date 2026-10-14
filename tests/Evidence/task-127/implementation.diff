@@ -1,0 +1,876 @@
+diff --git a/tests/Fixtures/Golden/helper-v1/.empty b/tests/Fixtures/Golden/helper-v1/.empty
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tests/Fixtures/Golden/helper-v1/nested/people.json b/tests/Fixtures/Golden/helper-v1/nested/people.json
+new file mode 100644
+index 0000000..036341a
+--- /dev/null
++++ b/tests/Fixtures/Golden/helper-v1/nested/people.json
+@@ -0,0 +1 @@
++{"handle":"people"}
+diff --git a/tests/Fixtures/References/v1/README.md b/tests/Fixtures/References/v1/README.md
+new file mode 100644
+index 0000000..9887cbf
+--- /dev/null
++++ b/tests/Fixtures/References/v1/README.md
+@@ -0,0 +1,17 @@
++# GroupVitals people references v1
++
++These five files are verbatim, committed source snapshots, not runnable SDK components. Their app, Streams UI, translation, and domain dependencies are intentionally not copied. Source checkout: `~/Sites/_gv/app`. Each file was checked byte-for-byte against the pinned commit and working copy.
++
++- `streams/people.json` — People stream definition. Source: `~/Sites/_gv/app/streams/people.json`; commit: `fa7fe5cbc160b2d0a9886574840c1efb154a4106`; SHA-256: `61375318bfb7b0ca40d56cdcee57dd22305f26c881e3e54149d78d7335520b5d`.
++
++- `app/Domains/People/Panel/Pages/ListPeople.php` — Table page and mountable action registration. Source: `~/Sites/_gv/app/app/Domains/People/Panel/Pages/ListPeople.php`; commit: `fa7fe5cbc160b2d0a9886574840c1efb154a4106`; SHA-256: `2d65b85204df12bee5c691d96791929cb647d3616631ee70d837bd6f826f9e92`.
++
++- `app/Domains/People/Panel/Tables/PeopleTable.php` — People table. Source: `~/Sites/_gv/app/app/Domains/People/Panel/Tables/PeopleTable.php`; commit: `fa7fe5cbc160b2d0a9886574840c1efb154a4106`; SHA-256: `d0ac3926c444db5de58de434e273d7f84037f961cfe244d7135a11d255112742`.
++
++- `app/Domains/People/Panel/Actions/AddPersonModal.php` — Mountable add-person action. Source: `~/Sites/_gv/app/app/Domains/People/Panel/Actions/AddPersonModal.php`; commit: `fa7fe5cbc160b2d0a9886574840c1efb154a4106`; SHA-256: `b8662e321ffa2dbbf834070b280196e5b9c7ce8210d02a3558563ca9441957a5`.
++
++- `app/Domains/People/Panel/Resources/PeoplePanelResource.php` — Panel resource and page route registration. Source: `~/Sites/_gv/app/app/Domains/People/Panel/Resources/PeoplePanelResource.php`; commit: `fa7fe5cbc160b2d0a9886574840c1efb154a4106`; SHA-256: `e02a67faafd090792e7b1be3815810bbcda1006b2e080b235121a33eb3342515`.
++
++ListPeople registers PeopleTable and AddPersonModal; PeoplePanelResource registers the people page routes. These references cover the people thin slice only. No streams/ui code is modified.
++
++Treat v1 as immutable. Pin updated references in a new version directory with new provenance; do not silently refresh these files. Golden outputs live separately under tests/Fixtures/Golden and are reviewed expectations, not copies of all reference dependencies.
+diff --git a/tests/Fixtures/References/v1/app/Domains/People/Panel/Actions/AddPersonModal.php b/tests/Fixtures/References/v1/app/Domains/People/Panel/Actions/AddPersonModal.php
+new file mode 100644
+index 0000000..3259266
+--- /dev/null
++++ b/tests/Fixtures/References/v1/app/Domains/People/Panel/Actions/AddPersonModal.php
+@@ -0,0 +1,70 @@
++<?php
++
++namespace App\Domains\People\Panel\Actions;
++
++use Streams\Ui\Support\Facades\UI;
++use App\Domains\People\Models\Person;
++use Streams\Ui\Notifications\Notification;
++use App\Domains\People\Actions\CreatePerson;
++use App\Domains\People\Actions\CreatePersonData;
++use Streams\Ui\Builders\Actions\MountableAction;
++use App\Domains\People\Panel\Forms\PersonCreateForm;
++
++class AddPersonModal extends MountableAction
++{
++    protected function setUp(): void
++    {
++        $name = $this->getName();
++        PersonCreateForm::register($this->getLivewire());
++
++        $this
++            ->label(__('domains/people.actions.add'))
++            ->modalWidth('xl')
++            ->modalHeading(__('domains/people.actions.add'))
++            ->modalComponents(function (): array {
++                $form = PersonCreateForm::resolve();
++
++                if (empty($form->getRawState())) {
++                    $organization = UI::getTenant();
++
++                    $initialLocation = entries('locations')
++                        ->where('organization_id', $organization->id)
++                        ->orderBy('id')
++                        ->first();
++
++                    $form->fill([
++                        ...PersonCreateForm::defaultState(),
++                        'location_id' => $initialLocation?->id,
++                    ]);
++                }
++
++                return [$form];
++            })
++            ->action(function (MountableAction $action): void {
++
++                $data = $action->getFormData();
++                $organization = UI::getTenant();
++
++                dispatch_sync(new CreatePerson(
++                    CreatePersonData::fromValidated(
++                        validated: $data,
++                        organizationId: $organization->id,
++                    ),
++                ));
++
++                Notification::make()
++                    ->title('Person Created')
++                    ->description('Person created successfully.')
++                    ->duration(5)
++                    ->success()
++                    ->push($this->livewire);
++
++                PersonCreateForm::resolve()->fill(PersonCreateForm::defaultState());
++            })
++            ->authorize('create', Person::class)
++            ->disabled(fn ($action) => ! $action->isAuthorized())
++            ->mergeHtmlAttributes([
++                'wire:click' => 'mountAction(\''.$name.'\')',
++            ]);
++    }
++}
+diff --git a/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php b/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php
+new file mode 100644
+index 0000000..47bb1a6
+--- /dev/null
++++ b/tests/Fixtures/References/v1/app/Domains/People/Panel/Pages/ListPeople.php
+@@ -0,0 +1,122 @@
++<?php
++
++namespace App\Domains\People\Panel\Pages;
++
++use App\Livewire\PanelPage;
++use Streams\Ui\Support\Facades\UI;
++use Streams\Ui\Builders\Containers\Grid;
++use Streams\Ui\Builders\Headings\Heading;
++use Streams\Ui\Livewire\Widgets\Stats\Stat;
++use Streams\Ui\Builders\Containers\Container;
++use Streams\Ui\Livewire\Tables\InteractsWithTables;
++use App\Domains\People\Panel\Actions\AddPersonModal;
++use Streams\Ui\Livewire\Actions\InteractsWithActions;
++use App\Domains\People\Panel\Actions\PeopleActionsMenu;
++use App\Domains\People\Panel\Resources\PeoplePanelResource;
++use App\Domains\People\Panel\Tables\PeopleTable as PeopleIndexTable;
++
++class ListPeople extends PanelPage
++{
++    use InteractsWithActions;
++    use InteractsWithTables;
++
++    protected static string $resource = PeoplePanelResource::class;
++
++    protected static bool $registerNavigation = true;
++
++    protected static ?string $navigationGroup = 'People';
++
++    protected static ?string $navigationLabel = 'domains/people.navigation.manage';
++
++    protected static ?int $navigationSort = 1;
++
++    public string $first_name = '';
++
++    public string $last_name = '';
++
++    public string $email = '';
++
++    public ?string $import = null;
++
++    public array $peopleStats = [];
++
++    public function boot()
++    {
++        $this->loadPeopleStats();
++
++        AddPersonModal::register($this);
++        PeopleIndexTable::register($this);
++    }
++
++    /**
++     * Seed Status=Active once per page load. Do not set this in boot()/table setUp —
++     * those run on every Livewire request and would fight cleared or changed filters.
++     */
++    public function mount(): void
++    {
++        if (! isset($this->data['tables']['people-table']['filters']['status'])) {
++            data_set($this->data, 'tables.people-table.filters.status', ['value' => 'active']);
++        }
++    }
++
++    public function getComponents(): array
++    {
++        return [
++            Container::make('group')
++                ->components([
++                    Heading::make(__('domains/people.title.plural'))
++                        ->actions([
++                            AddPersonModal::resolve(),
++                            PeopleActionsMenu::make(),
++                            // UploadPeopleModal::resolve(),
++
++                        ]),
++                    Grid::make('stats')
++                        ->columns(4)
++                        ->components(function () {
++                            return array_map(function ($stat) {
++                                return Stat::make($stat['title'], $stat['value'])
++                                    ->description($stat['description']);
++                            }, $this->peopleStats);
++                        }),
++                    Container::make()
++                        ->components([
++                            PeopleIndexTable::resolve(),
++                        ]),
++                ]),
++        ];
++    }
++
++    protected function loadPeopleStats(): void
++    {
++        $organization = UI::getTenant();
++
++        $this->peopleStats = [
++            [
++                'title' => 'Total People',
++                'value' => entries('people')->where('organization_id', $organization->id)->count(),
++                'description' => '+15 this month',
++            ],
++            [
++                'title' => 'Active People',
++                'value' => entries('people')->where('organization_id', $organization->id)
++                    ->where('status', 'active')->count(),
++                'description' => '+10 this month',
++            ],
++            [
++                'title' => 'Inactive People',
++                'value' => entries('people')->where('organization_id', $organization->id)
++                    ->where('status', 'inactive')->count(),
++                'description' => '+8%',
++            ],
++            [
++                'title' => __('domains/people.stats.new_people'),
++                'value' => entries('people')
++                    ->where('organization_id', $organization->id)
++                    ->where('created_at', '>=', now()->subDays(30))
++                    ->count(),
++                'description' => null,
++            ],
++        ];
++    }
++}
+diff --git a/tests/Fixtures/References/v1/app/Domains/People/Panel/Resources/PeoplePanelResource.php b/tests/Fixtures/References/v1/app/Domains/People/Panel/Resources/PeoplePanelResource.php
+new file mode 100644
+index 0000000..d3f46e7
+--- /dev/null
++++ b/tests/Fixtures/References/v1/app/Domains/People/Panel/Resources/PeoplePanelResource.php
+@@ -0,0 +1,106 @@
++<?php
++
++namespace App\Domains\People\Panel\Resources;
++
++use App\Domains\People;
++use Streams\Ui\Resources\Resource;
++use Streams\Ui\Support\Facades\UI;
++use Streams\Core\Criteria\Criteria;
++use Streams\Ui\Builders\Actions\Action;
++use Streams\Ui\Builders\Navigation\Navigation;
++use Streams\Ui\Builders\Breadcrumbs\Breadcrumbs;
++use Streams\Ui\Builders\Navigation\NavigationItem;
++
++class PeoplePanelResource extends Resource
++{
++    protected static bool $registerNavigation = false;
++
++    protected static ?string $slug = 'people';
++
++    public static function getPages(): array
++    {
++        return [
++            'index' => People\Panel\Pages\ListPeople::route('/'),
++
++            'groups' => People\Panel\Pages\PersonGroups::route('/{entry}'),
++            'attendance' => People\Panel\Pages\PersonAttendance::route('/{entry}/attendance'),
++            'comments' => People\Panel\Pages\PersonComments::route('/{entry}/comments'),
++            'forms' => People\Panel\Pages\PersonForms::route('/{entry}/forms'),
++            'profile' => People\Panel\Pages\PersonProfile::route('/{entry}/profile'),
++            'timeline' => People\Panel\Pages\PersonActivity::route('/{entry}/timeline'),
++        ];
++    }
++
++    public static function navigation(int|string $entryId, ?string $state = null): Navigation
++    {
++        return Navigation::make('person-navigation')
++            ->style('pills')
++            ->activeColor('primary')
++            ->borderRadius('full')
++            ->outlined()
++            ->items([
++                NavigationItem::make(__('domains/people.navigation.profile'))
++                    ->url(route('streams.ui.admin.people.profile', $entryId))
++                    ->isActiveWhen(fn () => $state === 'profile'),
++                NavigationItem::make(__('domains/groups.title.plural'))
++                    ->url(route('streams.ui.admin.people.groups', $entryId))
++                    ->isActiveWhen(fn () => $state === 'groups'),
++                NavigationItem::make(__('domains/groups.navigation.attendance'))
++                    ->url(route('streams.ui.admin.people.attendance', $entryId))
++                    ->isActiveWhen(fn () => $state === 'attendance'),
++                NavigationItem::make(__('domains/comments.title.plural'))
++                    ->url(route('streams.ui.admin.people.comments', $entryId))
++                    ->isActiveWhen(fn () => $state === 'comments'),
++                NavigationItem::make(__('domains/forms.title.plural'))
++                    ->url(route('streams.ui.admin.people.forms', $entryId))
++                    ->isActiveWhen(fn () => $state === 'forms'),
++                NavigationItem::make(__('domains/people.navigation.timeline'))
++                    ->url(route('streams.ui.admin.people.timeline', $entryId))
++                    ->isActiveWhen(fn () => $state === 'timeline'),
++            ]);
++    }
++
++    public static function breadcrumbs(): Breadcrumbs
++    {
++        return Breadcrumbs::make([
++            Action::make(__('domains/people.actions.back_to_people'))
++                ->icon('heroicon-o-arrow-left')
++                ->htmlAttributes(['iconPosition' => 'before'])
++                ->link(route('streams.ui.admin.people.index')),
++        ]);
++    }
++
++    public static function scopedQuery(): Criteria
++    {
++        $organization = UI::getTenant();
++
++        return entries('people')
++            ->where('organization_id', $organization->id);
++    }
++
++    public static function kraftwerk($householdId, $personId): Criteria
++    {
++        $query = entries('household_members');
++
++        if ($householdId) {
++            return $query->where('household_id', $householdId);
++        }
++
++        return $query->where('person_id', (int) $personId);
++    }
++
++    /**
++     * Page H1 for person detail screens — first + last name.
++     */
++    public static function personHeadingTitle(object $person): string
++    {
++        $name = trim(implode(' ', array_filter([
++            trim((string) ($person->first_name ?? '')),
++            trim((string) ($person->last_name ?? '')),
++        ])));
++
++        return $name !== ''
++            ? $name
++            : __('domains/people.labels.unknown');
++    }
++}
+diff --git a/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php b/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php
+new file mode 100644
+index 0000000..b2d3a40
+--- /dev/null
++++ b/tests/Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php
+@@ -0,0 +1,96 @@
++<?php
++
++namespace App\Domains\People\Panel\Tables;
++
++use Streams\Ui\Builders\Tables\Table;
++use App\Domains\Tags\Support\TagPillsHtml;
++use Streams\Ui\Builders\Tables\Columns\LinkColumn;
++use Streams\Ui\Builders\Tables\Columns\TextColumn;
++use Streams\Ui\Builders\Tables\Filters\TextFilter;
++use Streams\Ui\Builders\Tables\Columns\BadgeColumn;
++use Streams\Ui\Builders\Tables\Filters\SelectFilter;
++use App\Domains\People\Panel\Actions\DeleteSelectedPeople;
++use App\Domains\People\Panel\Actions\RestoreSelectedPeople;
++use App\Domains\People\Panel\Resources\PeoplePanelResource;
++use App\Domains\People\Panel\Actions\DeactivateSelectedPeople;
++
++class PeopleTable extends Table
++{
++    protected function setUp(): void
++    {
++        DeactivateSelectedPeople::register($this->getLivewire());
++        RestoreSelectedPeople::register($this->getLivewire());
++        DeleteSelectedPeople::register($this->getLivewire());
++
++        $this
++            ->filters([
++                TextFilter::make('first_name')
++                    ->placeholder(__('domains/people.fields.first_name.label')),
++                TextFilter::make('last_name')
++                    ->placeholder(__('domains/people.fields.last_name.label')),
++                TextFilter::make('email')
++                    ->placeholder(__('domains/people.fields.email.label')),
++                SelectFilter::make('status')
++                    ->label(__('domains/people.fields.status.label'))
++                    ->placeholder(__('domains/people.fields.status.label'))
++                    ->options([
++                        'active' => __('domains/people.fields.status.options.active'),
++                        'inactive' => __('domains/people.fields.status.options.inactive'),
++                        'invited' => __('domains/people.fields.status.options.invited'),
++                    ]),
++            ])
++            ->columns([
++                BadgeColumn::make('status')
++                    ->label(__('domains/people.fields.status.label'))
++                    ->color(fn ($entry) => match ($entry?->status) {
++                        'active' => 'success',
++                        'inactive' => 'warning',
++                        'invited' => 'gray',
++                        default => 'gray',
++                    })
++                    ->title(fn ($entry) => match ($entry?->status) {
++                        'active' => __('domains/people.fields.status.options.active'),
++                        'inactive' => __('domains/people.fields.status.options.inactive'),
++                        'invited' => __('domains/people.fields.status.options.invited'),
++                        default => __('domains/people.labels.unknown'),
++                    })
++                    ->sortable(),
++                LinkColumn::make('first_name')
++                    ->label(__('domains/people.fields.first_name.label'))
++                    ->value(fn ($entry) => $entry->first_name.' '.$entry->last_name)
++                    ->url(fn ($entry) => route('streams.ui.admin.people.profile', $entry->id))
++                    ->sortable()
++                    ->searchable(['first_name', 'last_name']),
++                TextColumn::make('email')
++                    ->sortable()
++                    ->searchable()
++                    ->label(__('domains/people.fields.email.label')),
++                TextColumn::make('phone_number')
++                    ->label(__('domains/people.fields.phone_number.label'))
++                    ->searchable()
++                    ->sortable(),
++                TextColumn::make('tags')
++                    ->label(__('domains/people.fields.tags.label'))
++                    ->value(function ($entry) {
++                        $assignments = entries('tag_assignments')
++                            ->where('taggable_id', $entry->id)
++                            ->where('taggable_type', 'person')
++                            ->get();
++
++                        $names = $assignments->map(function ($assignment) {
++                            return $assignment->tag()?->name;
++                        })->filter();
++
++                        return TagPillsHtml::fromNames($names);
++                    }),
++            ])
++            ->bulkActions([
++                DeactivateSelectedPeople::resolve(),
++                RestoreSelectedPeople::resolve(),
++                DeleteSelectedPeople::resolve(),
++            ])
++            ->query(PeoplePanelResource::scopedQuery())
++            ->emptyStateDescription(__('domains/people.empty_state_description'))
++            ->emptyStateIcon('heroicon-o-users');
++    }
++}
+diff --git a/tests/Fixtures/References/v1/streams/people.json b/tests/Fixtures/References/v1/streams/people.json
+new file mode 100644
+index 0000000..02457b6
+--- /dev/null
++++ b/tests/Fixtures/References/v1/streams/people.json
+@@ -0,0 +1,149 @@
++{
++    "config": {
++        "source": {
++            "type": "database",
++            "table": "people"
++        },
++        "abstract": "App\\Domains\\People\\Models\\Person"
++    },
++    "fields": [
++        {
++            "handle": "id",
++            "type": "integer",
++            "required": true,
++            "unique": true,
++            "config": {
++                "default": "increment"
++            }
++        },
++        {
++            "handle": "created_at",
++            "type": "datetime",
++            "required": true,
++            "config": {
++                "default": "now"
++            }
++        },
++        {
++            "handle": "identity_id",
++            "type": "relationship",
++            "config": {
++                "related": "identities"
++            }
++        },
++        {
++            "handle": "organization_id",
++            "type": "relationship",
++            "config": {
++                "related": "organizations"
++            }
++        },
++        {
++            "handle": "location_id",
++            "type": "relationship",
++            "config": {
++                "related": "locations"
++            }
++        },
++        {
++            "handle": "first_name",
++            "type": "string",
++            "required": true,
++            "rules": ["max:40"]
++        },
++        {
++            "handle": "last_name",
++            "type": "string",
++            "required": true,
++            "rules": ["max:40"]
++        },
++        {
++            "handle": "status",
++            "type": "select",
++            "config": {
++                "default": "active",
++                "options": {
++                    "active": "Active",
++                    "inactive": "Inactive",
++                    "invited": "Invited"
++                }
++            }
++        },
++        {
++            "handle": "prefix",
++            "type": "string"
++        },
++        {
++            "handle": "given_name",
++            "type": "string",
++            "rules": ["max:40"]
++        },
++        {
++            "handle": "nickname",
++            "type": "string",
++            "rules": ["max:40"]
++        },
++        {
++            "handle": "middle_name",
++            "type": "string",
++            "rules": ["max:40"]
++        },
++        {
++            "handle": "suffix",
++            "type": "string"
++        },
++        {
++            "handle": "email",
++            "type": "email"
++        },
++        {
++            "handle": "phone_number",
++            "type": "string"
++        },
++        {
++            "handle": "location_id",
++            "type": "relationship",
++            "config": {
++                "related": "locations"
++            }
++        },
++        {
++            "handle": "is_child",
++            "type": "boolean"
++        },
++        {
++            "handle": "gender",
++            "type": "select",
++            "config": {
++                "options": {
++                    "male": "Male",
++                    "female": "Female"
++                }
++            }
++        },
++        {
++            "handle": "birthday",
++            "type": "date"
++        },
++        {
++            "handle": "marital_status",
++            "type": "select",
++            "config": {
++                "options": {
++                    "single": "Single",
++                    "married": "Married",
++                    "divorced": "Divorced",
++                    "widowed": "Widowed"
++                }
++            }
++        },
++        {
++            "handle": "household_id",
++            "type": "string",
++            "config": {
++                "nullable": true
++            }
++        }
++
++    ]
++}
+diff --git a/tests/Support/GoldenFiles.php b/tests/Support/GoldenFiles.php
+new file mode 100644
+index 0000000..18923a1
+--- /dev/null
++++ b/tests/Support/GoldenFiles.php
+@@ -0,0 +1,87 @@
++<?php
++
++namespace Streams\Sdk\Tests\Support;
++
++use FilesystemIterator;
++use PHPUnit\Framework\Assert;
++use RecursiveDirectoryIterator;
++use RecursiveIteratorIterator;
++use SebastianBergmann\Diff\Differ;
++use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
++
++/** Runs a generator in a disposable directory and compares every file byte-for-byte. */
++final class GoldenFiles
++{
++    /** The callable receives the output directory; it may invoke an Artisan command there. */
++    public static function assertGenerated(callable $generate, string $goldenDirectory): void
++    {
++        Assert::assertDirectoryExists($goldenDirectory);
++        $goldenDirectory = rtrim($goldenDirectory, DIRECTORY_SEPARATOR);
++        $directory = sys_get_temp_dir().'/streams-sdk-golden-'.bin2hex(random_bytes(16));
++        Assert::assertTrue(mkdir($directory, 0700), 'Cannot create golden-test output directory.');
++
++        try {
++            $generate($directory);
++            $expected = self::files($goldenDirectory);
++            $actual = self::files($directory);
++            $paths = array_unique(array_merge(array_keys($expected), array_keys($actual)));
++            sort($paths);
++            $differences = '';
++
++            foreach ($paths as $path) {
++                if (!array_key_exists($path, $expected)) {
++                    $differences .= "Unexpected output file: {$path}\n";
++                } elseif (!array_key_exists($path, $actual)) {
++                    $differences .= "Missing output file: {$path}\n";
++                } elseif ($expected[$path] === $actual[$path]) {
++                    continue;
++                }
++
++                $differ = new Differ(new UnifiedDiffOutputBuilder("--- golden/{$path}\n+++ actual/{$path}\n"));
++                $differences .= $differ->diff($expected[$path] ?? '', $actual[$path] ?? '');
++            }
++
++            Assert::assertSame('', $differences, "Generated output differs from golden files:\n".$differences);
++        } finally {
++            self::remove($directory);
++        }
++    }
++
++    /** @return array<string, string> */
++    private static function files(string $directory): array
++    {
++        $files = [];
++        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
++
++        foreach ($iterator as $file) {
++            Assert::assertFalse($file->isLink(), 'Golden tests do not support symbolic links: '.$file->getPathname());
++            Assert::assertTrue($file->isFile(), 'Expected a regular output file: '.$file->getPathname());
++            $path = substr($file->getPathname(), strlen($directory) + 1);
++            $contents = file_get_contents($file->getPathname());
++            Assert::assertNotFalse($contents, 'Cannot read output file: '.$path);
++            $files[$path] = $contents;
++        }
++
++        ksort($files);
++
++        return $files;
++    }
++
++    private static function remove(string $directory): void
++    {
++        $iterator = new RecursiveIteratorIterator(
++            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
++            RecursiveIteratorIterator::CHILD_FIRST
++        );
++
++        foreach ($iterator as $file) {
++            if ($file->isDir() && !$file->isLink()) {
++                rmdir($file->getPathname());
++            } else {
++                unlink($file->getPathname());
++            }
++        }
++
++        rmdir($directory);
++    }
++}
+diff --git a/tests/Support/GoldenFilesTest.php b/tests/Support/GoldenFilesTest.php
+new file mode 100644
+index 0000000..2584662
+--- /dev/null
++++ b/tests/Support/GoldenFilesTest.php
+@@ -0,0 +1,143 @@
++<?php
++
++namespace Streams\Sdk\Tests\Support;
++
++use PHPUnit\Framework\AssertionFailedError;
++use PHPUnit\Framework\TestCase;
++use RuntimeException;
++
++class GoldenFilesTest extends TestCase
++{
++    private function golden(): string
++    {
++        return dirname(__DIR__).'/Fixtures/Golden/helper-v1';
++    }
++
++    private function generate(string $directory): void
++    {
++        mkdir($directory.'/nested');
++        file_put_contents($directory.'/nested/people.json', "{\"handle\":\"people\"}\n");
++        file_put_contents($directory.'/.empty', '');
++    }
++
++    public function test_matches_nested_and_hidden_files_and_removes_temporary_directory(): void
++    {
++        $output = null;
++        GoldenFiles::assertGenerated(function (string $directory) use (&$output): void {
++            $output = $directory;
++            $this->generate($directory);
++        }, $this->golden().'/');
++
++        $this->assertDirectoryDoesNotExist($output);
++    }
++
++    public function test_mismatch_reports_unified_diff_and_cleans_up(): void
++    {
++        $output = null;
++
++        try {
++            GoldenFiles::assertGenerated(function (string $directory) use (&$output): void {
++                $output = $directory;
++                $this->generate($directory);
++                file_put_contents($directory.'/nested/people.json', "{\"handle\":\"wrong\"}\n");
++            }, $this->golden());
++        } catch (AssertionFailedError $error) {
++            $this->assertStringContainsString("--- golden/nested/people.json\n+++ actual/nested/people.json\n@@", $error->getMessage());
++            $this->assertStringContainsString('-{"handle":"people"}', $error->getMessage());
++            $this->assertStringContainsString('+{"handle":"wrong"}', $error->getMessage());
++            $this->assertDirectoryDoesNotExist($output);
++
++            return;
++        }
++
++        $this->fail('A changed output file must fail.');
++    }
++
++    public function test_missing_empty_file_fails(): void
++    {
++        $this->expectException(AssertionFailedError::class);
++        $this->expectExceptionMessage('Missing output file: .empty');
++        GoldenFiles::assertGenerated(function (string $directory): void {
++            $this->generate($directory);
++            unlink($directory.'/.empty');
++        }, $this->golden());
++    }
++
++    public function test_unexpected_empty_file_fails(): void
++    {
++        $this->expectException(AssertionFailedError::class);
++        $this->expectExceptionMessage('Unexpected output file: extra');
++        GoldenFiles::assertGenerated(function (string $directory): void {
++            $this->generate($directory);
++            file_put_contents($directory.'/extra', '');
++        }, $this->golden());
++    }
++
++    public function test_generator_exception_propagates_and_cleans_up(): void
++    {
++        $output = null;
++
++        try {
++            GoldenFiles::assertGenerated(function (string $directory) use (&$output): void {
++                $output = $directory;
++                $this->generate($directory);
++                throw new RuntimeException('Generator failed');
++            }, $this->golden());
++        } catch (RuntimeException $error) {
++            $this->assertSame('Generator failed', $error->getMessage());
++            $this->assertDirectoryDoesNotExist($output);
++
++            return;
++        }
++
++        $this->fail('The generator exception must propagate.');
++    }
++
++    public function test_each_run_gets_an_empty_unique_directory(): void
++    {
++        $outputs = [];
++
++        for ($run = 0; $run < 2; $run++) {
++            GoldenFiles::assertGenerated(function (string $directory) use (&$outputs): void {
++                $outputs[] = $directory;
++                $this->assertSame([], array_values(array_diff(scandir($directory), ['.', '..'])));
++                $this->generate($directory);
++            }, $this->golden());
++        }
++
++        $this->assertNotSame($outputs[0], $outputs[1]);
++    }
++
++    public function test_missing_nonempty_file_reports_deletion_diff(): void
++    {
++        $this->expectException(AssertionFailedError::class);
++        $this->expectExceptionMessage('-{"handle":"people"}');
++        GoldenFiles::assertGenerated(function (string $directory): void {
++            $this->generate($directory);
++            unlink($directory.'/nested/people.json');
++        }, $this->golden());
++    }
++
++    public function test_symbolic_link_is_rejected_without_deleting_its_target(): void
++    {
++        $output = null;
++        $target = $this->golden().'/nested/people.json';
++        $original = file_get_contents($target);
++
++        try {
++            GoldenFiles::assertGenerated(function (string $directory) use (&$output, $target): void {
++                $output = $directory;
++                $this->generate($directory);
++                symlink($target, $directory.'/linked.json');
++            }, $this->golden());
++        } catch (AssertionFailedError $error) {
++            $this->assertStringContainsString('do not support symbolic links', $error->getMessage());
++            $this->assertDirectoryDoesNotExist($output);
++            $this->assertSame($original, file_get_contents($target));
++
++            return;
++        }
++
++        $this->fail('Symbolic links must fail.');
++    }
++}
+diff --git a/tests/Support/README.md b/tests/Support/README.md
+new file mode 100644
+index 0000000..ddb74c9
+--- /dev/null
++++ b/tests/Support/README.md
+@@ -0,0 +1,22 @@
++# Golden-file tests
++
++Use `GoldenFiles::assertGenerated($generate, $goldenDirectory)` in a PHPUnit test.
++The callable receives a fresh, empty temporary output directory. Invoke your
++generator or Artisan command with that directory as its output target and assert
++its exit status inside the callable. The helper compares the entire recursive file
++set, including hidden and empty files, byte-for-byte against the golden directory.
++Missing and unexpected files fail too; content changes report a unified diff with
++`golden/` and `actual/` filenames. Empty directories are not part of the comparison.
++Symbolic links are rejected. Temporary output is removed after success, assertion
++failure, or a generator exception. The helper never rewrites golden expectations.
++
++```php
++GoldenFiles::assertGenerated(function (string $output): void {
++    $this->artisan('your:generator', ['--output' => $output])->assertExitCode(0);
++}, __DIR__.'/../Fixtures/Golden/your-generator-v1');
++```
++
++Keep reviewed golden expectations under `tests/Fixtures/Golden`. GroupVitals
++reference snapshots under `tests/Fixtures/References` are source examples, not
++automatically generated expectations. The helper's own self-contained tests use
++`helper-v1` and require no GroupVitals checkout, database, or Streams UI runtime.

@@ -1,0 +1,21 @@
+{
+    "created": [],
+    "modified": [],
+    "skipped": [],
+    "unapplied": [
+        {
+            "path": "people.pages.manage",
+            "file": "app/Domains/People/Panel/Pages/PeoplePagesManage.php",
+            "reason": "cannot apply edit [attach add action]: boot() and getComponents() are required"
+        }
+    ],
+    "conflicts": [],
+    "diff": "",
+    "kinds": {
+        "people.actions.add": {
+            "kind": "action",
+            "source": "sdk",
+            "errors": []
+        }
+    }
+}

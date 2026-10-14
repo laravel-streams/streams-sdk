@@ -215,6 +215,80 @@ class PhpEditor
     }
 
     /**
+     * Append an item to every array expression the $locate callback selects.
+     *
+     * $locate receives the candidate Array_ and the stack of its ancestor
+     * nodes (outermost first) and returns true to select that array. The
+     * append is idempotent: if an item that prints identically already exists
+     * the array is left untouched. The format-preserving printer matches
+     * untouched nodes back to their original tokens, so only the selected
+     * array changes in the printed file.
+     *
+     * @param  callable(Array_ $array, array<int, Node> $stack): bool  $locate
+     */
+    public function appendToArray(callable $locate, Node $item): bool
+    {
+        $appended = false;
+
+        $traverser = new NodeTraverser;
+
+        $traverser->addVisitor(new class($locate, $item, $appended) extends NodeVisitorAbstract
+        {
+            /** @var array<int, Node> */
+            protected array $stack = [];
+
+            public function __construct(
+                protected $locate,
+                protected Node $item,
+                protected bool &$appended,
+            ) {}
+
+            public function enterNode(Node $node)
+            {
+                if ($node instanceof Array_ && ($this->locate)($node, $this->stack)) {
+                    if (! $this->contains($node)) {
+                        $node->items[] = $this->item;
+                        $this->appended = true;
+                    }
+                }
+
+                $this->stack[] = $node;
+
+                return null;
+            }
+
+            public function leaveNode(Node $node)
+            {
+                array_pop($this->stack);
+
+                return null;
+            }
+
+            /**
+             * Whether the array already holds an item that prints the same
+             * as the item about to be appended (idempotency guard).
+             */
+            protected function contains(Array_ $array): bool
+            {
+                $printer = new Standard;
+                $needle = $printer->prettyPrint([$this->item]);
+
+                foreach ($array->items as $candidate) {
+                    if ($candidate instanceof ArrayItem && $printer->prettyPrint([$candidate]) === $needle) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
+
+        $this->statements = $traverser->traverse($this->statements);
+
+        return $appended;
+    }
+
+    /**
      * The format-preserving print of the edited file.
      */
     public function print(): string

@@ -1,0 +1,36 @@
+=== Edit 1: add a mountable action to the page (ListPeople.php) ===
+--- ListPeople.php
++++ ListPeople.php
+@@ @@
+                         ->actions([
+                             AddPersonModal::resolve(),
+                             PeopleActionsMenu::make(),
++                            ExportPeopleModal::resolve(),
+                             // UploadPeopleModal::resolve(),
+ 
+                         ]),
+
+=== Edit 2: add an HTML attribute (AddPersonModal.php) ===
+--- AddPersonModal.php
++++ AddPersonModal.php
+@@ @@
+             ->authorize('create', Person::class)
+             ->disabled(fn ($action) => ! $action->isAuthorized())
+             ->mergeHtmlAttributes([
+-                'wire:click' => 'mountAction(\''.$name.'\')',
++                'wire:click' => 'mountAction(\''.$name.'\')', 'x-cloak' => true,
+             ]);
+     }
+ }
+
+=== Edit 3: append to the long getPages() array (PeoplePanelResource.php) ===
+--- PeoplePanelResource.php
++++ PeoplePanelResource.php
+@@ @@
+             'forms' => People\Panel\Pages\PersonForms::route('/{entry}/forms'),
+             'profile' => People\Panel\Pages\PersonProfile::route('/{entry}/profile'),
+             'timeline' => People\Panel\Pages\PersonActivity::route('/{entry}/timeline'),
++            'export' => People\Panel\Pages\PersonExport::route('/export'),
+         ];
+     }
+ 

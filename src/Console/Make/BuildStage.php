@@ -259,6 +259,12 @@ class BuildStage
             $node = $tree->node($path);
             $label = $this->label($node, $path);
 
+            // Opaque nodes are owned by people. A code-bearing node whose
+            // subtree holds any captured closure/callback is never rewritten.
+            if ($this->isOpaqueSubtree($tree, $path)) {
+                continue;
+            }
+
             $memory->add(new CompiledFile(
                 $path,
                 $relative,
@@ -273,9 +279,30 @@ class BuildStage
         return $memory;
     }
 
-    /** Dependencies of a manage page are built through the same command. */
-    protected function scope(AppTree $tree, ?string $only): array
+    /**
+     * Whether a code-bearing node is owned by people: its own node or any
+     * descendant carries a non-empty `opaque` list (captured closures,
+     * permission callbacks or computed options). Build never rewrites those.
+     */
+    protected function isOpaqueSubtree(AppTree $tree, string $path): bool
     {
+        foreach ($tree->types() as $nodePath => $type) {
+            if ($nodePath !== $path && ! str_starts_with($nodePath, $path.'.')) {
+                continue;
+            }
+
+            $node = $tree->node($nodePath);
+
+            if (isset($node['opaque']) && is_array($node['opaque']) && $node['opaque'] !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Dependencies of a manage page are built through the same command. */
+    protected function scope(AppTree $tree, ?string $only): array    {
         if ($only === null || $tree->type($only) !== 'page') {
             return [];
         }

@@ -4,6 +4,7 @@ namespace Streams\Sdk\Tests\Console\Commands;
 
 use Illuminate\Support\Facades\File;
 use Streams\Sdk\Tests\SdkTestCase;
+use Streams\Sdk\Console\Support\Pint;
 
 class MakeTableTest extends SdkTestCase
 {
@@ -102,6 +103,23 @@ class MakeTableTest extends SdkTestCase
 
         $this->assertStringContainsString("'posts' => ['panel' => true]", $registry);
         $this->assertStringContainsString("'authors' => ['page' => true]", $registry);
+    }
+
+    public function test_written_registry_is_pint_formatted_and_stable()
+    {
+        $this->artisan('make:table', ['id' => 'posts', '--panel' => true])
+            ->expectsOutputToContain('(pint)')
+            ->assertSuccessful();
+
+        $registry = File::get($this->registryPath);
+
+        // The post-step ran Pint on the written registry.
+        $this->assertStringContainsString("'posts' => [", $registry);
+        $this->assertStringEndsWith("\n", $registry);
+
+        // Pint is stable: a second pass leaves the file byte-for-byte identical.
+        $this->assertTrue(Pint::format($this->registryPath));
+        $this->assertSame($registry, File::get($this->registryPath));
     }
 
     public function test_it_rejects_invalid_table_ids()

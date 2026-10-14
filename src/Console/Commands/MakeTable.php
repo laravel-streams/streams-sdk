@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
 use Streams\Sdk\Console\Support\PhpEditor;
+use Streams\Sdk\Console\Support\Pint;
 use Streams\Sdk\Console\Support\Stub;
 
 class MakeTable extends Command
@@ -127,6 +128,12 @@ class MakeTable extends Command
         File::ensureDirectoryExists(dirname($path));
 
         File::put($path, $contents);
+
+        if (str_ends_with($path, '.php') && Pint::format($path)) {
+            $this->line("<info>written:</info> {$path} (pint)");
+
+            return;
+        }
 
         $this->line("<info>written:</info> {$path}");
     }

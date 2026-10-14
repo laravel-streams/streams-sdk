@@ -9,6 +9,7 @@
         }
     ],
     "require": {
+        "nikic/php-parser": "^4.14",
         "streams/core": "^2.0"
     },
     "require-dev": {

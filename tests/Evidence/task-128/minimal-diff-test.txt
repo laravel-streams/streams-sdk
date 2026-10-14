@@ -1,0 +1,6 @@
+PHPUnit 9.5.24 [44;37m#StandWith[0m[43;30mUkraine[0m
+Php Editor (Streams\Sdk\Tests\Console\Support\PhpEditor)
+ ✔ Editing one array entry changes only that entry
+ ✔ Noop edit prints the file byte for byte
+Time: 00:00.220, Memory: 24.00 MB
+OK (2 tests, 6 assertions)

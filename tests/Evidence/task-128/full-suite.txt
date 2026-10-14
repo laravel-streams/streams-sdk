@@ -1,0 +1,47 @@
+PHPUnit 9.5.24 [44;37m#StandWith[0m[43;30mUkraine[0m
+List Entries (Streams\Sdk\Tests\Console\Commands\ListEntries)
+ ✔ It can list entries
+List Streams (Streams\Sdk\Tests\Console\Commands\ListStreams)
+ ✔ It can list streams
+Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
+ ↩ It makes addons
+Make Table (Streams\Sdk\Tests\Console\Commands\MakeTable)
+ ✔ It makes a table and registers it in the panel and on the page
+ ✔ It is idempotent
+ ✔ Dry run shows the diff the real run applies without writing
+ ✔ It updates flags in place in an existing registry
+ ✔ It keeps existing entries when registering more tables
+ ✔ Written registry is pint formatted and stable
+ ✔ It rejects invalid table ids
+Show Entry (Streams\Sdk\Tests\Console\Commands\ShowEntry)
+ ✔ It can show an entry
+Php Editor (Streams\Sdk\Tests\Console\Support\PhpEditor)
+ ✔ Editing one array entry changes only that entry
+ ✔ Noop edit prints the file byte for byte
+Php File (Streams\Sdk\Tests\Console\Support\PhpFile)
+ ✔ Puts an item into the returned array
+ ✔ Second identical put changes nothing
+ ✔ Updates flags in place without duplicates
+ ✔ Preserves hand written entries
+ ✔ Diff matches the change the save applies
+ ✔ Renders the versioned table stub
+Catalog Drift (Streams\Sdk\Tests\Support\CatalogDrift)
+ ✔ Catalog is up to date with field types and builders
+ ✔ Catalog contents are sane
+ ✔ Stream schema offers code derived field types
+ ✔ Generated schemas validate
+Golden Files (Streams\Sdk\Tests\Support\GoldenFiles)
+ ✔ Matches nested and hidden files and removes temporary directory
+ ✔ Mismatch reports unified diff and cleans up
+ ✔ Missing empty file fails
+ ✔ Unexpected empty file fails
+ ✔ Generator exception propagates and cleans up
+ ✔ Each run gets an empty unique directory
+ ✔ Missing nonempty file reports deletion diff
+ ✔ Symbolic link is rejected without deleting its target
+Time: 00:04.942, Memory: 38.00 MB
+Summary of non-successful tests:
+Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
+ ↩ It makes addons
+OK, but incomplete, skipped, or risky tests!
+Tests: 31, Assertions: 1608, Skipped: 1.

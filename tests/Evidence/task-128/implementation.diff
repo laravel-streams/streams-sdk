@@ -1,0 +1,763 @@
+diff --git a/composer.json b/composer.json
+index b4aebd6..590e7e3 100644
+--- a/composer.json
++++ b/composer.json
+@@ -9,6 +9,7 @@
+         }
+     ],
+     "require": {
++        "nikic/php-parser": "^4.14",
+         "streams/core": "^2.0"
+     },
+     "require-dev": {
+diff --git a/src/Console/Commands/MakeTable.php b/src/Console/Commands/MakeTable.php
+index c5bf9db..7285b5d 100644
+--- a/src/Console/Commands/MakeTable.php
++++ b/src/Console/Commands/MakeTable.php
+@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\File;
+ use Illuminate\Console\Command;
+ use SebastianBergmann\Diff\Differ;
+ use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
+-use Streams\Sdk\Console\Support\PhpFile;
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Pint;
+ use Streams\Sdk\Console\Support\Stub;
+ 
+ class MakeTable extends Command
+@@ -89,15 +90,15 @@ class MakeTable extends Command
+ 
+         if (File::exists($path)) {
+             $original = (string) File::get($path);
+-            $file = PhpFile::read($path);
++            $editor = PhpEditor::read($path);
+         } else {
+             $original = '';
+-            $file = PhpFile::fromString($this->registryStub(), $path);
++            $editor = PhpEditor::fromString($this->registryStub(), $path);
+         }
+ 
+-        $file->put($id, $flags);
++        $editor->put($id, $flags);
+ 
+-        $this->write($path, $file->contents(), $original);
++        $this->write($path, $editor->print(), $original);
+     }
+ 
+     protected function registryStub(): string
+@@ -128,6 +129,12 @@ class MakeTable extends Command
+ 
+         File::put($path, $contents);
+ 
++        if (str_ends_with($path, '.php') && Pint::format($path)) {
++            $this->line("<info>written:</info> {$path} (pint)");
++
++            return;
++        }
++
+         $this->line("<info>written:</info> {$path}");
+     }
+ 
+diff --git a/src/Console/Support/PhpEditor.php b/src/Console/Support/PhpEditor.php
+new file mode 100644
+index 0000000..26b724b
+--- /dev/null
++++ b/src/Console/Support/PhpEditor.php
+@@ -0,0 +1,244 @@
++<?php
++
++namespace Streams\Sdk\Console\Support;
++
++use PhpParser\Lexer;
++use PhpParser\Node;
++use PhpParser\Node\Expr\Array_;
++use PhpParser\Node\Expr\ArrayItem;
++use PhpParser\Node\Expr\ConstFetch;
++use PhpParser\Node\Name;
++use PhpParser\Node\Scalar\String_;
++use PhpParser\Node\Stmt\Return_;
++use PhpParser\NodeTraverser;
++use PhpParser\NodeVisitor\CloningVisitor;
++use PhpParser\NodeVisitorAbstract;
++use PhpParser\Parser;
++use PhpParser\ParserFactory;
++use PhpParser\PrettyPrinter\Standard;
++use SebastianBergmann\Diff\Differ;
++use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
++
++/**
++ * Edits a PHP file through nikic/php-parser and writes it back with the
++ * format-preserving printer.
++ *
++ * The file is parsed once and the AST is deep-cloned. Callers mutate the
++ * clone; printing matches every untouched node back to its original tokens
++ * so only the nodes that were actually changed are re-printed. A no-op edit
++ * therefore prints the file byte-for-byte (idempotent).
++ */
++class PhpEditor
++{
++    /**
++     * The editable (deep-cloned) statements.
++     */
++    protected array $statements = [];
++
++    /**
++     * The original statements the file was parsed into.
++     */
++    protected array $originalStatements = [];
++
++    /**
++     * The original token stream, used by the format-preserving printer.
++     *
++     * @var array<int, mixed>
++     */
++    protected array $tokens = [];
++
++    public function __construct(protected string $path) {}
++
++    public static function read(string $path): static
++    {
++        return static::fromString((string) file_get_contents($path), $path);
++    }
++
++    /**
++     * Build an editor from code rather than the filesystem.
++     */
++    public static function fromString(string $code, string $path): static
++    {
++        $editor = new static($path);
++
++        $lexer = new Lexer([
++            'usedAttributes' => [
++                'comments',
++                'startLine',
++                'endLine',
++                'startTokenPos',
++                'endTokenPos',
++            ],
++        ]);
++
++        $parser = static::parser($lexer);
++
++        $editor->originalStatements = $parser->parse($code);
++        $editor->tokens = $lexer->getTokens();
++
++        // Deep-clone the AST before editing: the format-preserving printer
++        // matches new nodes back to the original tokens by their positions,
++        // so unchanged nodes must still carry the original position data.
++        $traverser = new NodeTraverser;
++        $traverser->addVisitor(new CloningVisitor);
++
++        $editor->statements = $traverser->traverse($editor->originalStatements);
++
++        return $editor;
++    }
++
++    public function path(): string
++    {
++        return $this->path;
++    }
++
++    /**
++     * The editable (deep-cloned) statements.
++     */
++    public function statements(): array
++    {
++        return $this->statements;
++    }
++
++    /**
++     * Replace the editable statements after applying node edits.
++     */
++    public function withStatements(array $statements): static
++    {
++        $this->statements = $statements;
++
++        return $this;
++    }
++
++    /**
++     * Add (or update) a keyed item in the file's top-level returned array.
++     *
++     * $flags are key/value pairs such as ['panel' => true, 'page' => false].
++     * Existing keys are updated in place; missing ones are appended, so the
++     * edit is idempotent.
++     *
++     * @param  array<string, bool>  $flags
++     */
++    public function put(string $key, array $flags = []): bool
++    {
++        $before = $this->print();
++
++        $traverser = new NodeTraverser;
++
++        $traverser->addVisitor(new class($key, $flags) extends NodeVisitorAbstract
++        {
++            public function __construct(protected string $key, protected array $flags) {}
++
++            public function enterNode(Node $node)
++            {
++                if ($node instanceof Return_ && $node->expr instanceof Array_) {
++                    $node->expr = $this->merge($node->expr);
++
++                    return $node;
++                }
++
++                return null;
++            }
++
++            protected function merge(Array_ $array): Array_
++            {
++                $item = null;
++
++                foreach ($array->items as $candidate) {
++                    if ($candidate->key instanceof String_ && $candidate->key->value === $this->key) {
++                        $item = $candidate;
++
++                        break;
++                    }
++                }
++
++                if ($item === null) {
++                    $array->items[] = new ArrayItem($this->flagsNode(), new String_($this->key));
++
++                    return $array;
++                }
++
++                if (! $item->value instanceof Array_) {
++                    $item->value = new Array_([], ['kind' => Array_::KIND_SHORT]);
++                }
++
++                $item->value = $this->mergeFlags($item->value);
++
++                return $array;
++            }
++
++            protected function mergeFlags(Array_ $array): Array_
++            {
++                foreach ($this->flags as $flag => $value) {
++                    $valueNode = $value
++                        ? new ConstFetch(new Name('true'))
++                        : new ConstFetch(new Name('false'));
++
++                    $replaced = false;
++
++                    foreach ($array->items as $candidate) {
++                        if ($candidate->key instanceof String_ && $candidate->key->value === $flag) {
++                            $candidate->value = $valueNode;
++
++                            $replaced = true;
++
++                            break;
++                        }
++                    }
++
++                    if (! $replaced) {
++                        $array->items[] = new ArrayItem($valueNode, new String_($flag));
++                    }
++                }
++
++                return $array;
++            }
++
++            protected function flagsNode(): Array_
++            {
++                $items = [];
++
++                foreach ($this->flags as $flag => $value) {
++                    $items[] = new ArrayItem(
++                        $value ? new ConstFetch(new Name('true')) : new ConstFetch(new Name('false')),
++                        new String_($flag),
++                    );
++                }
++
++                return new Array_($items, ['kind' => Array_::KIND_SHORT]);
++            }
++        });
++
++        $this->statements = $traverser->traverse($this->statements);
++
++        return $before !== $this->print();
++    }
++
++    /**
++     * The format-preserving print of the edited file.
++     */
++    public function print(): string
++    {
++        return (new Standard)->printFormatPreserving(
++            $this->statements,
++            $this->originalStatements,
++            $this->tokens,
++        );
++    }
++
++    /**
++     * The unified diff between the original contents and the edited
++     * contents — exactly what saving the file would apply.
++     */
++    public function diff(string $original): string
++    {
++        $differ = new Differ(new UnifiedDiffOutputBuilder("--- {$this->path}\n+++ {$this->path}\n"));
++
++        return $differ->diff($original, $this->print());
++    }
++
++    protected static function parser(Lexer $lexer): Parser
++    {
++        return (new ParserFactory)->create(ParserFactory::PREFER_PHP7, $lexer);
++    }
++}
+diff --git a/src/Console/Support/PhpFile.php b/src/Console/Support/PhpFile.php
+index a0f67a2..628a7c0 100644
+--- a/src/Console/Support/PhpFile.php
++++ b/src/Console/Support/PhpFile.php
+@@ -2,31 +2,13 @@
+ 
+ namespace Streams\Sdk\Console\Support;
+ 
+-use PhpParser\Node;
+-use PhpParser\Node\Expr\Array_;
+-use PhpParser\Node\Expr\ArrayItem;
+-use PhpParser\Node\Expr\ConstFetch;
+-use PhpParser\Node\Name;
+-use PhpParser\Node\Scalar\String_;
+-use PhpParser\Node\Stmt\Return_;
+-use PhpParser\NodeTraverser;
+-use PhpParser\NodeVisitorAbstract;
+-use PhpParser\Parser;
+-use PhpParser\ParserFactory;
+-use PhpParser\PrettyPrinter\Standard;
+-use SebastianBergmann\Diff\Differ;
+-use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
+-
+ /**
+- * Edits a PHP file in place through an AST.
+- *
+- * The file is parsed with nikic/php-parser, mutated, and pretty-printed.
+- * Printing is deterministic, so re-running an edit that is already present
+- * returns "not changed" and saves nothing (idempotent).
++ * @deprecated Use PhpEditor directly. This wrapper exists for backward
++ *             compatibility with callers of the #66 whole-file reprint.
+  */
+ class PhpFile
+ {
+-    protected array $statements = [];
++    protected PhpEditor $editor;
+ 
+     public function __construct(protected string $path)
+     {
+@@ -36,7 +18,7 @@ class PhpFile
+     {
+         $file = new static($path);
+ 
+-        $file->statements = $file->parser()->parse((string) file_get_contents($path));
++        $file->editor = PhpEditor::fromString((string) file_get_contents($path), $path);
+ 
+         return $file;
+     }
+@@ -48,7 +30,7 @@ class PhpFile
+     {
+         $file = new static($path);
+ 
+-        $file->statements = $file->parser()->parse($code);
++        $file->editor = PhpEditor::fromString($code, $path);
+ 
+         return $file;
+     }
+@@ -61,115 +43,19 @@ class PhpFile
+     /**
+      * Add (or update) a keyed item in the file's top-level returned array.
+      *
+-     * $flags are key/value pairs such as ['panel' => true, 'page' => false].
+-     * Existing keys are updated in place; missing ones are appended, so the
+-     * edit is idempotent.
+-     *
+      * @param array<string, bool> $flags
+      */
+     public function put(string $key, array $flags = []): bool
+     {
+-        $before = $this->print();
+-
+-        $traverser = new NodeTraverser;
+-
+-        $traverser->addVisitor(new class($key, $flags) extends NodeVisitorAbstract
+-        {
+-            public function __construct(protected string $key, protected array $flags)
+-            {
+-            }
+-
+-            public function enterNode(Node $node)
+-            {
+-                if ($node instanceof Return_ && $node->expr instanceof Array_) {
+-                    $node->expr = $this->merge($node->expr);
+-
+-                    return $node;
+-                }
+-
+-                return null;
+-            }
+-
+-            protected function merge(Array_ $array): Array_
+-            {
+-                $item = null;
+-
+-                foreach ($array->items as $candidate) {
+-                    if ($candidate->key instanceof String_ && $candidate->key->value === $this->key) {
+-                        $item = $candidate;
+-
+-                        break;
+-                    }
+-                }
+-
+-                if ($item === null) {
+-                    $array->items[] = new ArrayItem($this->flagsNode(), new String_($this->key));
+-
+-                    return $array;
+-                }
+-
+-                if (!$item->value instanceof Array_) {
+-                    $item->value = new Array_([], ['kind' => Array_::KIND_SHORT]);
+-                }
+-
+-                $item->value = $this->mergeFlags($item->value);
+-
+-                return $array;
+-            }
+-
+-            protected function mergeFlags(Array_ $array): Array_
+-            {
+-                foreach ($this->flags as $flag => $value) {
+-                    $valueNode = $value
+-                        ? new ConstFetch(new Name('true'))
+-                        : new ConstFetch(new Name('false'));
+-
+-                    $replaced = false;
+-
+-                    foreach ($array->items as $candidate) {
+-                        if ($candidate->key instanceof String_ && $candidate->key->value === $flag) {
+-                            $candidate->value = $valueNode;
+-
+-                            $replaced = true;
+-
+-                            break;
+-                        }
+-                    }
+-
+-                    if (!$replaced) {
+-                        $array->items[] = new ArrayItem($valueNode, new String_($flag));
+-                    }
+-                }
+-
+-                return $array;
+-            }
+-
+-            protected function flagsNode(): Array_
+-            {
+-                $items = [];
+-
+-                foreach ($this->flags as $flag => $value) {
+-                    $items[] = new ArrayItem(
+-                        $value ? new ConstFetch(new Name('true')) : new ConstFetch(new Name('false')),
+-                        new String_($flag),
+-                    );
+-                }
+-
+-                return new Array_($items, ['kind' => Array_::KIND_SHORT]);
+-            }
+-        });
+-
+-        $this->statements = $traverser->traverse($this->statements);
+-
+-        return $before !== $this->print();
++        return $this->editor->put($key, $flags);
+     }
+ 
+     /**
+-     * The pretty-printed contents of the file.
++     * The format-preserving contents of the file.
+      */
+     public function contents(): string
+     {
+-        return $this->print();
++        return $this->editor->print();
+     }
+ 
+     /**
+@@ -178,18 +64,6 @@ class PhpFile
+      */
+     public function diff(string $original): string
+     {
+-        $differ = new Differ(new UnifiedDiffOutputBuilder("--- {$this->path}\n+++ {$this->path}\n"));
+-
+-        return $differ->diff($original, $this->contents());
+-    }
+-
+-    protected function parser(): Parser
+-    {
+-        return (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+-    }
+-
+-    protected function print(): string
+-    {
+-        return (new Standard)->prettyPrintFile($this->statements);
++        return $this->editor->diff($original);
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/src/Console/Support/Pint.php b/src/Console/Support/Pint.php
+new file mode 100644
+index 0000000..5adeea3
+--- /dev/null
++++ b/src/Console/Support/Pint.php
+@@ -0,0 +1,70 @@
++<?php
++
++namespace Streams\Sdk\Console\Support;
++
++use Symfony\Component\Process\Process;
++
++/**
++ * Runs Laravel Pint over generated PHP files as a post-write step.
++ *
++ * The binary is resolved in order from:
++ *  1. config('streams.sdk.pint_path')
++ *  2. the host app's vendor/bin/pint
++ *  3. the SDK's bundled resources/bin/pint.phar
++ *
++ * Pint is idempotent — running it twice over the same file produces the
++ * same bytes — so a file written through the SDK stays stable across
++ * repeated generations.
++ */
++class Pint
++{
++    /**
++     * Format a PHP file in place with Pint.
++     */
++    public static function format(string $path): bool
++    {
++        $binary = static::binary();
++
++        if ($binary === null || ! is_file($path)) {
++            return false;
++        }
++
++        $process = new Process([PHP_BINARY, $binary, $path]);
++
++        $process->setTimeout(60);
++
++        $process->run();
++
++        return $process->isSuccessful();
++    }
++
++    /**
++     * The resolved pint binary, or null when none is available.
++     */
++    public static function binary(): ?string
++    {
++        try {
++            $configured = (string) config('streams.sdk.pint_path', '');
++        } catch (\Throwable) {
++            $configured = '';
++        }
++
++        if ($configured !== '' && is_file($configured)) {
++            return $configured;
++        }
++
++        try {
++            $hostBinary = function_exists('base_path') ? base_path('vendor/bin/pint') : '';
++        } catch (\Throwable) {
++            $hostBinary = '';
++        }
++
++        if ($hostBinary !== '' && is_file($hostBinary)) {
++            return $hostBinary;
++        }
++
++        $bundled = dirname(__DIR__, 3).'/resources/bin/pint.phar';
++
++        return is_file($bundled) ? $bundled : null;
++    }
++}
+diff --git a/tests/Console/Commands/MakeTableTest.php b/tests/Console/Commands/MakeTableTest.php
+index b7851a1..4acd892 100644
+--- a/tests/Console/Commands/MakeTableTest.php
++++ b/tests/Console/Commands/MakeTableTest.php
+@@ -4,6 +4,7 @@ namespace Streams\Sdk\Tests\Console\Commands;
+ 
+ use Illuminate\Support\Facades\File;
+ use Streams\Sdk\Tests\SdkTestCase;
++use Streams\Sdk\Console\Support\Pint;
+ 
+ class MakeTableTest extends SdkTestCase
+ {
+@@ -104,6 +105,23 @@ class MakeTableTest extends SdkTestCase
+         $this->assertStringContainsString("'authors' => ['page' => true]", $registry);
+     }
+ 
++    public function test_written_registry_is_pint_formatted_and_stable()
++    {
++        $this->artisan('make:table', ['id' => 'posts', '--panel' => true])
++            ->expectsOutputToContain('(pint)')
++            ->assertSuccessful();
++
++        $registry = File::get($this->registryPath);
++
++        // The post-step ran Pint on the written registry.
++        $this->assertStringContainsString("'posts' => [", $registry);
++        $this->assertStringEndsWith("\n", $registry);
++
++        // Pint is stable: a second pass leaves the file byte-for-byte identical.
++        $this->assertTrue(Pint::format($this->registryPath));
++        $this->assertSame($registry, File::get($this->registryPath));
++    }
++
+     public function test_it_rejects_invalid_table_ids()
+     {
+         $this->artisan('make:table', ['id' => 'Not Valid!'])
+diff --git a/tests/Console/Support/PhpEditorTest.php b/tests/Console/Support/PhpEditorTest.php
+new file mode 100644
+index 0000000..18f5022
+--- /dev/null
++++ b/tests/Console/Support/PhpEditorTest.php
+@@ -0,0 +1,64 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support;
++
++use Illuminate\Support\Facades\File;
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Tests\SdkTestCase;
++
++class PhpEditorTest extends SdkTestCase
++{
++    public function test_editing_one_array_entry_changes_only_that_entry()
++    {
++        $original = (string) File::get(__DIR__.'/../../Fixtures/PhpEditor/registry.php');
++
++        $editor = PhpEditor::fromString($original, 'tables.php');
++
++        $changed = $editor->put('posts', ['panel' => true, 'page' => true]);
++
++        $this->assertTrue($changed);
++
++        $diff = $editor->diff($original);
++
++        // The only +/- lines are the single flag line inside the posts entry.
++        $this->assertStringContainsString('-        \'panel\' => true,', $diff);
++        $this->assertStringContainsString("+        'panel' => true, 'page' => true,", $diff);
++
++        // No other entry, key, or surrounding structure is added or removed:
++        // every other +/- line belongs to the posts entry's flag change.
++        $this->assertSame(["-        'panel' => true,", "+        'panel' => true, 'page' => true,"], $this->changedLines($diff));
++    }
++
++    public function test_noop_edit_prints_the_file_byte_for_byte()
++    {
++        $original = (string) File::get(__DIR__.'/../../Fixtures/PhpEditor/registry.php');
++
++        $editor = PhpEditor::fromString($original, 'tables.php');
++
++        $changed = $editor->put('posts', ['panel' => true]);
++
++        $this->assertFalse($changed);
++
++        $this->assertSame($original, $editor->print());
++    }
++
++    /**
++     * The added/removed lines in a unified diff, in order.
++     */
++    protected function changedLines(string $diff): array
++    {
++        $lines = [];
++
++        foreach (explode("\n", $diff) as $line) {
++            if (str_starts_with($line, '+') && ! str_starts_with($line, '+++')) {
++                $lines[] = $line;
++            }
++
++            if (str_starts_with($line, '-') && ! str_starts_with($line, '---')) {
++                $lines[] = $line;
++            }
++        }
++
++        return $lines;
++    }
++}
+diff --git a/tests/Console/Support/PhpFileTest.php b/tests/Console/Support/PhpFileTest.php
+index 1646849..f90631f 100644
+--- a/tests/Console/Support/PhpFileTest.php
++++ b/tests/Console/Support/PhpFileTest.php
+@@ -20,7 +20,7 @@ class PhpFileTest extends SdkTestCase
+         $this->assertTrue($changed);
+ 
+         $this->assertSame(
+-            "<?php\n\nreturn ['posts' => ['panel' => true, 'page' => true]];",
++            "<?php\n\nreturn ['posts' => ['panel' => true, 'page' => true]];\n",
+             $file->contents()
+         );
+     }
+@@ -34,7 +34,7 @@ class PhpFileTest extends SdkTestCase
+         $this->assertFalse($file->put('posts', ['panel' => true]));
+ 
+         $this->assertSame(
+-            "<?php\n\nreturn ['posts' => ['panel' => true]];",
++            "<?php\nreturn ['posts' => ['panel' => true]];\n",
+             $file->contents()
+         );
+     }
+@@ -48,14 +48,14 @@ class PhpFileTest extends SdkTestCase
+         $file->put('posts', ['page' => true]);
+ 
+         $this->assertSame(
+-            "<?php\n\nreturn ['posts' => ['panel' => true, 'page' => true]];",
++            "<?php\nreturn ['posts' => ['panel' => true, 'page' => true]];\n",
+             $file->contents()
+         );
+ 
+         $file->put('posts', ['panel' => false]);
+ 
+         $this->assertSame(
+-            "<?php\n\nreturn ['posts' => ['panel' => false, 'page' => true]];",
++            "<?php\nreturn ['posts' => ['panel' => false, 'page' => true]];\n",
+             $file->contents()
+         );
+     }
+@@ -69,7 +69,7 @@ class PhpFileTest extends SdkTestCase
+         $file->put('posts', ['panel' => true]);
+ 
+         $this->assertSame(
+-            "<?php\n\nreturn ['theme' => 'dark', 'posts' => ['panel' => true]];",
++            "<?php\nreturn ['theme' => 'dark', 'posts' => ['panel' => true]];\n",
+             $file->contents()
+         );
+     }
+@@ -86,7 +86,7 @@ class PhpFileTest extends SdkTestCase
+ 
+         $diff = $file->diff($original);
+ 
+-        $this->assertStringContainsString('+return [\'posts\' => [\'panel\' => true]];', $diff);
++        $this->assertStringContainsString("+return ['posts' => ['panel' => true]];", $diff);
+         $this->assertStringContainsString('-return [', $diff);
+     }
+ 
+diff --git a/tests/Fixtures/PhpEditor/registry.php b/tests/Fixtures/PhpEditor/registry.php
+new file mode 100644
+index 0000000..5e664b1
+--- /dev/null
++++ b/tests/Fixtures/PhpEditor/registry.php
+@@ -0,0 +1,11 @@
++<?php
++
++return [
++    'theme' => 'dark',
++    'posts' => [
++        'panel' => true,
++    ],
++    'authors' => [
++        'page' => true,
++    ],
++];

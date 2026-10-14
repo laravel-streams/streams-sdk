@@ -9,7 +9,8 @@ use Streams\Sdk\Support\CatalogGenerator;
 class CatalogGenerate extends Command
 {
     protected $signature = 'streams:catalog
-        {--path= : The directory to write catalog files into.}';
+        {--path= : The directory containing catalog files.}
+        {--check : Check for drift without writing any files.}';
 
     protected $description = 'Generate the machine-readable SDK catalog, its schema, and streams.schema.json.';
 
@@ -32,15 +33,37 @@ class CatalogGenerate extends Command
         $fieldTypes = count($generator->fieldTypes());
         $builders = count($generator->uiBuilders());
 
+        $drift = false;
+
         foreach ($files as $file => $payload) {
+            $contents = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
+
+            if ($this->option('check')) {
+                if (!File::exists($file) || File::get($file) !== $contents) {
+                    $drift = true;
+                    $this->error("drift: {$file}");
+                }
+
+                continue;
+            }
+
             File::ensureDirectoryExists(dirname($file));
 
-            File::put(
-                $file,
-                json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL
-            );
+            File::put($file, $contents);
 
             $this->line("<info>written:</info> {$file}");
+        }
+
+        if ($this->option('check')) {
+            if ($drift) {
+                $this->error('Catalog is stale. Run streams:catalog to regenerate the files.');
+
+                return self::FAILURE;
+            }
+
+            $this->info('Catalog is up to date.');
+
+            return self::SUCCESS;
         }
 
         $this->line("cataloged {$fieldTypes} field types and {$builders} UI builders.");

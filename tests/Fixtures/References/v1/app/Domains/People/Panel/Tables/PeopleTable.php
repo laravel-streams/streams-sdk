@@ -92,5 +92,12 @@ class PeopleTable extends Table
             ->query(PeoplePanelResource::scopedQuery())
             ->emptyStateDescription(__('domains/people.empty_state_description'))
             ->emptyStateIcon('heroicon-o-users');
+
+        // Synthetic classifier edge cases (not real GV settings): a literal
+        // null, a literal negative number, and a literal integer array.
+        $this
+            ->pollingInterval(null)
+            ->paginationPageOptions([5, 10, 25])
+            ->defaultSort(-1);
     }
 }

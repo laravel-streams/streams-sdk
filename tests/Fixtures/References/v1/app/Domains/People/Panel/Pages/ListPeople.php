@@ -30,6 +30,9 @@ class ListPeople extends PanelPage
 
     protected static ?int $navigationSort = 1;
 
+    // Synthetic classifier edge case: a literal null property default.
+    protected static ?string $navigationBadge = null;
+
     public string $first_name = '';
 
     public string $last_name = '';

@@ -107,6 +107,61 @@ class StreamsCaptureTest extends SdkTestCase
         $this->assertContains('action', $actionHandles);
     }
 
+    public function test_literal_settings_including_null_and_negative_numbers_are_captured(): void
+    {
+        Artisan::call('streams:capture');
+        $tree = AppTree::load($this->root.'/streams.json');
+
+        // Literal null, negative and integer-array settings stay data.
+        $table = $tree->node('people.table');
+        $this->assertArrayHasKey('pollingInterval', $table['settings']);
+        $this->assertNull($table['settings']['pollingInterval']);
+        $this->assertSame(-1, $table['settings']['defaultSort'] ?? null);
+        $this->assertSame([5, 10, 25], $table['settings']['paginationPageOptions'] ?? null);
+
+        // A literal null property default is data too.
+        $page = $tree->node('people.pages.list_people');
+        $this->assertArrayHasKey('navigationBadge', $page['settings']);
+        $this->assertNull($page['settings']['navigationBadge']);
+
+        // make() names an item; it is not a literal setting.
+        $this->assertArrayNotHasKey('columns.status.make', $table['settings']);
+        $panel = $tree->node('people.panel');
+        $this->assertArrayNotHasKey('navigation.make', $panel['settings']);
+
+        // Assignment scaffolding never leaks an empty-handle opaque node.
+        foreach (['people.table', 'people.panel', 'people.pages.list_people', 'people.actions.add_person_modal'] as $path) {
+            $node = $tree->node($path);
+            $this->assertNotEmpty($node['opaque'] ?? []);
+            $this->assertNotContains('', array_column($node['opaque'], 'handle'));
+        }
+    }
+
+    public function test_unreadable_builder_files_are_reported_not_silently_dropped(): void
+    {
+        File::put($this->root.'/app/Domains/People/Panel/Tables/BrokenTable.php', "<?php\n\nthis is not valid php (((\n");
+        File::put($this->root.'/app/Domains/People/Panel/Tables/NoClassTable.php', "<?php\n\n\$shared = 1;\n");
+
+        $exit = Artisan::call('streams:capture');
+        $output = Artisan::output();
+
+        $this->assertSame(0, $exit, $output);
+        $this->assertStringContainsString('BrokenTable.php', $output);
+        $this->assertStringContainsString('could not be parsed', $output);
+        $this->assertStringContainsString('NoClassTable.php', $output);
+        $this->assertStringContainsString('no builder class found', $output);
+
+        // The healthy builders are still captured and the tree still validates.
+        $treeFile = $this->root.'/streams.json';
+        $this->assertFileExists($treeFile);
+        $data = json_decode((string) File::get($treeFile));
+        $validator = new SchemaValidator($this->schemaDir);
+        $validator->assertValid($data, 'https://streams.dev/schema/app.schema.json', 'streams.json');
+        $tree = AppTree::load($treeFile);
+        $this->assertSame('table', $tree->type('people.table'));
+        $this->assertSame('people_table', $tree->node('people.table')['handle'] ?? null);
+    }
+
     public function test_capture_then_build_produces_zero_changes_because_opaque_nodes_are_never_rewritten(): void
     {
         Artisan::call('streams:capture');

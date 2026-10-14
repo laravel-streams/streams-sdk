@@ -40,6 +40,10 @@ class StreamsCapture extends Command
             return self::FAILURE;
         }
 
+        foreach ($reader->skipped() as $skip) {
+            $this->warn("skipped builder [{$skip['file']}]: {$skip['reason']}");
+        }
+
         $json = json_encode($tree, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         if ($json === false) {

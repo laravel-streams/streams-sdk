@@ -8,18 +8,24 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\UnaryMinus;
+use PhpParser\Node\Expr\UnaryPlus;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\DNumber;
 use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
+use PhpParser\Node\Stmt\Foreach_;
+use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\Return_;
@@ -84,7 +90,20 @@ class CaptureReader
     public function __construct(protected string $root) {}
 
     /**
+     * Builder files that could not be captured, with the reason.
+     *
+     * @return list<array{file: string, reason: string}>
+     */
+    public function skipped(): array
+    {
+        return $this->skipped;
+    }
+
+    /**
      * Capture the reference layout into an app tree payload.
+     *
+     * Builder files that cannot be read are never dropped silently: they are
+     * reported through skipped() and surfaced by the streams:capture command.
      *
      * @return array{name: string, streams: array<string, array<string, mixed>>}
      */
@@ -105,6 +124,12 @@ class CaptureReader
             $node = $this->captureFile($file, $relative, $kind, $handle);
 
             if ($node === null) {
+                $this->skipped[] = [
+                    'file' => $relative,
+                    'reason' => $this->skipReason ?? 'unrecognized builder file',
+                ];
+                $this->skipReason = null;
+
                 continue;
             }
 
@@ -116,6 +141,13 @@ class CaptureReader
             'streams' => $streams,
         ];
     }
+
+    /**
+     * @var list<array{file: string, reason: string}>
+     */
+    protected array $skipped = [];
+
+    protected ?string $skipReason = null;
 
     /**
      * Stream definitions under streams/ become stream nodes.
@@ -208,12 +240,16 @@ class CaptureReader
         $statements = $this->parse($file);
 
         if ($statements === null) {
+            $this->skipReason = 'file could not be parsed';
+
             return null;
         }
 
         $class = $this->findClass($statements);
 
         if ($class === null) {
+            $this->skipReason = 'no builder class found';
+
             return null;
         }
 
@@ -297,9 +333,9 @@ class CaptureReader
                 continue;
             }
 
-            [$value, $entries] = $this->literalOrOpaque($prop->default, $file, $name);
+            [$found, $value, $entries] = $this->literalOrOpaque($prop->default, $file, $name);
 
-            if ($value !== null) {
+            if ($found) {
                 $settings[$name] = $value;
             }
 
@@ -316,12 +352,60 @@ class CaptureReader
     protected function captureMethod(ClassMethod $method, string $file, array &$settings, array &$opaque): void
     {
         foreach ($method->stmts ?? [] as $stmt) {
-            if ($stmt instanceof Expression) {
-                $this->chain($stmt->expr, $file, '', $settings, $opaque);
+            $this->captureStatement($stmt, $file, $method->name->toString(), $settings, $opaque);
+        }
+    }
+
+    /**
+     * Capture one statement inside a builder method. Assignments are local
+     * scaffolding, not builder settings, and never become opaque nodes.
+     * Builder calls inside control flow are still walked so they are not
+     * silently discarded.
+     *
+     * @param  array<string, mixed>  $settings
+     * @param  list<array{handle: string, file: string, line: int}>  $opaque
+     */
+    protected function captureStatement(Stmt $stmt, string $file, string $prefix, array &$settings, array &$opaque): void
+    {
+        if ($stmt instanceof Expression) {
+            if ($stmt->expr instanceof Assign) {
+                return;
             }
 
-            if ($stmt instanceof Return_ && $stmt->expr !== null) {
-                $this->chain($stmt->expr, $file, $method->name->toString(), $settings, $opaque);
+            $this->chain($stmt->expr, $file, '', $settings, $opaque);
+
+            return;
+        }
+
+        if ($stmt instanceof Return_ && $stmt->expr !== null) {
+            $this->chain($stmt->expr, $file, $prefix, $settings, $opaque);
+
+            return;
+        }
+
+        if ($stmt instanceof If_) {
+            foreach ($stmt->stmts as $inner) {
+                $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
+            }
+
+            foreach ($stmt->elseifs as $elseif) {
+                foreach ($elseif->stmts as $inner) {
+                    $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
+                }
+            }
+
+            if ($stmt->else !== null) {
+                foreach ($stmt->else->stmts as $inner) {
+                    $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
+                }
+            }
+
+            return;
+        }
+
+        if ($stmt instanceof Foreach_) {
+            foreach ($stmt->stmts as $inner) {
+                $this->captureStatement($inner, $file, $prefix, $settings, $opaque);
             }
         }
     }
@@ -352,10 +436,8 @@ class CaptureReader
             $method = $expr->name instanceof Node\Identifier ? $expr->name->toString() : null;
 
             // X::make('handle') names the builder item already captured by the
-            // container walker, so the make call itself is just a marker.
+            // container walker. It is not itself a setting.
             if ($method === 'make' && isset($expr->args[0]) && $expr->args[0] instanceof Arg && $expr->args[0]->value instanceof String_) {
-                $settings[$this->joined($prefix, 'make')] = true;
-
                 return;
             }
 
@@ -373,6 +455,11 @@ class CaptureReader
 
         // The chain root itself ($this or a variable) is not a setting.
         if ($expr instanceof Variable) {
+            return;
+        }
+
+        // Assignment scaffolding is not a builder setting.
+        if ($expr instanceof Assign) {
             return;
         }
 
@@ -406,9 +493,9 @@ class CaptureReader
         $values = [];
 
         foreach ($args as $arg) {
-            [$value, $entries] = $this->literalOrOpaque($arg->value, $file, $key);
+            [$found, $value, $entries] = $this->literalOrOpaque($arg->value, $file, $key);
 
-            if ($value !== null) {
+            if ($found) {
                 $values[] = $value;
             }
 
@@ -449,9 +536,9 @@ class CaptureReader
             return;
         }
 
-        [$value, $entries] = $this->literalOrOpaque($arg, $file, $key);
+        [$found, $value, $entries] = $this->literalOrOpaque($arg, $file, $key);
 
-        if ($value !== null) {
+        if ($found) {
             $settings[$key] = $value;
 
             return;
@@ -491,54 +578,68 @@ class CaptureReader
     /**
      * A literal value or opaque entries for a non-literal expression.
      *
-     * @return array{0: mixed, 1: list<array{handle: string, file: string, line: int}>}
+     * The first element reports whether the expression is a literal at all,
+     * so a literal null is data, not opaque.
+     *
+     * @return array{0: bool, 1: mixed, 2: list<array{handle: string, file: string, line: int}>}
      */
     protected function literalOrOpaque(Expr $expr, string $file, string $key): array
     {
-        $value = $this->scalar($expr);
+        $literal = $this->literal($expr);
 
-        if ($value !== null) {
-            return [$value, []];
+        if ($literal[0]) {
+            return [true, $literal[1], []];
         }
 
-        if ($expr instanceof Array_ && $this->isLiteralArray($expr)) {
-            return [$this->literalArray($expr), []];
-        }
-
-        return [null, [$this->opaque($key, $file, $expr->getStartLine())]];
+        return [false, null, [$this->opaque($key, $file, $expr->getStartLine())]];
     }
 
-    protected function scalar(Expr $expr): mixed
+    /**
+     * Whether an expression is a JSON-representable literal and its value.
+     *
+     * @return array{0: bool, 1: mixed}
+     */
+    protected function literal(Expr $expr): array
     {
         if ($expr instanceof String_) {
-            return $expr->value;
+            return [true, $expr->value];
         }
 
         if ($expr instanceof LNumber) {
-            return $expr->value;
+            return [true, $expr->value];
         }
 
         if ($expr instanceof DNumber) {
-            return $expr->value;
+            return [true, $expr->value];
         }
 
         if ($expr instanceof ConstFetch) {
             $name = $expr->name->toString();
 
-            if ($name === 'true') {
-                return true;
-            }
-
-            if ($name === 'false') {
-                return false;
-            }
-
-            if ($name === 'null') {
-                return null;
-            }
+            return match ($name) {
+                'true' => [true, true],
+                'false' => [true, false],
+                'null' => [true, null],
+                default => [false, null],
+            };
         }
 
-        return null;
+        // A signed numeric literal (-5, +1.5) is still a literal.
+        if ($expr instanceof UnaryMinus || $expr instanceof UnaryPlus) {
+            $operand = $expr->expr;
+
+            if ($operand instanceof LNumber) {
+                return [true, $expr instanceof UnaryMinus ? -$operand->value : $operand->value];
+            }
+
+            if ($operand instanceof DNumber) {
+                return [true, $expr instanceof UnaryMinus ? -$operand->value : $operand->value];
+            }
+
+            return [false, null];
+        }
+
+        return [false, null];
     }
 
     protected function isLiteralArray(Array_ $array): bool
@@ -552,7 +653,7 @@ class CaptureReader
                 return false;
             }
 
-            if ($this->literalArrayValue($item->value) === null) {
+            if (! $this->literalArrayValue($item->value)[0]) {
                 return false;
             }
         }
@@ -575,28 +676,25 @@ class CaptureReader
             $value = $this->literalArrayValue($item->value);
 
             if ($item->key === null) {
-                $out[] = $value;
+                $out[] = $value[1];
             } elseif ($item->key instanceof String_ || $item->key instanceof LNumber) {
-                $out[$item->key->value] = $value;
+                $out[$item->key->value] = $value[1];
             }
         }
 
         return $out;
     }
 
-    protected function literalArrayValue(Expr $expr): mixed
+    /**
+     * @return array{0: bool, 1: mixed}
+     */
+    protected function literalArrayValue(Expr $expr): array
     {
-        $value = $this->scalar($expr);
-
-        if ($value !== null) {
-            return $value;
-        }
-
         if ($expr instanceof Array_ && $this->isLiteralArray($expr)) {
-            return $this->literalArray($expr);
+            return [true, $this->literalArray($expr)];
         }
 
-        return null;
+        return $this->literal($expr);
     }
 
     protected function joined(string $prefix, string $segment): string

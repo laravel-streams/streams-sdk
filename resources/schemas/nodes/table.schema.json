@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/table.schema.json",
+    "title": "Table node",
+    "description": "A table node. Addressed at people.table. Columns and row actions are child nodes keyed by handle.",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "columns": {
+            "type": "object",
+            "description": "Columns keyed by field handle.",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "$ref": "https://streams.dev/schema/node/column.schema.json"
+                    },
+                    {
+                        "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                    }
+                ]
+            }
+        },
+        "actions": {
+            "type": "object",
+            "description": "Row actions keyed by handle.",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "$ref": "https://streams.dev/schema/node/action.schema.json"
+                    },
+                    {
+                        "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                    }
+                ]
+            }
+        },
+        "config": {
+            "type": "object"
+        }
+    }
+}

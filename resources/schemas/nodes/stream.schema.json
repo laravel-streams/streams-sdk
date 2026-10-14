@@ -1,0 +1,138 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/stream.schema.json",
+    "title": "Stream node",
+    "description": "A stream definition. Extends the current stream JSON payload (name, fields, config) with a ui subtree holding the stream's panel, table, pages, public pages, actions, and forms. Addressed at the stream handle dot path (people).",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "required": [
+        "name",
+        "fields"
+    ],
+    "properties": {
+        "id": {
+            "type": "string"
+        },
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "extends": {
+            "type": "string"
+        },
+        "config": {
+            "type": "object"
+        },
+        "fields": {
+            "type": [
+                "array",
+                "object"
+            ],
+            "items": {
+                "type": "object"
+            }
+        },
+        "route": {
+            "type": "object"
+        },
+        "routes": {
+            "type": "object"
+        },
+        "data": {
+            "type": "object"
+        },
+        "ui": {
+            "type": "object",
+            "description": "The stream's UI nodes, each addressed by a dot path under the stream handle.",
+            "properties": {
+                "panel": {
+                    "oneOf": [
+                        {
+                            "$ref": "https://streams.dev/schema/node/panel.schema.json"
+                        },
+                        {
+                            "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                        }
+                    ]
+                },
+                "table": {
+                    "oneOf": [
+                        {
+                            "$ref": "https://streams.dev/schema/node/table.schema.json"
+                        },
+                        {
+                            "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                        }
+                    ]
+                },
+                "pages": {
+                    "type": "object",
+                    "description": "Control panel pages keyed by handle.",
+                    "additionalProperties": {
+                        "oneOf": [
+                            {
+                                "$ref": "https://streams.dev/schema/node/page.schema.json"
+                            },
+                            {
+                                "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                            }
+                        ]
+                    }
+                },
+                "public_pages": {
+                    "type": "object",
+                    "description": "Front-end/public pages keyed by handle.",
+                    "additionalProperties": {
+                        "oneOf": [
+                            {
+                                "$ref": "https://streams.dev/schema/node/public-page.schema.json"
+                            },
+                            {
+                                "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                            }
+                        ]
+                    }
+                },
+                "actions": {
+                    "type": "object",
+                    "description": "Stream actions keyed by handle.",
+                    "additionalProperties": {
+                        "oneOf": [
+                            {
+                                "$ref": "https://streams.dev/schema/node/action.schema.json"
+                            },
+                            {
+                                "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                            }
+                        ]
+                    }
+                },
+                "forms": {
+                    "type": "object",
+                    "description": "Forms keyed by handle.",
+                    "additionalProperties": {
+                        "oneOf": [
+                            {
+                                "$ref": "https://streams.dev/schema/node/form.schema.json"
+                            },
+                            {
+                                "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

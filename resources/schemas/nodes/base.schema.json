@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/base.schema.json",
+    "title": "App tree node",
+    "description": "Properties shared by every app tree node. The handle is the node's path segment; the class name is derived from the full dot path in StudlyCase unless overridden.",
+    "type": "object",
+    "additionalProperties": true,
+    "required": [
+        "handle"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "description": "The node's path segment. Snake_case or slug, lowercase, starting with a letter."
+        },
+        "name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "class": {
+            "type": "string",
+            "description": "StudlyCase class name override. Derived from the dot path when absent."
+        }
+    }
+}

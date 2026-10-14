@@ -1,0 +1,7 @@
+{
+    "$schema": "https://streams.dev/schema/node/page.schema.json",
+    "handle": "manage",
+    "title": "Manage people",
+    "section": "people",
+    "table": "table"
+}

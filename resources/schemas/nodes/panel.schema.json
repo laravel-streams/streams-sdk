@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/panel.schema.json",
+    "title": "Panel node",
+    "description": "A control panel node that groups a stream's pages. Addressed at people.panel.",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "title": {
+            "type": "string"
+        },
+        "pages": {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "type": "object"
+                }
+            ],
+            "description": "Page handles in this panel, by handle (no generated ids)."
+        },
+        "config": {
+            "type": "object"
+        }
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "$schema": "https://streams.dev/schema/node/form.schema.json",
+    "handle": "form",
+    "name": "Add person",
+    "sections": {
+        "basics": {
+            "handle": "basics",
+            "name": "Basics",
+            "fields": [
+                {
+                    "handle": "name",
+                    "type": "string",
+                    "required": true
+                },
+                {
+                    "handle": "email",
+                    "type": "email",
+                    "required": true
+                }
+            ]
+        }
+    },
+    "buttons": [
+        {
+            "handle": "save",
+            "label": "Save"
+        },
+        {
+            "handle": "cancel",
+            "label": "Cancel"
+        }
+    ]
+}

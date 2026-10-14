@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/action.schema.json",
+    "title": "Action node",
+    "description": "An action. Addressed at people.actions.add. Nested actions (dropdown items) live under actions; a modal action carries a form.",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "label": {
+            "type": "string"
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "button",
+                "link",
+                "modal",
+                "dropdown"
+            ]
+        },
+        "target": {
+            "type": "string"
+        },
+        "form": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "$ref": "https://streams.dev/schema/node/form.schema.json"
+                },
+                {
+                    "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                }
+            ],
+            "description": "The modal form: a dot-path reference, inline node, or $ref."
+        },
+        "actions": {
+            "type": "object",
+            "description": "Nested actions keyed by handle.",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "$ref": "https://streams.dev/schema/node/action.schema.json"
+                    },
+                    {
+                        "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://streams.dev/schema/app.schema.json",
+    "name": "People",
+    "description": "The people thin slice: a stream with a table page, an add action that opens a modal form, and a public directory page.",
+    "streams": {
+        "people": {
+            "$ref": "streams/people.json"
+        }
+    }
+}

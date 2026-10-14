@@ -1,0 +1,35 @@
+{
+    "$schema": "https://streams.dev/schema/node/table.schema.json",
+    "handle": "table",
+    "name": "People table",
+    "columns": {
+        "name": {
+            "handle": "name",
+            "label": "Name"
+        },
+        "email": {
+            "handle": "email",
+            "label": "Email address"
+        }
+    },
+    "actions": {
+        "edit": {
+            "handle": "edit",
+            "label": "Edit",
+            "type": "link"
+        },
+        "delete": {
+            "handle": "delete",
+            "label": "Delete",
+            "type": "button"
+        }
+    },
+    "config": {
+        "order_by": [
+            [
+                "name",
+                "asc"
+            ]
+        ]
+    }
+}

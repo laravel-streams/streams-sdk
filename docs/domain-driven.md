@@ -22,7 +22,7 @@ streams/
     products.json
 ```
 
-`make:stream` and `make:table` write here. Definitions reference the [stream definition schema](/docs/sdk/stream-schema), so editors validate them.
+The `make:stream` and `make:table` command classes can write here. They are not registered with Artisan. `streams:make` is the registered command, and a table is the `table` component kind. Definitions reference the [stream definition schema](/docs/sdk/stream-schema), so editors validate them.
 
 ## The `app/Streams` domain registry
 

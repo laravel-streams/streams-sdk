@@ -2,9 +2,11 @@
 
 namespace Streams\Sdk\Tests\Console\Commands;
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\File;
-use Streams\Sdk\Tests\SdkTestCase;
+use Streams\Sdk\Console\Commands\MakeTable;
 use Streams\Sdk\Console\Support\Pint;
+use Streams\Sdk\Tests\SdkTestCase;
 
 class MakeTableTest extends SdkTestCase
 {
@@ -16,9 +18,11 @@ class MakeTableTest extends SdkTestCase
     {
         parent::setUp();
 
-        $this->tablesDir = sys_get_temp_dir() . '/streams-sdk-tables-' . uniqid();
+        $this->app->make(Kernel::class)->registerCommand($this->app->make(MakeTable::class));
 
-        $this->registryPath = $this->tablesDir . '/tables.php';
+        $this->tablesDir = sys_get_temp_dir().'/streams-sdk-tables-'.uniqid();
+
+        $this->registryPath = $this->tablesDir.'/tables.php';
 
         config([
             'streams.sdk.tables_dir' => $this->tablesDir,
@@ -40,10 +44,10 @@ class MakeTableTest extends SdkTestCase
         $this->artisan('make:table', ['id' => 'posts', '--panel' => true, '--page' => true])
             ->assertSuccessful();
 
-        $this->assertFileExists($this->tablesDir . '/posts.json');
+        $this->assertFileExists($this->tablesDir.'/posts.json');
         $this->assertFileExists($this->registryPath);
 
-        $this->assertStringContainsString('"handle": "posts"', File::get($this->tablesDir . '/posts.json'));
+        $this->assertStringContainsString('"handle": "posts"', File::get($this->tablesDir.'/posts.json'));
 
         $registry = File::get($this->registryPath);
 
@@ -70,7 +74,7 @@ class MakeTableTest extends SdkTestCase
             ->expectsOutputToContain("'posts' => ['panel' => true, 'page' => true]")
             ->assertSuccessful();
 
-        $this->assertFileDoesNotExist($this->tablesDir . '/posts.json');
+        $this->assertFileDoesNotExist($this->tablesDir.'/posts.json');
         $this->assertFileDoesNotExist($this->registryPath);
 
         // The real run applies exactly the content the dry run described.
@@ -127,6 +131,6 @@ class MakeTableTest extends SdkTestCase
         $this->artisan('make:table', ['id' => 'Not Valid!'])
             ->assertFailed();
 
-        $this->assertFileDoesNotExist($this->tablesDir . '/Not Valid!.json');
+        $this->assertFileDoesNotExist($this->tablesDir.'/Not Valid!.json');
     }
 }

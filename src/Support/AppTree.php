@@ -87,11 +87,37 @@ class AppTree
      */
     protected string $root;
 
-    public static function load(string $rootFile): static
+    /**
+     * Load the app tree.
+     *
+     * $extraContainers are containers a component kind adds on top of the
+     * built-in ones. Keys are the parent node type.
+     *
+     * @param  array<string, array<string, array{type: string, map: bool, map_of?: string}>>  $extraContainers
+     */
+    public static function load(string $rootFile, array $extraContainers = []): static
     {
-        $tree = new static();
+        $tree = new static;
 
         $tree->root = rtrim(dirname($rootFile), '/');
+
+        foreach ($extraContainers as $parent => $specs) {
+            if (! is_string($parent) || ! is_array($specs)) {
+                throw new AppTreeException('Extra containers must be a map of parent type to child specs.');
+            }
+
+            foreach ($specs as $key => $spec) {
+                if (! is_string($key) || ! is_array($spec)) {
+                    throw new AppTreeException("Extra container [{$parent}.{$key}] is invalid.");
+                }
+
+                if (isset($tree->containers[$parent][$key])) {
+                    throw new AppTreeException("Container [{$parent}.{$key}] is already defined.");
+                }
+
+                $tree->containers[$parent][$key] = $spec;
+            }
+        }
 
         $tree->loadFile($rootFile, '', 'root');
 
@@ -105,7 +131,7 @@ class AppTree
      */
     public function node(string $path): array
     {
-        if (!isset($this->nodes[$path])) {
+        if (! isset($this->nodes[$path])) {
             throw new AppTreeException("Unknown app tree node [{$path}].");
         }
 
@@ -184,9 +210,9 @@ class AppTree
      */
     public function assertSegment(string $segment): void
     {
-        if (!preg_match(self::SEGMENT_PATTERN, $segment)) {
+        if (! preg_match(self::SEGMENT_PATTERN, $segment)) {
             throw new AppTreeException(
-                "Invalid path segment [{$segment}]. Segments must be snake_case or slug: " .
+                "Invalid path segment [{$segment}]. Segments must be snake_case or slug: ".
                 'lowercase letters, numbers, underscores or hyphens, starting with a letter.'
             );
         }
@@ -214,7 +240,7 @@ class AppTree
 
         $data = json_decode($contents, true);
 
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             throw new AppTreeException("App tree file [{$file}] does not contain a JSON object.");
         }
 
@@ -252,7 +278,7 @@ class AppTree
         }
 
         foreach ($this->containers[$type] ?? [] as $key => $spec) {
-            if (!array_key_exists($key, $data) || !is_array($data[$key])) {
+            if (! array_key_exists($key, $data) || ! is_array($data[$key])) {
                 continue;
             }
 
@@ -276,7 +302,7 @@ class AppTree
     protected function registerUiChildren(string $streamPath, array $ui): void
     {
         foreach ($this->containers['ui'] as $key => $spec) {
-            if (!array_key_exists($key, $ui) || !is_array($ui[$key])) {
+            if (! array_key_exists($key, $ui) || ! is_array($ui[$key])) {
                 continue;
             }
 
@@ -301,7 +327,7 @@ class AppTree
         $seen = [];
 
         foreach ($map as $segment => $node) {
-            if (!is_string($segment) || !is_array($node)) {
+            if (! is_string($segment) || ! is_array($node)) {
                 continue;
             }
 
@@ -311,7 +337,7 @@ class AppTree
 
             if (isset($seen[$class]) && $seen[$class] !== $segment) {
                 throw new AppTreeException(
-                    "Duplicate name in [{$containerPath}]: [{$seen[$class]}] and [{$segment}] both derive " .
+                    "Duplicate name in [{$containerPath}]: [{$seen[$class]}] and [{$segment}] both derive ".
                     "the StudlyCase class [{$class}]."
                 );
             }
@@ -328,7 +354,7 @@ class AppTree
     protected function registerNodeAt(string $path, string $type, array $node): void
     {
         if (is_array($node) && isset($node['$ref']) && is_string($node['$ref'])) {
-            $this->loadFile($this->root . '/' . $node['$ref'], $path, $type);
+            $this->loadFile($this->root.'/'.$node['$ref'], $path, $type);
 
             return;
         }
@@ -338,7 +364,7 @@ class AppTree
 
     protected function joinPath(string $parent, string $segment): string
     {
-        return $parent === '' ? $segment : $parent . '.' . $segment;
+        return $parent === '' ? $segment : $parent.'.'.$segment;
     }
 
     /**
@@ -350,7 +376,7 @@ class AppTree
 
         $real = realpath($file);
 
-        if ($root !== false && $real !== false && str_starts_with($real, $root . '/')) {
+        if ($root !== false && $real !== false && str_starts_with($real, $root.'/')) {
             return substr($real, strlen($root) + 1);
         }
 

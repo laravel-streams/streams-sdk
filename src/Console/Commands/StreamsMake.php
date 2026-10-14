@@ -228,6 +228,10 @@ class StreamsMake extends Command
             $recipe = $this->recipePayload();
             $path = $this->pathArgument() ?? $recipe['path'];
 
+            if ($this->pathArgument() !== null && $recipe['path'] !== null && $this->pathArgument() !== $recipe['path']) {
+                return $this->failJson('The recipe path must match the command path.', 'path');
+            }
+
             if ($path === null) {
                 return $this->failJson('A dot path is required.', 'path');
             }
@@ -238,6 +242,12 @@ class StreamsMake extends Command
 
             if ($kind === null) {
                 return $this->failJson("No component kind fits at [{$path}].", 'path');
+            }
+
+            foreach (array_keys($recipe['input'] ?? []) as $key) {
+                if ($kind->input((string) $key) === null) {
+                    return $this->failJson('Unknown input field.', (string) $key);
+                }
             }
 
             $interactive = $this->input->isInteractive() && ! $this->option('no-interaction');
@@ -253,7 +263,7 @@ class StreamsMake extends Command
             $errors = $kind->validate($definition->input);
 
             if ($errors !== []) {
-                return $this->failJson('Missing required value.', $errors[0]['field'], $errors);
+                return $this->failJson('Invalid component definition.', $errors[0]['field'], $errors);
             }
 
             $written = $editor->apply($this->treeFile(), $path, $definition->input, (bool) $this->option('dry-run'));
@@ -367,10 +377,21 @@ class StreamsMake extends Command
             throw new TreeEditException("JSON recipe not found [{$file}].");
         }
 
-        $data = json_decode((string) file_get_contents($file), true);
+        $contents = (string) file_get_contents($file);
+        $object = json_decode($contents);
 
-        if (! is_array($data)) {
-            throw new TreeEditException("JSON recipe [{$file}] must be a JSON object.");
+        if (! $object instanceof \stdClass) {
+            throw new TreeEditException("JSON recipe [{$file}] must be a JSON object.", 'json');
+        }
+
+        $data = json_decode($contents, true);
+
+        if (array_key_exists('path', $data) && ! is_string($data['path'])) {
+            throw new TreeEditException('The recipe path must be a string.', 'path');
+        }
+
+        if (property_exists($object, 'input') && ! $object->input instanceof \stdClass) {
+            throw new TreeEditException('The recipe input must be a JSON object.', 'input');
         }
 
         $path = isset($data['path']) && is_string($data['path']) ? $data['path'] : null;

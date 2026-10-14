@@ -163,7 +163,7 @@ Every prompt comes from the kind's input schema. The same definition supplies th
 
 ```json
 {
-    "message": "Missing required value.",
+    "message": "Invalid component definition.",
     "field": "label",
     "errors": [
         {"field": "label", "message": "The label field is required."}
@@ -171,7 +171,7 @@ Every prompt comes from the kind's input schema. The same definition supplies th
 }
 ```
 
-`--json=recipe.json` is the recipe. The file is either the node object or `{"path": "people.actions.add", "input": { ... }}`. Field flags override recipe keys. `--dry-run` with a recipe or flags prints the edit and does not write the JSON file.
+`--json=recipe.json` is the recipe. The file is either the node object or `{"path": "people.actions.add", "input": { ... }}`. Field flags override recipe keys. Unknown fields, invalid JSON objects, and a recipe path that differs from the command path produce a JSON field error before writing. `--dry-run` with a recipe or flags prints the edit and does not write the JSON file.
 
 ```bash
 php artisan streams:make people.actions.add --no-interaction --label="Add person" --type=modal --form=people.actions.add.form

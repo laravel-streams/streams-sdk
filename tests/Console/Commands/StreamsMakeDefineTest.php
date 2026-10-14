@@ -33,7 +33,7 @@ class StreamsMakeDefineTest extends SdkTestCase
             'form' => 'people.actions.add.form',
         ];
 
-        $prompted = $this->copyFixture();
+        $prompted = $this->copyWithoutAddAction();
         $this->artisan('streams:make', [
             'path' => 'people.actions.add',
             '--tree' => $prompted.'/streams.json',
@@ -44,7 +44,7 @@ class StreamsMakeDefineTest extends SdkTestCase
             ->expectsQuestion('Modal form', 'people.actions.add.form')
             ->assertExitCode(0);
 
-        $flagged = $this->copyFixture();
+        $flagged = $this->copyWithoutAddAction();
         $flagCode = Artisan::call('streams:make', [
             'path' => 'people.actions.add',
             '--tree' => $flagged.'/streams.json',
@@ -63,7 +63,7 @@ class StreamsMakeDefineTest extends SdkTestCase
             'input' => $input,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
-        $fromRecipe = $this->copyFixture();
+        $fromRecipe = $this->copyWithoutAddAction();
         $recipeCode = Artisan::call('streams:make', [
             'path' => 'people.actions.add',
             '--tree' => $fromRecipe.'/streams.json',
@@ -83,6 +83,8 @@ class StreamsMakeDefineTest extends SdkTestCase
         $this->assertSame($input['form'], $promptTree['people.actions.add']['form']);
         $this->assertSame($promptTree, $flagTree);
         $this->assertSame($promptTree, $recipeTree);
+        $this->assertSame(File::get($prompted.'/streams/people.json'), File::get($flagged.'/streams/people.json'));
+        $this->assertSame(File::get($prompted.'/streams/people.json'), File::get($fromRecipe.'/streams/people.json'));
 
         File::deleteDirectory($prompted);
         File::deleteDirectory($flagged);
@@ -208,6 +210,82 @@ class StreamsMakeDefineTest extends SdkTestCase
                 $this->assertNotSame('', $field->flag, $kind->name.'.'.$field->key);
             }
         }
+    }
+
+    public function test_recipe_only_path_flags_override_recipe_and_dry_run_does_not_write(): void
+    {
+        $copy = $this->copyWithoutAddAction();
+        $file = $copy.'/recipe.json';
+        File::put($file, json_encode([
+            'path' => 'people.actions.add',
+            'input' => ['label' => 'Recipe label', 'type' => 'button'],
+        ]));
+        $before = File::get($copy.'/streams/people.json');
+
+        $options = [
+            '--tree' => $copy.'/streams.json',
+            '--json' => $file,
+            '--no-interaction' => true,
+            '--label' => 'Flag label',
+        ];
+        $this->assertSame(0, Artisan::call('streams:make', $options + ['--dry-run' => true]));
+        $dry = json_decode(Artisan::output(), true);
+        $this->assertFalse($dry['written']);
+        $this->assertSame('add', $dry['input']['handle']);
+        $this->assertSame('Flag label', $dry['input']['label']);
+        $this->assertSame($before, File::get($copy.'/streams/people.json'));
+
+        $this->assertSame(0, Artisan::call('streams:make', $options));
+        $actual = json_decode(Artisan::output(), true);
+        $this->assertTrue($actual['written']);
+        $this->assertSame($dry['input'], AppTree::load($copy.'/streams.json')->node('people.actions.add'));
+        $this->assertSame([], $this->phpFiles($copy));
+
+        File::deleteDirectory($copy);
+    }
+
+    public function test_invalid_recipes_return_field_errors_without_writing(): void
+    {
+        $copy = $this->copyFixture();
+        $before = File::get($copy.'/streams/people.actions.add.json');
+        $file = $copy.'/recipe.json';
+        $cases = [
+            ['[]', 'json'],
+            ['{"input":[]}', 'input'],
+            ['{"path":42,"input":{}}', 'path'],
+            ['{"path":"people.actions.other","input":{}}', 'path'],
+            ['{"label":"Add","type":"button","typo":true}', 'typo'],
+            ['{"label":"Add","type":"unsupported"}', 'type'],
+            ['{"label":"Add","type":"modal"}', 'form'],
+        ];
+
+        foreach ($cases as [$recipe, $field]) {
+            File::put($file, $recipe);
+            $code = Artisan::call('streams:make', [
+                'path' => 'people.actions.add',
+                '--tree' => $copy.'/streams.json',
+                '--json' => $file,
+                '--no-interaction' => true,
+            ]);
+            $output = Artisan::output();
+            $this->assertSame(1, $code, $output);
+            $this->assertSame($field, json_decode($output, true)['field'], $output);
+            $this->assertSame($before, File::get($copy.'/streams/people.actions.add.json'));
+        }
+
+        File::deleteDirectory($copy);
+    }
+
+    protected function copyWithoutAddAction(): string
+    {
+        $copy = $this->copyFixture();
+        $file = $copy.'/streams/people.json';
+        $data = json_decode(File::get($file), true);
+        unset($data['ui']['actions']['add']);
+        File::put($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->assertFalse(AppTree::load($copy.'/streams.json')->has('people.actions.add'));
+
+        return $copy;
     }
 
     protected function copyFixture(): string

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Streams\Sdk\Support\AppTree;
 use Streams\Sdk\Tests\SdkTestCase;
+use Streams\Sdk\Tests\Support\GoldenFiles;
 
 class PeoplePagesMakeTest extends SdkTestCase
 {
@@ -55,5 +56,27 @@ class PeoplePagesMakeTest extends SdkTestCase
         $this->assertIsArray($report);
 
         return $report;
+    }
+
+    /** @dataProvider inputModes */
+    public function test_command_input_modes_match_the_people_golden_files(array $arguments): void
+    {
+        GoldenFiles::assertGenerated(function (string $app) use ($arguments): void {
+            $report = $this->make(array_merge($arguments, ['--output' => $app]));
+            $this->assertSame([], $report['unapplied']);
+            $this->assertSame([], $report['conflicts']);
+            $this->assertCount(4, $report['created']);
+            // Ownership metadata is tested separately; the golden captures app code.
+            File::delete($app.'/streams.lock');
+        }, __DIR__.'/../../Fixtures/Golden/people-make');
+    }
+
+    public static function inputModes(): array
+    {
+        return [
+            'whole tree via configured defaults' => [[]],
+            'stream path via explicit tree' => [['path' => 'people', '--tree' => __DIR__.'/../../Fixtures/PeopleMake/streams.json']],
+            'manage component and dependencies' => [['path' => 'people.pages.manage']],
+        ];
     }
 }

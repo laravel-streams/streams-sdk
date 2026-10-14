@@ -192,9 +192,10 @@ class BuildStage
     protected function compile(AppTree $tree, ?string $only): MemoryTree
     {
         $memory = new MemoryTree;
+        $scope = $this->scope($tree, $only);
 
         foreach ($tree->types() as $path => $type) {
-            if (! in_array($type, Paths::FILE_TYPES, true) || ! $this->inScope($path, $only)) {
+            if (! in_array($type, Paths::FILE_TYPES, true) || ! $this->inScope($path, $only) && ! in_array($path, $scope, true)) {
                 continue;
             }
 
@@ -212,12 +213,40 @@ class BuildStage
             $memory->add(new CompiledFile(
                 $path,
                 $relative,
-                $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
+                (new ComponentRenderer($this->paths))->render(
+                    $tree, $path, $type, $this->paths->namespaceFor($relative), $class,
+                    $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
+                ),
                 $class,
             ));
         }
 
         return $memory;
+    }
+
+    /** Dependencies of a manage page are built through the same command. */
+    protected function scope(AppTree $tree, ?string $only): array
+    {
+        if ($only === null || $tree->type($only) !== 'page') {
+            return [];
+        }
+
+        $node = $tree->node($only);
+        $stream = explode('.', $only)[0];
+        $table = $node['table'] ?? null;
+        if (! is_string($table)) {
+            return [];
+        }
+
+        $table = str_contains($table, '.') ? $table : $stream.'.'.$table;
+        $paths = [$table];
+        foreach ($tree->types() as $path => $type) {
+            if ($path === $stream.'.actions.add' || str_starts_with($path, $stream.'.actions.add.')) {
+                $paths[] = $path;
+            }
+        }
+
+        return $paths;
     }
 
     /**
@@ -343,7 +372,7 @@ PHP;
                     $hasClass = true;
 
                     foreach ($node->stmts ?? [] as $stmt) {
-                        if ($stmt instanceof ClassMethod && $stmt->name->toString() === 'label') {
+                        if ($stmt instanceof ClassMethod && in_array($stmt->name->toString(), ['label', 'generatedLabel'], true)) {
                             $hasLabel = true;
                         }
                     }

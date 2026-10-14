@@ -48,15 +48,27 @@ class Paths
      */
     public function __construct(protected array $templates) {}
 
-    public static function fromConfig(): static
+    /**
+     * Paths from the published config, on top of the reference layout.
+     *
+     * When $variant is given (or detected from the installed Laravel and
+     * Streams versions) the variant's reference templates are merged over the
+     * defaults, followed by any explicit config under
+     * config('streams.sdk.make.paths') so app config always wins.
+     */
+    public static function fromConfig(?string $variant = null): static
     {
+        $variant ??= Variants::detect();
+
+        $reference = array_merge(self::DEFAULTS, Variants::referencesFor($variant));
+
         $configured = config('streams.sdk.make.paths', []);
 
         if (! is_array($configured)) {
             $configured = [];
         }
 
-        return new static(array_merge(self::DEFAULTS, $configured));
+        return new static(array_merge($reference, $configured));
     }
 
     /**

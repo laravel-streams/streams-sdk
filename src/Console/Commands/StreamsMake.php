@@ -77,8 +77,8 @@ class StreamsMake extends Command
 
     /**
      * No path, no recipe, and no field flags: show what can be made.
-     * --dry-run and --json without a recipe still build, which is the
-     * existing plan/apply path.
+     * --dry-run, --json, and --fix without a recipe still build, which is
+     * the existing plan/apply path.
      */
     protected function shouldList(): bool
     {
@@ -86,7 +86,7 @@ class StreamsMake extends Command
             return false;
         }
 
-        return ! $this->option('dry-run') && ! $this->wantsJsonOutput();
+        return ! $this->option('dry-run') && ! $this->wantsJsonOutput() && ! $this->option('fix');
     }
 
     /**
@@ -138,19 +138,18 @@ class StreamsMake extends Command
         $fixes = new FixRegistry;
         $fixes->add(new RegenerateConflictFixProvider($stage, $output));
         $report = new BuildReport($plan, $fixes);
-        $fixed = [];
 
         if ($this->option('fix') && ! $this->option('dry-run')) {
             foreach ($report->failed() as $edit) {
                 foreach ($fixes->solutionsFor($edit) as $solution) {
                     if ($solution->apply()) {
-                        $fixed[] = $edit;
+                        $report->recordFixed($edit);
                     }
                 }
             }
 
             $plan = $stage->plan($tree, $only, $output);
-            $report = new BuildReport($plan, $fixes);
+            $report->setPlan($plan);
         }
 
         if ($this->wantsJsonOutput()) {
@@ -167,12 +166,8 @@ class StreamsMake extends Command
             $diff = $plan->unifiedDiff();
             $this->line($diff === '' ? '(no changes)' : $diff);
         } else {
-            foreach ($plan->created as $file) {
-                $this->line("<info>created:</info> {$file}");
-            }
-
-            foreach ($plan->modified as $file) {
-                $this->line("<info>modified:</info> {$file}");
+            foreach ($report->applied() as $applied) {
+                $this->line("<info>{$applied['reason']}:</info> {$applied['path']} {$applied['file']}");
             }
         }
 
@@ -180,12 +175,24 @@ class StreamsMake extends Command
             $this->line("<fg=yellow>skipped:</> {$file}");
         }
 
-        foreach ($plan->unapplied as $edit) {
-            $this->line("<fg=yellow>unapplied:</> {$edit['path']} {$edit['file']} {$edit['reason']}");
+        foreach ($report->unapplied() as $edit) {
+            $line = "<fg=yellow>unapplied:</> {$edit->path} {$edit->file} ({$edit->reason})";
+
+            if ($edit->suggestedChange !== null) {
+                $line .= " — {$edit->suggestedChange}";
+            }
+
+            $this->line($line);
         }
 
-        foreach ($plan->conflicts as $conflict) {
-            $this->line("<fg=yellow>conflict:</> {$conflict['path']} {$conflict['file']}");
+        foreach ($report->conflicts() as $edit) {
+            $line = "<fg=yellow>conflict:</> {$edit->path} {$edit->file} ({$edit->reason})";
+
+            if ($edit->suggestedChange !== null) {
+                $line .= " — {$edit->suggestedChange}";
+            }
+
+            $this->line($line);
         }
 
         if ($this->option('fix')) {
@@ -199,15 +206,16 @@ class StreamsMake extends Command
                 }
             }
 
-            foreach ($fixed as $edit) {
+            foreach ($report->fixed() as $edit) {
                 $this->line("<fg=green>fixed:</> {$edit->path} {$edit->file} — {$edit->suggestedChange}");
             }
         }
 
         $this->line(sprintf(
-            'created: %d modified: %d skipped: %d unapplied: %d conflicts: %d',
+            'created: %d modified: %d fixed: %d skipped: %d unapplied: %d conflicts: %d',
             count($plan->created),
             count($plan->modified),
+            count($report->fixed()),
             count($plan->skipped),
             count($plan->unapplied),
             count($plan->conflicts),

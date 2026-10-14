@@ -65,6 +65,8 @@ class FixRegistryTest extends SdkTestCase
             ['path' => 'people.model', 'file' => 'app/Support/People/PeopleModel.php', 'reason' => 'modified'],
         ], $array['applied']);
 
+        $this->assertSame([], $array['fixed']);
+
         $this->assertSame('people', $array['failed'][0]['path']);
         $this->assertSame('app/Support/People/People.php', $array['failed'][0]['file']);
         $this->assertStringContainsString('hand edit', $array['failed'][0]['reason']);
@@ -75,6 +77,40 @@ class FixRegistryTest extends SdkTestCase
         $this->assertStringContainsString('applied: people.input app/Support/People/PeopleInput.php (created)', $text);
         $this->assertStringContainsString('failed: people app/Support/People/People.php (hand edit; hash does not match streams.lock)', $text);
         $this->assertStringContainsString('— fix: regenerate app/Support/People/People.php from the app tree', $text);
+    }
+
+    public function test_recorded_fixes_are_kept_when_the_report_replans(): void
+    {
+        $plan = new BuildPlan;
+        $plan->created = ['app/Support/People/PeopleInput.php'];
+        $plan->files['app/Support/People/PeopleInput.php'] = 'people.input';
+        $plan->conflicts = [[
+            'path' => 'people',
+            'file' => 'app/Support/People/People.php',
+            'reason' => 'hand edit; hash does not match streams.lock',
+        ]];
+
+        $registry = new FixRegistry([new HandEditConflictProvider]);
+        $report = new BuildReport($plan, $registry);
+
+        $solved = $report->failed()[0];
+        $this->assertTrue($registry->solutionsFor($solved)[0]->apply());
+        $report->recordFixed($solved);
+
+        $clean = new BuildPlan;
+        $report->setPlan($clean);
+
+        $array = $report->toArray();
+
+        $this->assertSame([], $array['applied']);
+        $this->assertSame([], $array['failed']);
+        $this->assertCount(1, $array['fixed']);
+        $this->assertSame('people', $array['fixed'][0]['path']);
+        $this->assertSame('app/Support/People/People.php', $array['fixed'][0]['file']);
+        $this->assertStringContainsString('hand edit', $array['fixed'][0]['reason']);
+        $this->assertSame('regenerate app/Support/People/People.php from the app tree', $array['fixed'][0]['suggestedChange']);
+
+        $this->assertStringContainsString('fixed: people app/Support/People/People.php — regenerate app/Support/People/People.php from the app tree', $report->renderText());
     }
 
     public function test_conflict_solution_summary_names_the_file(): void

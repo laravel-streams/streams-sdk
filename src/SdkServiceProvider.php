@@ -17,6 +17,7 @@ use Streams\Sdk\Console\Commands\ShowEntry;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Commands\StreamsTap;
+use Streams\Sdk\Console\Commands\StreamsValidate;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
 use Streams\Sdk\Console\Inputs\BooleanConsoleInput;
 use Streams\Sdk\Console\Inputs\IntegerConsoleInput;
@@ -38,6 +39,7 @@ class SdkServiceProvider extends ServiceProvider
                 CatalogGenerate::class,
                 StreamsSchema::class,
                 StreamsTap::class,
+                StreamsValidate::class,
                 ShowEntry::class,
                 ListEntries::class,
                 ListStreams::class,

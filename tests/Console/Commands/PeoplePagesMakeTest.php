@@ -79,4 +79,32 @@ class PeoplePagesMakeTest extends SdkTestCase
             'manage component and dependencies' => [['path' => 'people.pages.manage']],
         ];
     }
+
+    public function test_add_action_is_attached_to_an_existing_manage_page_with_a_minimal_ast_diff(): void
+    {
+        $relative = 'app/Domains/People/Panel/Pages/PeoplePagesManage.php';
+        $original = File::get(__DIR__.'/../../Fixtures/PeopleMake/ExistingManage.php');
+        File::ensureDirectoryExists(dirname($this->output.'/'.$relative));
+        File::put($this->output.'/'.$relative, $original);
+
+        $dry = $this->make(['path' => 'people.actions.add', '--dry-run' => true]);
+        $this->assertSame($original, File::get($this->output.'/'.$relative));
+        $real = $this->make(['path' => 'people.actions.add']);
+        $this->assertSame($dry, $real);
+        $this->assertSame([$relative], $real['modified']);
+        $this->assertSame([], $real['unapplied']);
+        $this->assertCount(2, $real['created']);
+
+        $expected = str_replace(
+            ['        PeopleTable::register($this);', '                            PeopleActionsMenu::make(),'],
+            ["        PeopleTable::register(\$this);\n        AddPersonModal::register(\$this);", "                            PeopleActionsMenu::make(),\n                            AddPersonModal::resolve(),"],
+            $original,
+        );
+        $this->assertSame($expected, File::get($this->output.'/'.$relative));
+        $second = $this->make(['path' => 'people.actions.add']);
+        $this->assertSame([], $second['created']);
+        $this->assertSame([], $second['modified']);
+        $this->assertSame('', $second['diff']);
+        $this->assertSame($expected, File::get($this->output.'/'.$relative));
+    }
 }

@@ -33,7 +33,7 @@ exact failure the SDK already guards against with the app-definition drift check
 **Task #65 owns the type generation** — in the api-client repo, it consumes the schema
 output above and produces the front-end type layer for the Streams API client. That
 repo is where TypeScript type definitions, generated builders, and client parameter
-typing. Do not re-implement them here.
+typing live. Do not re-implement them here.
 
 ## Reference model
 

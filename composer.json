@@ -15,6 +15,9 @@
     "require-dev": {
         "streams/testing": "^1.0"
     },
+    "suggest": {
+        "spatie/ignition": "Optional: surface streams:make fix solutions in Ignition and Flare error pages."
+    },
     "autoload": {
         "psr-4": {
             "Streams\\Sdk\\": "src/"

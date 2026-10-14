@@ -5,6 +5,9 @@ namespace Streams\Sdk\Console\Commands;
 use Illuminate\Console\Command;
 use Streams\Sdk\Console\Make\BuildStage;
 use Streams\Sdk\Console\Make\DefinitionCollector;
+use Streams\Sdk\Console\Make\Reports\BuildReport;
+use Streams\Sdk\Console\Make\Reports\FixRegistry;
+use Streams\Sdk\Console\Make\Reports\Fixes\RegenerateConflictFixProvider;
 use Streams\Sdk\Console\Make\KindCatalog;
 use Streams\Sdk\Console\Make\Kinds\InputField;
 use Streams\Sdk\Console\Make\Kinds\Kind;
@@ -36,6 +39,7 @@ class StreamsMake extends Command
         {--tree= : App streams.json. Defaults to config streams.sdk.make.tree.}
         {--output= : Directory generated files are written under. Defaults to config streams.sdk.make.output.}
         {--dry-run : Print the plan or tree edit without writing files.}
+        {--fix : Apply fix provider solutions to failed edits. With --dry-run, preview them.}
         {--json= : JSON recipe file. With no file, print machine-readable JSON.}';
 
     protected $description = 'Make a node in the app JSON tree, or build generated files from that tree.';
@@ -131,8 +135,27 @@ class StreamsMake extends Command
             $stage->apply($plan, $output);
         }
 
+        $fixes = new FixRegistry;
+        $fixes->add(new RegenerateConflictFixProvider($stage, $output));
+        $report = new BuildReport($plan, $fixes);
+        $fixed = [];
+
+        if ($this->option('fix') && ! $this->option('dry-run')) {
+            foreach ($report->failed() as $edit) {
+                foreach ($fixes->solutionsFor($edit) as $solution) {
+                    if ($solution->apply()) {
+                        $fixed[] = $edit;
+                    }
+                }
+            }
+
+            $plan = $stage->plan($tree, $only, $output);
+            $report = new BuildReport($plan, $fixes);
+        }
+
         if ($this->wantsJsonOutput()) {
             $payload = $plan->toArray();
+            $payload['report'] = $report->toArray();
             $payload['kinds'] = $this->resolvedKinds($registry, $tree, $only);
 
             $this->output->writeln(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -163,6 +186,22 @@ class StreamsMake extends Command
 
         foreach ($plan->conflicts as $conflict) {
             $this->line("<fg=yellow>conflict:</> {$conflict['path']} {$conflict['file']}");
+        }
+
+        if ($this->option('fix')) {
+            if ($this->option('dry-run')) {
+                foreach ($report->failed() as $edit) {
+                    if ($edit->suggestedChange === null) {
+                        continue;
+                    }
+
+                    $this->line("<fg=green>would fix:</> {$edit->path} {$edit->file} — {$edit->suggestedChange}");
+                }
+            }
+
+            foreach ($fixed as $edit) {
+                $this->line("<fg=green>fixed:</> {$edit->path} {$edit->file} — {$edit->suggestedChange}");
+            }
         }
 
         $this->line(sprintf(

@@ -1,0 +1,149 @@
+{
+    "config": {
+        "source": {
+            "type": "database",
+            "table": "people"
+        },
+        "abstract": "App\\Domains\\People\\Models\\Person"
+    },
+    "fields": [
+        {
+            "handle": "id",
+            "type": "integer",
+            "required": true,
+            "unique": true,
+            "config": {
+                "default": "increment"
+            }
+        },
+        {
+            "handle": "created_at",
+            "type": "datetime",
+            "required": true,
+            "config": {
+                "default": "now"
+            }
+        },
+        {
+            "handle": "identity_id",
+            "type": "relationship",
+            "config": {
+                "related": "identities"
+            }
+        },
+        {
+            "handle": "organization_id",
+            "type": "relationship",
+            "config": {
+                "related": "organizations"
+            }
+        },
+        {
+            "handle": "location_id",
+            "type": "relationship",
+            "config": {
+                "related": "locations"
+            }
+        },
+        {
+            "handle": "first_name",
+            "type": "string",
+            "required": true,
+            "rules": ["max:40"]
+        },
+        {
+            "handle": "last_name",
+            "type": "string",
+            "required": true,
+            "rules": ["max:40"]
+        },
+        {
+            "handle": "status",
+            "type": "select",
+            "config": {
+                "default": "active",
+                "options": {
+                    "active": "Active",
+                    "inactive": "Inactive",
+                    "invited": "Invited"
+                }
+            }
+        },
+        {
+            "handle": "prefix",
+            "type": "string"
+        },
+        {
+            "handle": "given_name",
+            "type": "string",
+            "rules": ["max:40"]
+        },
+        {
+            "handle": "nickname",
+            "type": "string",
+            "rules": ["max:40"]
+        },
+        {
+            "handle": "middle_name",
+            "type": "string",
+            "rules": ["max:40"]
+        },
+        {
+            "handle": "suffix",
+            "type": "string"
+        },
+        {
+            "handle": "email",
+            "type": "email"
+        },
+        {
+            "handle": "phone_number",
+            "type": "string"
+        },
+        {
+            "handle": "location_id",
+            "type": "relationship",
+            "config": {
+                "related": "locations"
+            }
+        },
+        {
+            "handle": "is_child",
+            "type": "boolean"
+        },
+        {
+            "handle": "gender",
+            "type": "select",
+            "config": {
+                "options": {
+                    "male": "Male",
+                    "female": "Female"
+                }
+            }
+        },
+        {
+            "handle": "birthday",
+            "type": "date"
+        },
+        {
+            "handle": "marital_status",
+            "type": "select",
+            "config": {
+                "options": {
+                    "single": "Single",
+                    "married": "Married",
+                    "divorced": "Divorced",
+                    "widowed": "Widowed"
+                }
+            }
+        },
+        {
+            "handle": "household_id",
+            "type": "string",
+            "config": {
+                "nullable": true
+            }
+        }
+
+    ]
+}

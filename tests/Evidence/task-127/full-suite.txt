@@ -1,0 +1,96 @@
+PHPUnit 9.5.24 #StandWithUkraine
+
+PHP Deprecated:  SebastianBergmann\Exporter\Exporter::shortenedRecursiveExport(): Implicitly marking parameter $context as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/exporter/src/Exporter.php on line 78
+
+Deprecated: SebastianBergmann\Exporter\Exporter::shortenedRecursiveExport(): Implicitly marking parameter $context as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/sebastian/exporter/src/Exporter.php on line 78
+List Entries (Streams\Sdk\Tests\Console\Commands\ListEntries)
+ ✔ It can list entries
+
+List Streams (Streams\Sdk\Tests\Console\Commands\ListStreams)
+ ✔ It can list streams
+
+Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
+ ↩ It makes addons
+
+Make Table (Streams\Sdk\Tests\Console\Commands\MakeTable)
+ ✔ It makes a table and registers it in the panel and on the page
+ ✔ It is idempotent
+ ✔ Dry run shows the diff the real run applies without writing
+ ✔ It updates flags in place in an existing registry
+ ✔ It keeps existing entries when registering more tables
+ ✔ It rejects invalid table ids
+
+Show Entry (Streams\Sdk\Tests\Console\Commands\ShowEntry)
+ ✔ It can show an entry
+
+Php File (Streams\Sdk\Tests\Console\Support\PhpFile)
+ ✔ Puts an item into the returned array
+ ✔ Second identical put changes nothing
+ ✔ Updates flags in place without duplicates
+ ✔ Preserves hand written entries
+ ✔ Diff matches the change the save applies
+ ✔ Renders the versioned table stub
+
+Catalog Drift (Streams\Sdk\Tests\Support\CatalogDrift)
+ ✔ Catalog is up to date with field types and builders
+ ✔ Catalog contents are sane
+ ✔ Stream schema offers code derived field types
+ ✔ Generated schemas validate
+
+Golden Files (Streams\Sdk\Tests\Support\GoldenFiles)
+ ✔ Matches nested and hidden files and removes temporary directory
+PHP Deprecated:  PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $comparisonFailure as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+PHP Deprecated:  PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $previous as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+ ✔ Mismatch reports unified diff and cleans up
+
+Deprecated: PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $comparisonFailure as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+
+Deprecated: PHPUnit\Framework\ExpectationFailedException::__construct(): Implicitly marking parameter $previous as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/phpunit/phpunit/src/Framework/Exception/ExpectationFailedException.php on line 31
+ ✔ Missing empty file fails
+ ✔ Unexpected empty file fails
+ ✔ Generator exception propagates and cleans up
+ ✔ Each run gets an empty unique directory
+ ✔ Missing nonempty file reports deletion diff
+ ✔ Symbolic link is rejected without deleting its target
+
+Time: 00:02.293, Memory: 38.00 MB
+
+Summary of non-successful tests:
+
+Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
+ ↩ It makes addons
+OK, but incomplete, skipped, or risky tests!
+Tests: 28, Assertions: 1596, Skipped: 1.
+PHP Deprecated:  Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+
+Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+PHP Deprecated:  Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+
+Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 45
+PHP Deprecated:  Spatie\LaravelRay\Ray::handleWatcherCallable(): Implicitly marking parameter $callable as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 434
+
+Deprecated: Spatie\LaravelRay\Ray::handleWatcherCallable(): Implicitly marking parameter $callable as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/laravel-ray/src/Ray.php on line 434
+PHP Deprecated:  Spatie\Ray\Ray::create(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+
+Deprecated: Spatie\Ray\Ray::create(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+PHP Deprecated:  Spatie\Ray\Ray::create(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+
+Deprecated: Spatie\Ray\Ray::create(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 105
+PHP Deprecated:  Spatie\Ray\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+
+Deprecated: Spatie\Ray\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+PHP Deprecated:  Spatie\Ray\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+
+Deprecated: Spatie\Ray\Ray::__construct(): Implicitly marking parameter $uuid as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Ray.php on line 112
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::createFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 14
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::createFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 14
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::getSettingsFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 27
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::getSettingsFromConfigFile(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 27
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::searchConfigFiles(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 40
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFiles(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 40
+PHP Deprecated:  Spatie\Ray\Settings\SettingsFactory::searchConfigFilesOnDisk(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 49
+
+Deprecated: Spatie\Ray\Settings\SettingsFactory::searchConfigFilesOnDisk(): Implicitly marking parameter $configDirectory as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-22-a112-cfc353ae/vendor/spatie/ray/src/Settings/SettingsFactory.php on line 49

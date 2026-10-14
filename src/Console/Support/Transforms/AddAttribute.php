@@ -35,8 +35,7 @@ class AddAttribute implements Transform
     public function __construct(
         protected string $name,
         protected array $args = [],
-    ) {
-    }
+    ) {}
 
     public function apply(PhpEditor $editor): PhpEditor
     {

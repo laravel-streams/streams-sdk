@@ -1,0 +1,16 @@
+Task 136 independent review: APPROVED
+Reviewer: rename_review (gpt-6-luna), read-only.
+Reviewed commits: df23a60 and 96c4cc2.
+Initial finding: normal build trusted unsafe streams.lock file mappings. Fixed by shared StreamLock::validFile validation with regression coverage.
+Final review: no remaining substantive issues against acceptance; implementation and evidence approved.
+
+Acceptance reconciliation:
+1. Rename test verifies people.actions.add -> people.actions.create, JSON path, lock keys/hashes, Generated tag, unchanged file/class location, descendant form, and stable subsequent build.
+2. Manual node removal test verifies exact orphan report heading/key and unchanged file bytes.
+3. Registration test rejects streams:rename and streams:make:rename; provider unchanged.
+4. Full vendor/bin/phpunit exit 0: 119 tests, 3248 assertions, 1 existing MakeAddon skip, zero failures/errors. Focused StreamsMakeTest: 15 tests, 806 assertions. Raw outputs and implementation diff attached.
+5. Independent review approved after remediation.
+
+Additional checks: PHP lint passed on all 7 changed PHP files.
+Unavailable prescribed entry points: composer test:affected was attempted but no script exists; php artisan test was attempted but this package has no artisan file; Pint and PHPStan were attempted but not installed. These tool gaps were not hidden or treated as successful checks. Full PHPUnit is the task verification gate and passed.
+No server started, no process stopped, no push/deploy or changes outside assigned repository.

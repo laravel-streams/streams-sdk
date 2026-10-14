@@ -1,0 +1,48 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/form.schema.json",
+    "title": "Form node",
+    "description": "A form node. Addressed at people.actions.add.form. Sections are child nodes keyed by handle.",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fields": {
+            "type": "array",
+            "items": {
+                "type": "object"
+            }
+        },
+        "sections": {
+            "type": "object",
+            "description": "Form sections keyed by handle.",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "$ref": "https://streams.dev/schema/node/section.schema.json"
+                    },
+                    {
+                        "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                    }
+                ]
+            }
+        },
+        "buttons": {
+            "type": "array",
+            "items": {
+                "type": "object"
+            }
+        },
+        "config": {
+            "type": "object"
+        }
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/public-page.schema.json",
+    "title": "Public / front-end page node",
+    "description": "A front-end/public page. Addressed at people.public_pages.directory.",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "title": {
+            "type": "string"
+        },
+        "path": {
+            "type": "string",
+            "description": "URL path for the public page."
+        },
+        "view": {
+            "type": "string"
+        },
+        "config": {
+            "type": "object"
+        }
+    }
+}

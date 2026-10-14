@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/ref.schema.json",
+    "title": "Node reference",
+    "description": "A $ref wrapper pointing at a node file. The referenced file is loaded into the app tree at the wrapper's dot path.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "$ref"
+    ],
+    "properties": {
+        "$ref": {
+            "type": "string",
+            "description": "Path to the node file, relative to the app root (the directory of streams.json)."
+        },
+        "$comment": {
+            "type": "string"
+        }
+    }
+}

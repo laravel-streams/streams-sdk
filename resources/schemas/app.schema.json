@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/app.schema.json",
+    "title": "Streams app definition",
+    "description": "The root of the app tree (streams.json). Lists streams by snake_case/slug handle; every node is addressed by a dot path starting at the stream handle (people, people.table, people.actions.add, people.pages.manage).",
+    "type": "object",
+    "additionalProperties": true,
+    "required": [
+        "streams"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "Points at this schema."
+        },
+        "name": {
+            "type": "string",
+            "description": "The application name."
+        },
+        "description": {
+            "type": "string"
+        },
+        "streams": {
+            "type": "object",
+            "description": "Streams keyed by handle. Each value is an inline stream node or a $ref to the stream node file.",
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "$ref": "https://streams.dev/schema/node/stream.schema.json"
+                    },
+                    {
+                        "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://streams.dev/schema/node/page.schema.json",
+    "title": "Control panel page node",
+    "description": "A control panel page. Addressed at people.pages.manage.",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://streams.dev/schema/node/base.schema.json"
+        }
+    ],
+    "additionalProperties": true,
+    "properties": {
+        "handle": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "title": {
+            "type": "string"
+        },
+        "section": {
+            "type": "string",
+            "description": "The panel section this page lives in."
+        },
+        "table": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "$ref": "https://streams.dev/schema/node/table.schema.json"
+                },
+                {
+                    "$ref": "https://streams.dev/schema/node/ref.schema.json"
+                }
+            ],
+            "description": "The table shown on this page: a dot-path reference, inline node, or $ref."
+        },
+        "config": {
+            "type": "object"
+        }
+    }
+}

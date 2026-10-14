@@ -1,0 +1,10 @@
+{
+    "$schema": "https://streams.dev/schema/node/public-page.schema.json",
+    "handle": "directory",
+    "title": "People directory",
+    "path": "people",
+    "view": "people.directory",
+    "config": {
+        "table": "people.table"
+    }
+}

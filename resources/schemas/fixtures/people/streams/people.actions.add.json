@@ -1,0 +1,28 @@
+{
+    "$schema": "https://streams.dev/schema/node/action.schema.json",
+    "handle": "add",
+    "label": "Add person",
+    "type": "modal",
+    "form": {
+        "$ref": "streams/people.actions.add.form.json"
+    },
+    "actions": {
+        "more": {
+            "handle": "more",
+            "label": "More",
+            "type": "dropdown",
+            "actions": {
+                "import": {
+                    "handle": "import",
+                    "label": "Import",
+                    "type": "link"
+                },
+                "export": {
+                    "handle": "export",
+                    "label": "Export",
+                    "type": "link"
+                }
+            }
+        }
+    }
+}

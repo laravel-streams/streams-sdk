@@ -1,0 +1,55 @@
+{
+    "$schema": "https://streams.dev/schema/node/stream.schema.json",
+    "name": "People",
+    "handle": "people",
+    "description": "The people stream.",
+    "fields": [
+        {
+            "handle": "id",
+            "type": "uuid",
+            "required": true,
+            "unique": true,
+            "config": {
+                "default": true
+            }
+        },
+        {
+            "handle": "name",
+            "type": "string",
+            "required": true
+        },
+        {
+            "handle": "email",
+            "type": "email",
+            "required": true,
+            "unique": true
+        }
+    ],
+    "ui": {
+        "panel": {
+            "handle": "panel",
+            "title": "People",
+            "pages": [
+                "manage"
+            ]
+        },
+        "table": {
+            "$ref": "streams/people.table.json"
+        },
+        "actions": {
+            "add": {
+                "$ref": "streams/people.actions.add.json"
+            }
+        },
+        "pages": {
+            "manage": {
+                "$ref": "streams/people.pages.manage.json"
+            }
+        },
+        "public_pages": {
+            "directory": {
+                "$ref": "streams/people.public_pages.directory.json"
+            }
+        }
+    }
+}

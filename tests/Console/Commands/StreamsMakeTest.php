@@ -106,6 +106,33 @@ class StreamsMakeTest extends SdkTestCase
         $this->assertSame(StreamLock::hashContents($table), $lock['people.table'][$relative]);
     }
 
+    public function test_config_path_overrides_are_where_the_build_writes(): void
+    {
+        config([
+            'streams.sdk.make.paths' => [
+                'root' => 'packages/Domains',
+                'namespace' => 'Packages\\Domains',
+                'table' => '{root}/{Domain}/Panel/Tables/{Class}.php',
+            ],
+        ]);
+
+        $this->runJson();
+
+        $table = $this->output.'/packages/Domains/People/Panel/Tables/PeopleTable.php';
+
+        $this->assertFileExists($table);
+
+        $this->assertStringContainsString(
+            'namespace Packages\\Domains\\People\\Panel\\Tables;',
+            (string) File::get($table),
+        );
+
+        $this->assertNotContains(
+            'app/Domains/People/Panel/Tables/PeopleTable.php',
+            $this->phpFiles(),
+        );
+    }
+
     public function test_a_second_run_with_no_tree_changes_reports_nothing_created_or_modified(): void
     {
         $this->runJson();

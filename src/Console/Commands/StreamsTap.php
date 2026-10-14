@@ -35,7 +35,7 @@ class StreamsTap extends Command
 
         $result = $this->fetch($url);
 
-        if ($result['status'] === null || $result['status'] >= 400) {
+        if ($result['status'] === null || $result['status'] < 200 || $result['status'] >= 300) {
             $this->error($result['status'] === null
                 ? 'The tap URL could not be reached.'
                 : 'Tap failed with status '.$result['status'].'.');

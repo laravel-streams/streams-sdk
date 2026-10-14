@@ -60,7 +60,33 @@ class StreamsTapTest extends SdkTestCase
     {
         $this->artisan('streams:tap', [
             'tap' => 'file:///etc/passwd',
-        ])->assertFailed();
+        ])->expectsOutputToContain('The tap must be an http or https URL.')
+            ->assertFailed();
+    }
+
+    public function test_streams_tap_calls_the_url_without_input(): void
+    {
+        $base = $this->startServer();
+
+        $this->artisan('streams:tap', [
+            'tap' => $base.'/widgets',
+        ])->expectsOutputToContain('tapped')
+            ->assertSuccessful();
+
+        $this->assertSame('/widgets', $this->recordedUri());
+    }
+
+    public function test_streams_tap_input_keys_win_over_the_url_query_string(): void
+    {
+        $base = $this->startServer();
+
+        $this->artisan('streams:tap', [
+            'tap' => $base.'/widgets?status=archived&extra=1',
+            'input' => 'status=draft',
+        ])->expectsOutputToContain('tapped')
+            ->assertSuccessful();
+
+        $this->assertSame('/widgets?status=draft&extra=1', $this->recordedUri());
     }
 
     public function test_streams_tap_fails_when_the_tap_responds_with_an_error(): void
@@ -71,6 +97,16 @@ class StreamsTapTest extends SdkTestCase
             'tap' => $base.'/widgets',
             'input' => 'fail=1',
         ])->expectsOutputToContain('Tap failed with status 500.')
+            ->assertFailed();
+    }
+
+    public function test_streams_tap_fails_when_the_tap_responds_with_a_redirect(): void
+    {
+        $base = $this->startServer();
+
+        $this->artisan('streams:tap', [
+            'tap' => $base.'/widgets?redirect=1',
+        ])->expectsOutputToContain('Tap failed with status 302.')
             ->assertFailed();
     }
 
@@ -93,6 +129,11 @@ file_put_contents(getenv('TAP_LOG'), $_SERVER['REQUEST_URI']);
 if (isset($_GET['fail'])) {
     http_response_code(500);
     echo 'nope';
+    return;
+}
+if (isset($_GET['redirect'])) {
+    http_response_code(302);
+    echo 'moved';
     return;
 }
 echo 'tapped';

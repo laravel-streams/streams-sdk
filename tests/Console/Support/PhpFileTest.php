@@ -20,7 +20,7 @@ class PhpFileTest extends SdkTestCase
         $this->assertTrue($changed);
 
         $this->assertSame(
-            "<?php\n\nreturn ['posts' => ['panel' => true, 'page' => true]];",
+            "<?php\n\nreturn ['posts' => ['panel' => true, 'page' => true]];\n",
             $file->contents()
         );
     }
@@ -34,7 +34,7 @@ class PhpFileTest extends SdkTestCase
         $this->assertFalse($file->put('posts', ['panel' => true]));
 
         $this->assertSame(
-            "<?php\n\nreturn ['posts' => ['panel' => true]];",
+            "<?php\nreturn ['posts' => ['panel' => true]];\n",
             $file->contents()
         );
     }
@@ -48,14 +48,14 @@ class PhpFileTest extends SdkTestCase
         $file->put('posts', ['page' => true]);
 
         $this->assertSame(
-            "<?php\n\nreturn ['posts' => ['panel' => true, 'page' => true]];",
+            "<?php\nreturn ['posts' => ['panel' => true, 'page' => true]];\n",
             $file->contents()
         );
 
         $file->put('posts', ['panel' => false]);
 
         $this->assertSame(
-            "<?php\n\nreturn ['posts' => ['panel' => false, 'page' => true]];",
+            "<?php\nreturn ['posts' => ['panel' => false, 'page' => true]];\n",
             $file->contents()
         );
     }
@@ -69,7 +69,7 @@ class PhpFileTest extends SdkTestCase
         $file->put('posts', ['panel' => true]);
 
         $this->assertSame(
-            "<?php\n\nreturn ['theme' => 'dark', 'posts' => ['panel' => true]];",
+            "<?php\nreturn ['theme' => 'dark', 'posts' => ['panel' => true]];\n",
             $file->contents()
         );
     }
@@ -86,7 +86,7 @@ class PhpFileTest extends SdkTestCase
 
         $diff = $file->diff($original);
 
-        $this->assertStringContainsString('+return [\'posts\' => [\'panel\' => true]];', $diff);
+        $this->assertStringContainsString("+return ['posts' => ['panel' => true]];", $diff);
         $this->assertStringContainsString('-return [', $diff);
     }
 

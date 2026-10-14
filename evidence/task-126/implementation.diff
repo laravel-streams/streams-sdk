@@ -1,0 +1,309 @@
+diff --git a/.github/workflows/catalog-drift.yml b/.github/workflows/catalog-drift.yml
+new file mode 100644
+index 0000000..f94c847
+--- /dev/null
++++ b/.github/workflows/catalog-drift.yml
+@@ -0,0 +1,28 @@
++name: Catalog drift
++
++on:
++  push:
++    branches: ['1.0']
++  pull_request:
++
++permissions:
++  contents: read
++
++jobs:
++  catalog-drift:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: shivammathur/setup-php@v2
++        with:
++          php-version: '8.2'
++          extensions: mbstring, sqlite3, pdo_sqlite
++          tools: composer:v2
++          coverage: none
++      - name: Install dependencies
++        run: composer install --no-interaction --prefer-dist --no-progress
++      - name: Catalog drift and command regression tests
++        run: vendor/bin/phpunit --filter 'Catalog(Drift|ManifestMerge|Check)Test'
++      - name: TypeScript types drift check (task 65)
++        if: ${{ false }} # Enable and replace the placeholder when task 65 lands.
++        run: echo 'Task 65 will supply the TypeScript drift-check command.'
+diff --git a/src/Console/Commands/CatalogGenerate.php b/src/Console/Commands/CatalogGenerate.php
+index 58c656e..f540e6c 100644
+--- a/src/Console/Commands/CatalogGenerate.php
++++ b/src/Console/Commands/CatalogGenerate.php
+@@ -9,7 +9,8 @@ use Streams\Sdk\Support\CatalogGenerator;
+ class CatalogGenerate extends Command
+ {
+     protected $signature = 'streams:catalog
+-        {--path= : The directory to write catalog files into.}';
++        {--path= : The directory containing catalog files.}
++        {--check : Check for drift without writing any files.}';
+ 
+     protected $description = 'Generate the machine-readable SDK catalog, its schema, and streams.schema.json.';
+ 
+@@ -32,19 +33,41 @@ class CatalogGenerate extends Command
+         $fieldTypes = count($generator->fieldTypes());
+         $builders = count($generator->uiBuilders());
+ 
++        $drift = false;
++
+         foreach ($files as $file => $payload) {
++            $contents = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
++
++            if ($this->option('check')) {
++                if (!File::exists($file) || File::get($file) !== $contents) {
++                    $drift = true;
++                    $this->error("drift: {$file}");
++                }
++
++                continue;
++            }
++
+             File::ensureDirectoryExists(dirname($file));
+ 
+-            File::put(
+-                $file,
+-                json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL
+-            );
++            File::put($file, $contents);
+ 
+             $this->line("<info>written:</info> {$file}");
+         }
+ 
++        if ($this->option('check')) {
++            if ($drift) {
++                $this->error('Catalog is stale. Run streams:catalog to regenerate the files.');
++
++                return self::FAILURE;
++            }
++
++            $this->info('Catalog is up to date.');
++
++            return self::SUCCESS;
++        }
++
+         $this->line("cataloged {$fieldTypes} field types and {$builders} UI builders.");
+ 
+         return self::SUCCESS;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/src/Support/CatalogGenerator.php b/src/Support/CatalogGenerator.php
+index 75eb064..be57260 100644
+--- a/src/Support/CatalogGenerator.php
++++ b/src/Support/CatalogGenerator.php
+@@ -311,13 +311,20 @@ class CatalogGenerator
+      */
+     public function uiBuilders(): array
+     {
++        $builders = array_column($this->uiBuildersFromManifest(), null, 'id');
+         $path = $this->uiInstallPath();
+ 
+         if (is_dir($path)) {
+-            return $this->uiBuildersFromCode($path);
++            foreach ($this->uiBuildersFromCode($path) as $builder) {
++                $id = $builder['id'];
++
++                // The manifest remains authoritative for descriptive metadata.
++                // Retain entries that this version of streams/ui does not ship.
++                $builders[$id] = array_replace($builder, $builders[$id] ?? [], ['source' => 'code']);
++            }
+         }
+ 
+-        return $this->uiBuildersFromManifest();
++        return array_values($builders);
+     }
+ 
+     /**
+@@ -468,12 +475,24 @@ class CatalogGenerator
+             // Builders in streams/ui currently mirror the manifest ids by
+             // class short name; keep the manifest table authoritative for
+             // options until the package exports them.
++            $short = substr(basename($file), 0, -4);
++            $id = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $short) ?? $short);
++            $group = strtolower(basename(dirname($file)));
++
++            // Input/Text and Livewire/Table use group-qualified manifest ids.
++            if (in_array($group, ['input', 'livewire'], true) && !str_starts_with($id, $group . '-')) {
++                $id = $group . '-' . $id;
++            }
++
+             $builders[] = [
+-                'id' => strtolower(substr(basename($file), 0, -4)),
++                'id' => $id,
++                'group' => $group,
++                'options' => new \stdClass(),
++                'allowed_parents' => [],
+                 'source' => 'code',
+             ];
+         }
+ 
+         return $builders;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/tests/Support/CatalogCheckTest.php b/tests/Support/CatalogCheckTest.php
+new file mode 100644
+index 0000000..b504fec
+--- /dev/null
++++ b/tests/Support/CatalogCheckTest.php
+@@ -0,0 +1,70 @@
++<?php
++
++namespace Streams\Sdk\Tests\Support;
++
++use Illuminate\Support\Facades\Artisan;
++use Illuminate\Support\Facades\File;
++use Streams\Sdk\Tests\SdkTestCase;
++
++class CatalogCheckTest extends SdkTestCase
++{
++    protected string $directory;
++
++    protected function setUp(): void
++    {
++        parent::setUp();
++        $this->directory = sys_get_temp_dir() . '/streams-catalog-check-' . bin2hex(random_bytes(8));
++    }
++
++    protected function tearDown(): void
++    {
++        File::deleteDirectory($this->directory);
++        parent::tearDown();
++    }
++
++    protected function snapshot(): array
++    {
++        $snapshot = [];
++        foreach (File::allFiles($this->directory) as $file) {
++            $snapshot[$file->getRelativePathname()] = [file_get_contents($file->getPathname()), $file->getMTime()];
++        }
++
++        return $snapshot;
++    }
++
++    public function test_check_succeeds_without_changing_current_files(): void
++    {
++        $this->assertSame(0, Artisan::call('streams:catalog', ['--path' => $this->directory]));
++        $before = $this->snapshot();
++        $this->assertSame(0, Artisan::call('streams:catalog', ['--path' => $this->directory, '--check' => true]));
++        $this->assertStringContainsString('Catalog is up to date.', Artisan::output());
++        $this->assertSame($before, $this->snapshot());
++    }
++
++    public function test_check_fails_on_drift_without_changing_any_files(): void
++    {
++        $this->assertSame(0, Artisan::call('streams:catalog', ['--path' => $this->directory]));
++        foreach (['catalog/catalog.json', 'catalog/catalog.schema.json', 'schemas/streams.schema.json'] as $file) {
++            $original = File::get($this->directory . '/' . $file);
++            File::put($this->directory . '/' . $file, "stale\n");
++            $before = $this->snapshot();
++            $this->assertSame(1, Artisan::call('streams:catalog', ['--path' => $this->directory, '--check' => true]));
++            $this->assertStringContainsString('drift: ' . $this->directory . '/' . $file, Artisan::output());
++            $this->assertSame($before, $this->snapshot());
++            File::put($this->directory . '/' . $file, $original);
++        }
++    }
++
++    public function test_check_does_not_create_missing_files_or_directories(): void
++    {
++        $this->assertSame(1, Artisan::call('streams:catalog', ['--path' => $this->directory, '--check' => true]));
++        $this->assertDirectoryDoesNotExist($this->directory);
++
++        File::ensureDirectoryExists($this->directory . '/catalog');
++        File::put($this->directory . '/catalog/catalog.json', "stale\n");
++        $before = $this->snapshot();
++        $this->assertSame(1, Artisan::call('streams:catalog', ['--path' => $this->directory, '--check' => true]));
++        $this->assertSame($before, $this->snapshot());
++        $this->assertDirectoryDoesNotExist($this->directory . '/schemas');
++    }
++}
+diff --git a/tests/Support/CatalogManifestMergeTest.php b/tests/Support/CatalogManifestMergeTest.php
+new file mode 100644
+index 0000000..9016a5f
+--- /dev/null
++++ b/tests/Support/CatalogManifestMergeTest.php
+@@ -0,0 +1,40 @@
++<?php
++
++namespace Streams\Sdk\Tests\Support;
++
++use PHPUnit\Framework\TestCase;
++use Streams\Sdk\Support\CatalogGenerator;
++
++class CatalogManifestMergeTest extends TestCase
++{
++    public function test_installed_ui_preserves_every_manifest_builder_and_its_metadata(): void
++    {
++        $generator = new class extends CatalogGenerator {
++            protected function uiInstallPath(): string
++            {
++                return __DIR__ . '/../fixtures/catalog-ui';
++            }
++        };
++
++        $manifest = json_decode(file_get_contents(__DIR__ . '/../../resources/catalog/ui-builders.manifest.json'), true);
++        $builders = array_column($generator->uiBuilders(), null, 'id');
++
++        foreach ($manifest as $entry) {
++            $this->assertArrayHasKey($entry['id'], $builders);
++            $actual = $builders[$entry['id']];
++            unset($actual['source']);
++            $this->assertEquals($entry, json_decode(json_encode($actual), true));
++        }
++
++        foreach (['table', 'input-text', 'livewire-table'] as $id) {
++            $this->assertSame('code', $builders[$id]['source']);
++        }
++
++        $this->assertSame('manifest', $builders['form']['source']);
++        $this->assertSame('widget', $builders['custom-widget']['group']);
++        $this->assertInstanceOf(\stdClass::class, $builders['custom-widget']['options']);
++        $this->assertSame([], $builders['custom-widget']['allowed_parents']);
++        $this->assertCount(count($manifest) + 1, $builders);
++        $this->assertSame(json_encode($generator->uiBuilders()), json_encode($generator->uiBuilders()));
++    }
++}
+diff --git a/tests/fixtures/catalog-ui/src/Input/Text.php b/tests/fixtures/catalog-ui/src/Input/Text.php
+new file mode 100644
+index 0000000..7228f10
+--- /dev/null
++++ b/tests/fixtures/catalog-ui/src/Input/Text.php
+@@ -0,0 +1,3 @@
++<?php
++
++// Filename fixture for read-only installed-package discovery; never autoloaded.
+diff --git a/tests/fixtures/catalog-ui/src/Livewire/Table.php b/tests/fixtures/catalog-ui/src/Livewire/Table.php
+new file mode 100644
+index 0000000..7228f10
+--- /dev/null
++++ b/tests/fixtures/catalog-ui/src/Livewire/Table.php
+@@ -0,0 +1,3 @@
++<?php
++
++// Filename fixture for read-only installed-package discovery; never autoloaded.
+diff --git a/tests/fixtures/catalog-ui/src/Table/Table.php b/tests/fixtures/catalog-ui/src/Table/Table.php
+new file mode 100644
+index 0000000..7228f10
+--- /dev/null
++++ b/tests/fixtures/catalog-ui/src/Table/Table.php
+@@ -0,0 +1,3 @@
++<?php
++
++// Filename fixture for read-only installed-package discovery; never autoloaded.
+diff --git a/tests/fixtures/catalog-ui/src/Widget/CustomWidget.php b/tests/fixtures/catalog-ui/src/Widget/CustomWidget.php
+new file mode 100644
+index 0000000..7228f10
+--- /dev/null
++++ b/tests/fixtures/catalog-ui/src/Widget/CustomWidget.php
+@@ -0,0 +1,3 @@
++<?php
++
++// Filename fixture for read-only installed-package discovery; never autoloaded.

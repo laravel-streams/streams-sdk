@@ -180,6 +180,21 @@ php artisan streams:make people.actions.add --json=add.json --dry-run
 
 ### Component kinds
 
+### Renaming a node
+
+```bash
+php artisan streams:make rename people.actions.add people.actions.create
+php artisan streams:make rename people.actions.add people.actions.create --dry-run --json
+```
+
+Rename is a mode of `streams:make`; it registers no command. It accepts one pair of distinct sibling map-entry paths. The source must exist and the destination must be absent. It changes the map key while retaining its `$ref`, then edits the existing PHP `#[Generated]` tag, generated `nodePath()` return, and `Node:` comment through the format-preserving editor. Nested generated nodes (such as the action's form) follow the new prefix. Files and class names stay in place; the lock maps the new dot paths to those existing files and their updated hashes. Subsequent builds use that mapping.
+
+All edits are planned before any write. Missing lock entries, destination collisions, missing tags, parse errors, or hand edits reject the rename without writing. On a write failure, original bytes are restored. `--dry-run` returns the planned paths without changing the tree, code, or lock. Recipes, authoring flags, and `--list` cannot be combined with rename. Moving between parents and bulk renames are not supported; references inside node content are retained as authored.
+
+The build report includes `still in code, no longer in the config`, a list of objects with `path` and `file`, alongside the compatible `skipped` file list. The text report uses the same heading. Removing a node by hand leaves its PHP bytes untouched; no orphan is deleted.
+
+### Component kind registration
+
 Kinds are definitions in `Streams\Sdk\Console\Make\Kinds\KindRegistry`. They are not commands. `php artisan list` shows `streams:make` and does not gain a `make:*` command when a kind is registered.
 
 The SDK registers five kinds:

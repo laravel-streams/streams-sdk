@@ -11,6 +11,7 @@ use Streams\Sdk\Console\Make\Kinds\Kind;
 use Streams\Sdk\Console\Make\Kinds\KindRegistry;
 use Streams\Sdk\Console\Make\Kinds\KindRegistryException;
 use Streams\Sdk\Console\Make\Paths;
+use Streams\Sdk\Console\Make\RenameStage;
 use Streams\Sdk\Console\Make\TreeEditException;
 use Streams\Sdk\Console\Make\TreeEditor;
 use Streams\Sdk\Support\AppTree;
@@ -32,6 +33,8 @@ class StreamsMake extends Command
 {
     protected $signature = 'streams:make
         {path? : Dot path to make or build, such as people.actions.add.}
+        {from? : Source dot path for rename mode.}
+        {to? : Destination dot path for rename mode.}
         {--list : Show makeable kinds and the dot paths where they fit.}
         {--tree= : App streams.json. Defaults to config streams.sdk.make.tree.}
         {--output= : Directory generated files are written under. Defaults to config streams.sdk.make.output.}
@@ -60,6 +63,12 @@ class StreamsMake extends Command
 
     public function handle(): int
     {
+        if ($this->argument('path') === 'rename') {
+            return $this->renameNode();
+        }
+        if ($this->argument('from') !== null || $this->argument('to') !== null) {
+            return $this->failJson('Extra paths are only accepted in rename mode.', 'path');
+        }
         if ($this->option('list') || $this->shouldList()) {
             return $this->listKinds();
         }
@@ -69,6 +78,33 @@ class StreamsMake extends Command
         }
 
         return $this->buildFromTree();
+    }
+
+    protected function renameNode(): int
+    {
+        $registry = $this->laravel->make(KindRegistry::class);
+        try {
+            if ($this->option('list') || $this->recipePath() !== null || $this->hasAuthoringFlags()) {
+                return $this->failJson('Rename cannot be combined with list, recipes, or authoring flags.');
+            }
+            $from = $this->argument('from');
+            $to = $this->argument('to');
+            if (! is_string($from) || ! is_string($to)) {
+                return $this->failJson('Rename requires source and destination dot paths.', 'path');
+            }
+            $file = $this->treeFile();
+            $output = $this->locate($this->option('output') ?: (string) config('streams.sdk.make.output', base_path()));
+            $payload = (new RenameStage)->apply(
+                TreeEditor::forRegistry($registry),
+                AppTree::load($file, $registry->treeContainers()),
+                $file, $output, $from, $to, (bool) $this->option('dry-run'),
+            );
+        } catch (\Throwable $e) {
+            return $this->failJson($e->getMessage());
+        }
+        $this->output->writeln(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        return self::SUCCESS;
     }
 
     /**
@@ -155,6 +191,13 @@ class StreamsMake extends Command
 
         foreach ($plan->skipped as $file) {
             $this->line("<fg=yellow>skipped:</> {$file}");
+        }
+
+        if ($plan->orphans !== []) {
+            $this->line('still in code, no longer in the config:');
+            foreach ($plan->orphans as $orphan) {
+                $this->line('  '.$orphan['path'].' '.$orphan['file']);
+            }
         }
 
         foreach ($plan->unapplied as $edit) {

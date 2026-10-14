@@ -51,7 +51,7 @@ class BuildStage
      */
     public function plan(AppTree $tree, ?string $only, string $outputRoot): BuildPlan
     {
-        $this->memory = $this->compile($tree, $only);
+        $this->memory = $this->compile($tree, $only, $outputRoot);
         $this->lock = StreamLock::read($outputRoot);
         $this->lockUpdates = [];
 
@@ -72,6 +72,43 @@ class BuildStage
             }
 
             if ($actual === $file->contents) {
+                $this->own($file);
+
+                continue;
+            }
+
+            // Existing app pages are edited through the AST, never replaced by
+            // a generated page. The lock still protects subsequent hand edits.
+            if ($tree->type($file->nodePath) === 'page' && ! str_contains($actual, self::MARKER)) {
+                $actionPath = explode('.', $file->nodePath)[0].'.actions.add';
+                if (! $tree->has($actionPath)) {
+                    continue;
+                }
+                try {
+                    $candidate = (new PageActionEditor)->attach(
+                        $actual, $file->relative, $file->class,
+                        (new ComponentRenderer($this->paths))->qualified($tree, $actionPath, 'action'),
+                    );
+                } catch (\Throwable $exception) {
+                    $plan->unapplied[] = [
+                        'path' => $file->nodePath,
+                        'file' => $file->relative,
+                        'reason' => $this->failure('attach add action', $exception->getMessage()),
+                    ];
+
+                    continue;
+                }
+
+                if ($this->isHandEdit($actual, $file)) {
+                    $plan->conflicts[] = ['path' => $file->nodePath, 'file' => $file->relative, 'reason' => self::CONFLICT_REASON];
+
+                    continue;
+                }
+                $file->contents = $candidate;
+                if ($actual !== $candidate) {
+                    $plan->modified[] = $file->relative;
+                    $plan->diffs[$file->relative] = $this->diff($file->relative, $actual, $candidate);
+                }
                 $this->own($file);
 
                 continue;
@@ -189,12 +226,25 @@ class BuildStage
         return $recorded !== StreamLock::hashContents($actual);
     }
 
-    protected function compile(AppTree $tree, ?string $only): MemoryTree
+    protected function compile(AppTree $tree, ?string $only, string $outputRoot): MemoryTree
     {
         $memory = new MemoryTree;
+        $scope = $this->scope($tree, $only);
+
+        // Adding the modal also attaches it to an existing manage page, even
+        // when the caller addresses only the action node.
+        if ($only !== null && str_ends_with($only, '.actions.add')) {
+            $page = explode('.', $only)[0].'.pages.manage';
+            if ($tree->has($page)) {
+                $relative = $this->paths->resolve('page', Str::studly(explode('.', $only)[0]), $tree->classForPath($page));
+                if ($relative !== null && is_file($this->absolute($outputRoot, $relative))) {
+                    $scope[] = $page;
+                }
+            }
+        }
 
         foreach ($tree->types() as $path => $type) {
-            if (! in_array($type, Paths::FILE_TYPES, true) || ! $this->inScope($path, $only)) {
+            if (! in_array($type, Paths::FILE_TYPES, true) || ! $this->inScope($path, $only) && ! in_array($path, $scope, true)) {
                 continue;
             }
 
@@ -212,12 +262,40 @@ class BuildStage
             $memory->add(new CompiledFile(
                 $path,
                 $relative,
-                $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
+                (new ComponentRenderer($this->paths))->render(
+                    $tree, $path, $type, $this->paths->namespaceFor($relative), $class,
+                    $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
+                ),
                 $class,
             ));
         }
 
         return $memory;
+    }
+
+    /** Dependencies of a manage page are built through the same command. */
+    protected function scope(AppTree $tree, ?string $only): array
+    {
+        if ($only === null || $tree->type($only) !== 'page') {
+            return [];
+        }
+
+        $node = $tree->node($only);
+        $stream = explode('.', $only)[0];
+        $table = $node['table'] ?? null;
+        if (! is_string($table)) {
+            return [];
+        }
+
+        $table = str_contains($table, '.') ? $table : $stream.'.'.$table;
+        $paths = [$table];
+        foreach ($tree->types() as $path => $type) {
+            if ($path === $stream.'.actions.add' || str_starts_with($path, $stream.'.actions.add.')) {
+                $paths[] = $path;
+            }
+        }
+
+        return $paths;
     }
 
     /**
@@ -343,7 +421,7 @@ PHP;
                     $hasClass = true;
 
                     foreach ($node->stmts ?? [] as $stmt) {
-                        if ($stmt instanceof ClassMethod && $stmt->name->toString() === 'label') {
+                        if ($stmt instanceof ClassMethod && in_array($stmt->name->toString(), ['label', 'generatedLabel'], true)) {
                             $hasLabel = true;
                         }
                     }

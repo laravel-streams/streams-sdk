@@ -1,0 +1,112 @@
+  0/53 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   0%
+ 53/53 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%
+
+Instructions for interpreting errors
+---------
+
+Each error has an associated identifier, like `argument.type`
+or `return.missing`.
+
+Each error identifier has documentation at URL https://phpstan.org/error-identifiers/<identifier>
+This page contains code example, explanation why is this an error
+and instruction how to fix it.
+Before fixing the error, fetch the documentation page for its identifier.
+
+The error usually indicates a real bug or incorrect type in the code. Fix the underlying cause, do not just make the error go away.
+Do not add `@phpstan-ignore` comments, `@phpstan-ignore-next-line` comments, or baseline entries to suppress the error.
+Do not use assert() or inline @var PHPDoc tag to override PHPStan's inferred type.
+Do not add type casts just to silence errors.
+Do not widen parameter or return types just to make the error go away.
+ ------ ---------------------------------------------------------------------- 
+  Line   Console/Commands/DescribeStream.php                                   
+ ------ ---------------------------------------------------------------------- 
+  61     Result of method Illuminate\Console\Command::error() (void) is used.  
+         🪪  method.void                                                       
+ ------ ---------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   Console/Make/Paths.php                                                 
+ ------ ----------------------------------------------------------------------- 
+  59     Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+ ------ ----------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   Console/Support/PhpEditor.php                                          
+ ------ ----------------------------------------------------------------------- 
+  62     Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+  64     Class PhpParser\Lexer does not have a constructor and must be          
+         instantiated without any parameters.                                   
+         🪪  new.noConstructor                                                  
+  316    Access to undefined constant PhpParser\ParserFactory::PREFER_PHP7.     
+         🪪  classConstant.notFound                                             
+ ------ ----------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   Console/Support/PhpFile.php                                            
+ ------ ----------------------------------------------------------------------- 
+  19     Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+  31     Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+ ------ ----------------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   Console/Support/Stub.php                                               
+ ------ ----------------------------------------------------------------------- 
+  31     Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+  60     Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+ ------ ----------------------------------------------------------------------- 
+
+ ------ ---------------------------------------------------------------------- 
+  Line   Console/Support/Transforms/AddAttribute.php                           
+ ------ ---------------------------------------------------------------------- 
+  91     Instantiated class PhpParser\Node\Expr\LNumber not found.             
+         🪪  class.notFound                                                    
+         💡  Learn more at https://phpstan.org/user-guide/discovering-symbols  
+  95     Instantiated class PhpParser\Node\Expr\DNumber not found.             
+         🪪  class.notFound                                                    
+         💡  Learn more at https://phpstan.org/user-guide/discovering-symbols  
+ ------ ---------------------------------------------------------------------- 
+
+ ------ ------------------------------------------------------------- 
+  Line   SdkServiceProvider.php                                       
+ ------ ------------------------------------------------------------- 
+  120    Array has 2 duplicate keys with value 'integer' ('integer',  
+         'integer').                                                  
+         🪪  array.duplicateKey                                       
+ ------ ------------------------------------------------------------- 
+
+ ------ ----------------------------------------------------------------------- 
+  Line   Support/AppTree.php                                                    
+ ------ ----------------------------------------------------------------------- 
+  100    Unsafe usage of new static().                                          
+         🪪  new.static                                                         
+         💡  See:                                                               
+         https://phpstan.org/blog/solving-phpstan-error-unsafe-usage-of-new-st  
+         atic                                                                   
+ ------ ----------------------------------------------------------------------- 
+
+ [ERROR] Found 13 errors                                                        
+

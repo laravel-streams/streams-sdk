@@ -266,6 +266,39 @@ Tokens are `{root}`, `{Domain}`, and `{Class}`. `{root}` defaults to `app/Domain
 
 Class names are the StudlyCase of the full dot path (`people.table` becomes `PeopleTable`), except a panel node, which uses the reference suffix (`people.panel` becomes `PeoplePanelResource`).
 
+#### People manage pages
+
+The people thin slice is pinned in `tests/Fixtures/PeopleMake/streams.json` and
+`tests/Fixtures/Golden/people-make`. It emits a `PanelPage` with a heading and
+table, a `Table` with text columns and an `entries('people')` query, and a
+`MountableAction` that opens the generated stream form in a modal. The
+GroupVitals snapshots in `tests/Fixtures/References/v1` supply the builder
+shape; organization-specific models, authorization, stats, and business
+actions are not copied into the scaffold. Add submission and authorization
+behavior for your application before using the scaffold in production.
+
+The command accepts the same tree via configured defaults or explicit
+`--tree`/`--output`. Three invocation scopes are tested against identical
+goldens: the whole tree, `people`, and `people.pages.manage`. A manage-page
+scope includes its table and the stream's add action/form dependencies.
+`people.table` generates only the table. `people.actions.add` generates the
+modal and its form, and attaches the modal to an existing manage page if one
+is present; it does not create a page implicitly.
+
+For an existing app page, attachment uses the format-preserving PHP AST
+editor. It appends a registration to `boot()` and a resolution to the single
+Heading `actions` array in `getComponents()`, reusing the action import or
+alias when present and otherwise using its fully qualified class name. The
+page must already use `InteractsWithActions`. Unrelated statements and
+comments stay untouched. Missing methods, ambiguous headings, parse failures,
+and empty action arrays with comments are reported as `unapplied`; the page
+is left unchanged. A lock hash protects the edited page on subsequent runs,
+including pages that do not carry the SDK ownership marker. This does not
+change the no-delete rule or the command registration surface.
+
+Generated builders expose `generatedLabel()` for metadata rather than
+overriding their parent builder's `label()` setter.
+
 ### streams:livewire
 
 ```bash

@@ -1,0 +1,1034 @@
+diff --git a/docs/commands.md b/docs/commands.md
+index 0b39c33..8a6d5d9 100644
+--- a/docs/commands.md
++++ b/docs/commands.md
+@@ -236,6 +236,39 @@ Tokens are `{root}`, `{Domain}`, and `{Class}`. `{root}` defaults to `app/Domain
+ 
+ Class names are the StudlyCase of the full dot path (`people.table` becomes `PeopleTable`), except a panel node, which uses the reference suffix (`people.panel` becomes `PeoplePanelResource`).
+ 
++#### People manage pages
++
++The people thin slice is pinned in `tests/Fixtures/PeopleMake/streams.json` and
++`tests/Fixtures/Golden/people-make`. It emits a `PanelPage` with a heading and
++table, a `Table` with text columns and an `entries('people')` query, and a
++`MountableAction` that opens the generated stream form in a modal. The
++GroupVitals snapshots in `tests/Fixtures/References/v1` supply the builder
++shape; organization-specific models, authorization, stats, and business
++actions are not copied into the scaffold. Add submission and authorization
++behavior for your application before using the scaffold in production.
++
++The command accepts the same tree via configured defaults or explicit
++`--tree`/`--output`. Three invocation scopes are tested against identical
++goldens: the whole tree, `people`, and `people.pages.manage`. A manage-page
++scope includes its table and the stream's add action/form dependencies.
++`people.table` generates only the table. `people.actions.add` generates the
++modal and its form, and attaches the modal to an existing manage page if one
++is present; it does not create a page implicitly.
++
++For an existing app page, attachment uses the format-preserving PHP AST
++editor. It appends a registration to `boot()` and a resolution to the single
++Heading `actions` array in `getComponents()`, reusing the action import or
++alias when present and otherwise using its fully qualified class name. The
++page must already use `InteractsWithActions`. Unrelated statements and
++comments stay untouched. Missing methods, ambiguous headings, parse failures,
++and empty action arrays with comments are reported as `unapplied`; the page
++is left unchanged. A lock hash protects the edited page on subsequent runs,
++including pages that do not carry the SDK ownership marker. This does not
++change the no-delete rule or the command registration surface.
++
++Generated builders expose `generatedLabel()` for metadata rather than
++overriding their parent builder's `label()` setter.
++
+ ### streams:livewire
+ 
+ ```bash
+diff --git a/src/Console/Make/BuildStage.php b/src/Console/Make/BuildStage.php
+index f22e430..ac2192a 100644
+--- a/src/Console/Make/BuildStage.php
++++ b/src/Console/Make/BuildStage.php
+@@ -51,7 +51,7 @@ class BuildStage
+      */
+     public function plan(AppTree $tree, ?string $only, string $outputRoot): BuildPlan
+     {
+-        $this->memory = $this->compile($tree, $only);
++        $this->memory = $this->compile($tree, $only, $outputRoot);
+         $this->lock = StreamLock::read($outputRoot);
+         $this->lockUpdates = [];
+ 
+@@ -77,6 +77,43 @@ class BuildStage
+                 continue;
+             }
+ 
++            // Existing app pages are edited through the AST, never replaced by
++            // a generated page. The lock still protects subsequent hand edits.
++            if ($tree->type($file->nodePath) === 'page' && ! str_contains($actual, self::MARKER)) {
++                $actionPath = explode('.', $file->nodePath)[0].'.actions.add';
++                if (! $tree->has($actionPath)) {
++                    continue;
++                }
++                try {
++                    $candidate = (new PageActionEditor)->attach(
++                        $actual, $file->relative, $file->class,
++                        (new ComponentRenderer($this->paths))->qualified($tree, $actionPath, 'action'),
++                    );
++                } catch (\Throwable $exception) {
++                    $plan->unapplied[] = [
++                        'path' => $file->nodePath,
++                        'file' => $file->relative,
++                        'reason' => $this->failure('attach add action', $exception->getMessage()),
++                    ];
++
++                    continue;
++                }
++
++                if ($this->isHandEdit($actual, $file)) {
++                    $plan->conflicts[] = ['path' => $file->nodePath, 'file' => $file->relative, 'reason' => self::CONFLICT_REASON];
++
++                    continue;
++                }
++                $file->contents = $candidate;
++                if ($actual !== $candidate) {
++                    $plan->modified[] = $file->relative;
++                    $plan->diffs[$file->relative] = $this->diff($file->relative, $actual, $candidate);
++                }
++                $this->own($file);
++
++                continue;
++            }
++
+             $failures = $this->editFailures($actual, $file);
+ 
+             if ($failures !== []) {
+@@ -189,12 +226,25 @@ class BuildStage
+         return $recorded !== StreamLock::hashContents($actual);
+     }
+ 
+-    protected function compile(AppTree $tree, ?string $only): MemoryTree
++    protected function compile(AppTree $tree, ?string $only, string $outputRoot): MemoryTree
+     {
+         $memory = new MemoryTree;
++        $scope = $this->scope($tree, $only);
++
++        // Adding the modal also attaches it to an existing manage page, even
++        // when the caller addresses only the action node.
++        if ($only !== null && str_ends_with($only, '.actions.add')) {
++            $page = explode('.', $only)[0].'.pages.manage';
++            if ($tree->has($page)) {
++                $relative = $this->paths->resolve('page', Str::studly(explode('.', $only)[0]), $tree->classForPath($page));
++                if ($relative !== null && is_file($this->absolute($outputRoot, $relative))) {
++                    $scope[] = $page;
++                }
++            }
++        }
+ 
+         foreach ($tree->types() as $path => $type) {
+-            if (! in_array($type, Paths::FILE_TYPES, true) || ! $this->inScope($path, $only)) {
++            if (! in_array($type, Paths::FILE_TYPES, true) || ! $this->inScope($path, $only) && ! in_array($path, $scope, true)) {
+                 continue;
+             }
+ 
+@@ -212,7 +262,10 @@ class BuildStage
+             $memory->add(new CompiledFile(
+                 $path,
+                 $relative,
+-                $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
++                (new ComponentRenderer($this->paths))->render(
++                    $tree, $path, $type, $this->paths->namespaceFor($relative), $class,
++                    $this->render($this->paths->namespaceFor($relative), $class, $path, $label),
++                ),
+                 $class,
+             ));
+         }
+@@ -220,6 +273,31 @@ class BuildStage
+         return $memory;
+     }
+ 
++    /** Dependencies of a manage page are built through the same command. */
++    protected function scope(AppTree $tree, ?string $only): array
++    {
++        if ($only === null || $tree->type($only) !== 'page') {
++            return [];
++        }
++
++        $node = $tree->node($only);
++        $stream = explode('.', $only)[0];
++        $table = $node['table'] ?? null;
++        if (! is_string($table)) {
++            return [];
++        }
++
++        $table = str_contains($table, '.') ? $table : $stream.'.'.$table;
++        $paths = [$table];
++        foreach ($tree->types() as $path => $type) {
++            if ($path === $stream.'.actions.add' || str_starts_with($path, $stream.'.actions.add.')) {
++                $paths[] = $path;
++            }
++        }
++
++        return $paths;
++    }
++
+     /**
+      * Panel classes use the reference suffix (PeoplePanelResource). Every
+      * other code-bearing node uses the StudlyCase of its full dot path, which
+@@ -343,7 +421,7 @@ PHP;
+                     $hasClass = true;
+ 
+                     foreach ($node->stmts ?? [] as $stmt) {
+-                        if ($stmt instanceof ClassMethod && $stmt->name->toString() === 'label') {
++                        if ($stmt instanceof ClassMethod && in_array($stmt->name->toString(), ['label', 'generatedLabel'], true)) {
+                             $hasLabel = true;
+                         }
+                     }
+diff --git a/src/Console/Make/ComponentRenderer.php b/src/Console/Make/ComponentRenderer.php
+new file mode 100644
+index 0000000..584ab8d
+--- /dev/null
++++ b/src/Console/Make/ComponentRenderer.php
+@@ -0,0 +1,163 @@
++<?php
++
++namespace Streams\Sdk\Console\Make;
++
++use Illuminate\Support\Str;
++use Streams\Sdk\Support\AppTree;
++
++/** The people manage slice uses the same builder shape as the pinned references. */
++class ComponentRenderer
++{
++    public function __construct(protected Paths $paths) {}
++
++    public function render(AppTree $tree, string $path, string $type, string $namespace, string $class, string $fallback): string
++    {
++        $node = $tree->node($path);
++        $stream = explode('.', $path)[0];
++        $body = null;
++        $imports = [];
++        $extends = '';
++
++        if ($type === 'table') {
++            $imports = ['Streams\\Ui\\Builders\\Tables\\Columns\\TextColumn', 'Streams\\Ui\\Builders\\Tables\\Table'];
++            $extends = 'Table';
++            $columns = [];
++            foreach ($node['columns'] ?? [] as $handle => $column) {
++                $handle = $column['handle'] ?? $handle;
++                $label = $column['label'] ?? Str::headline($handle);
++                $columns[] = '                TextColumn::make('.var_export($handle, true).')'."\n".
++                    '                    ->label('.var_export($label, true).'),';
++            }
++            $columns = implode("\n", $columns);
++            $query = var_export($stream, true);
++            $body = <<<PHP
++    protected function setUp(): void
++    {
++        \$this
++            ->columns([
++{$columns}
++            ])
++            ->query(entries({$query}));
++    }
++PHP;
++        } elseif ($type === 'page' && isset($node['table']) && is_string($node['table'])) {
++            $tablePath = str_contains($node['table'], '.') ? $node['table'] : $stream.'.'.$node['table'];
++            if (! $tree->has($tablePath) || $tree->type($tablePath) !== 'table') {
++                return $fallback;
++            }
++            $table = $tree->classForPath($tablePath);
++            $imports = [
++                $this->qualified($tree, $tablePath, 'table'),
++                'App\\Livewire\\PanelPage',
++                'Streams\\Ui\\Builders\\Containers\\Container',
++                'Streams\\Ui\\Builders\\Headings\\Heading',
++                'Streams\\Ui\\Livewire\\Tables\\InteractsWithTables',
++            ];
++            $extends = 'PanelPage';
++            $actions = '';
++            $register = '';
++            $trait = '';
++            if ($tree->has($stream.'.actions.add')) {
++                $actionPath = $stream.'.actions.add';
++                $action = $tree->classForPath($actionPath);
++                $imports[] = $this->qualified($tree, $actionPath, 'action');
++                $imports[] = 'Streams\\Ui\\Livewire\\Actions\\InteractsWithActions';
++                $trait = "    use InteractsWithActions;\n";
++                $register = "        {$action}::register(\$this);\n";
++                $actions = "                            {$action}::resolve(),\n";
++            }
++            $title = var_export($node['title'] ?? $stream, true);
++            $body = <<<PHP
++{$trait}    use InteractsWithTables;
++
++    public function boot(): void
++    {
++{$register}        {$table}::register(\$this);
++    }
++
++    public function getComponents(): array
++    {
++        return [
++            Container::make('group')
++                ->components([
++                    Heading::make({$title})
++                        ->actions([
++{$actions}                        ]),
++                    {$table}::resolve(),
++                ]),
++        ];
++    }
++PHP;
++        } elseif ($type === 'action' && ($node['type'] ?? null) === 'modal' && $tree->has($path.'.form')) {
++            $form = $tree->classForPath($path.'.form');
++            $imports = [$this->qualified($tree, $path.'.form', 'form'), 'Streams\\Ui\\Builders\\Actions\\MountableAction'];
++            $extends = 'MountableAction';
++            $label = var_export($node['label'] ?? $path, true);
++            $body = <<<PHP
++    protected function setUp(): void
++    {
++        \$name = \$this->getName();
++        {$form}::register(\$this->getLivewire());
++
++        \$this
++            ->label({$label})
++            ->modalWidth('xl')
++            ->modalHeading({$label})
++            ->modalComponents(fn (): array => [{$form}::resolve()])
++            ->mergeHtmlAttributes([
++                'wire:click' => 'mountAction(\''.\$name.'\')',
++            ]);
++    }
++PHP;
++        } elseif ($type === 'form') {
++            $imports = ['Streams\\Ui\\Builders\\Forms\\Form'];
++            $extends = 'Form';
++            $fields = [];
++            foreach ($node['sections'] ?? [] as $section => $data) {
++                $sectionPath = $path.'.sections.'.$section;
++                $data = $tree->has($sectionPath) ? $tree->node($sectionPath) : $data;
++                foreach ($data['fields'] ?? [] as $field) {
++                    $fields[] = '                '.var_export($field['handle'], true).',';
++                }
++            }
++            $fields = implode("\n", $fields);
++            $streamName = var_export($stream, true);
++            $body = <<<PHP
++    protected function setUp(): void
++    {
++        \$this
++            ->stream({$streamName})
++            ->fields([
++{$fields}
++            ]);
++    }
++PHP;
++        }
++
++        if ($body === null) {
++            return $fallback;
++        }
++
++        // Retain the node metadata methods and ownership tag from the build stage.
++        $imports[] = 'Streams\\Sdk\\Attributes\\Generated';
++        sort($imports);
++        $uses = implode("\n", array_map(fn (string $import): string => 'use '.$import.';', $imports));
++        $source = str_replace('use Streams\\Sdk\\Attributes\\Generated;', $uses, $fallback);
++        $source = str_replace('class '.$class."\n{", 'class '.$class.' extends '.$extends."\n{\n".$body."\n", $source);
++        $source = str_replace('public function label(): string', 'public function generatedLabel(): string', $source);
++
++        return $source;
++    }
++
++    public function qualified(AppTree $tree, string $path, string $type): string
++    {
++        $class = $tree->classForPath($path);
++        $relative = $this->paths->resolve($type, Str::studly(explode('.', $path)[0]), $class);
++
++        if ($relative === null) {
++            throw new \RuntimeException('No output path for ['.$path.'].');
++        }
++
++        return $this->paths->namespaceFor($relative).'\\'.$class;
++    }
++}
+diff --git a/src/Console/Make/PageActionEditor.php b/src/Console/Make/PageActionEditor.php
+new file mode 100644
+index 0000000..b4813da
+--- /dev/null
++++ b/src/Console/Make/PageActionEditor.php
+@@ -0,0 +1,110 @@
++<?php
++
++namespace Streams\Sdk\Console\Make;
++
++use PhpParser\Node;
++use PhpParser\Node\Arg;
++use PhpParser\Node\Expr\Array_;
++use PhpParser\Node\Expr\ArrayItem;
++use PhpParser\Node\Expr\MethodCall;
++use PhpParser\Node\Expr\StaticCall;
++use PhpParser\Node\Expr\Variable;
++use PhpParser\Node\Identifier;
++use PhpParser\Node\Name;
++use PhpParser\Node\Name\FullyQualified;
++use PhpParser\Node\Stmt\Class_;
++use PhpParser\Node\Stmt\Expression;
++use PhpParser\Node\Stmt\Use_;
++use PhpParser\NodeFinder;
++use PhpParser\PrettyPrinter\Standard;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/** Attach one modal to a page without replacing the author's page implementation. */
++class PageActionEditor
++{
++    public function attach(string $source, string $file, string $class, string $action): string
++    {
++        $editor = PhpEditor::fromString($source, $file);
++        $finder = new NodeFinder;
++        $classes = $finder->find($editor->statements(), fn (Node $node): bool => $node instanceof Class_ && $node->name?->toString() === $class);
++        if (count($classes) !== 1) {
++            throw new \RuntimeException('expected one class declaration for '.$class);
++        }
++        $page = $classes[0];
++        $boot = $page->getMethod('boot');
++        $components = $page->getMethod('getComponents');
++        if ($boot === null || $boot->stmts === null || $components === null) {
++            throw new \RuntimeException('boot() and getComponents() are required');
++        }
++
++        $calls = $finder->find($components->stmts ?? [], function (Node $node): bool {
++            if (! $node instanceof MethodCall || ! $node->name instanceof Identifier || $node->name->toString() !== 'actions') {
++                return false;
++            }
++            $receiver = $node->var;
++            while ($receiver instanceof MethodCall) {
++                $receiver = $receiver->var;
++            }
++
++            return $receiver instanceof StaticCall
++                && $receiver->class instanceof Name
++                && $receiver->class->getLast() === 'Heading'
++                && isset($node->args[0])
++                && $node->args[0]->value instanceof Array_;
++        });
++        if (count($calls) !== 1) {
++            throw new \RuntimeException('expected one Heading actions array in getComponents()');
++        }
++
++        $traits = $finder->findInstanceOf($page->stmts, Node\Stmt\TraitUse::class);
++        $hasActions = false;
++        foreach ($traits as $use) {
++            foreach ($use->traits as $trait) {
++                $hasActions = $hasActions || $trait->getLast() === 'InteractsWithActions';
++            }
++        }
++        if (! $hasActions) {
++            throw new \RuntimeException('InteractsWithActions trait is required');
++        }
++
++        // Reuse an existing import (including aliases); otherwise use the FQCN.
++        $name = new FullyQualified($action);
++        foreach ($finder->findInstanceOf($editor->statements(), Use_::class) as $use) {
++            if ($use->type !== Use_::TYPE_NORMAL) {
++                continue;
++            }
++            foreach ($use->uses as $import) {
++                if (strcasecmp($import->name->toString(), $action) === 0) {
++                    $name = new Name($import->getAlias()->toString());
++                }
++            }
++        }
++
++        $array = $calls[0]->args[0]->value;
++        if ($array->items === []) {
++            $lines = explode("\n", $source);
++            $span = implode("\n", array_slice($lines, $array->getStartLine() - 1, $array->getEndLine() - $array->getStartLine() + 1));
++            if (str_contains($span, '//') || str_contains($span, '/*')) {
++                throw new \RuntimeException('empty actions array contains comments that cannot be preserved');
++            }
++        }
++        $editor->appendToArray(
++            fn (Array_ $candidate): bool => $candidate === $array,
++            new ArrayItem(new StaticCall(clone $name, new Identifier('resolve'))),
++        );
++
++        $register = new Expression(new StaticCall(clone $name, new Identifier('register'), [new Arg(new Variable('this'))]));
++        $printer = new Standard;
++        $exists = false;
++        foreach ($boot->stmts as $statement) {
++            if ($printer->prettyPrint([$statement]) === $printer->prettyPrint([$register])) {
++                $exists = true;
++            }
++        }
++        if (! $exists) {
++            $boot->stmts[] = $register;
++        }
++
++        return $editor->print();
++    }
++}
+diff --git a/tests/Console/Commands/PeoplePagesMakeTest.php b/tests/Console/Commands/PeoplePagesMakeTest.php
+new file mode 100644
+index 0000000..52d5ac5
+--- /dev/null
++++ b/tests/Console/Commands/PeoplePagesMakeTest.php
+@@ -0,0 +1,204 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Commands;
++
++use Illuminate\Support\Facades\Artisan;
++use Illuminate\Support\Facades\File;
++use Streams\Sdk\Support\AppTree;
++use Streams\Sdk\Tests\SdkTestCase;
++use Streams\Sdk\Tests\Support\GoldenFiles;
++
++class PeoplePagesMakeTest extends SdkTestCase
++{
++    protected string $fixture;
++
++    protected string $output;
++
++    protected function setUp(): void
++    {
++        parent::setUp();
++
++        $this->fixture = __DIR__.'/../../Fixtures/PeopleMake/streams.json';
++        $this->output = sys_get_temp_dir().'/streams-sdk-people-pages-'.bin2hex(random_bytes(8));
++        File::ensureDirectoryExists($this->output);
++
++        config([
++            'streams.sdk.make.tree' => $this->fixture,
++            'streams.sdk.make.output' => $this->output,
++        ]);
++    }
++
++    protected function tearDown(): void
++    {
++        File::deleteDirectory($this->output);
++
++        parent::tearDown();
++    }
++
++    public function test_people_fixture_resolves_the_manage_table_and_modal_form(): void
++    {
++        $tree = AppTree::load($this->fixture);
++
++        $this->assertSame('page', $tree->type('people.pages.manage'));
++        $this->assertSame('table', $tree->type('people.table'));
++        $this->assertSame('modal', $tree->node('people.actions.add')['type']);
++        $this->assertSame('form', $tree->type('people.actions.add.form'));
++        $this->assertSame([], File::allFiles($this->output));
++    }
++
++    protected function make(array $arguments = []): array
++    {
++        $exit = Artisan::call('streams:make', array_merge(['--json' => true], $arguments));
++        $output = Artisan::output();
++
++        $this->assertSame(0, $exit, $output);
++        $report = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
++        $this->assertIsArray($report);
++
++        return $report;
++    }
++
++    /** @dataProvider inputModes */
++    public function test_command_input_modes_match_the_people_golden_files(array $arguments): void
++    {
++        GoldenFiles::assertGenerated(function (string $app) use ($arguments): void {
++            $report = $this->make(array_merge($arguments, ['--output' => $app]));
++            $this->assertSame([], $report['unapplied']);
++            $this->assertSame([], $report['conflicts']);
++            $this->assertCount(4, $report['created']);
++            // Ownership metadata is tested separately; the golden captures app code.
++            File::delete($app.'/streams.lock');
++        }, __DIR__.'/../../Fixtures/Golden/people-make');
++    }
++
++    public static function inputModes(): array
++    {
++        return [
++            'whole tree via configured defaults' => [[]],
++            'stream path via explicit tree' => [['path' => 'people', '--tree' => __DIR__.'/../../Fixtures/PeopleMake/streams.json']],
++            'manage component and dependencies' => [['path' => 'people.pages.manage']],
++        ];
++    }
++
++    public function test_add_action_is_attached_to_an_existing_manage_page_with_a_minimal_ast_diff(): void
++    {
++        $relative = 'app/Domains/People/Panel/Pages/PeoplePagesManage.php';
++        $original = File::get(__DIR__.'/../../Fixtures/PeopleMake/ExistingManage.php');
++        File::ensureDirectoryExists(dirname($this->output.'/'.$relative));
++        File::put($this->output.'/'.$relative, $original);
++
++        $dry = $this->make(['path' => 'people.actions.add', '--dry-run' => true]);
++        $this->assertSame($original, File::get($this->output.'/'.$relative));
++        $real = $this->make(['path' => 'people.actions.add']);
++        $this->assertSame($dry, $real);
++        $this->assertSame([$relative], $real['modified']);
++        $this->assertSame([], $real['unapplied']);
++        $this->assertCount(2, $real['created']);
++
++        $expected = str_replace(
++            ['        PeopleTable::register($this);', '                            PeopleActionsMenu::make(),'],
++            ["        PeopleTable::register(\$this);\n        AddPersonModal::register(\$this);", "                            PeopleActionsMenu::make(),\n                            AddPersonModal::resolve(),"],
++            $original,
++        );
++        $this->assertSame($expected, File::get($this->output.'/'.$relative));
++        $second = $this->make(['path' => 'people.actions.add']);
++        $this->assertSame([], $second['created']);
++        $this->assertSame([], $second['modified']);
++        $this->assertSame('', $second['diff']);
++        $this->assertSame($expected, File::get($this->output.'/'.$relative));
++    }
++
++    public function test_second_run_preserves_every_byte_and_dry_run_matches_the_real_change_list(): void
++    {
++        $dry = $this->make(['--dry-run' => true]);
++        $this->assertSame([], File::allFiles($this->output));
++        $real = $this->make();
++        $this->assertSame($dry, $real);
++
++        $before = $this->snapshot();
++        $second = $this->make();
++        foreach (['created', 'modified', 'skipped', 'unapplied', 'conflicts'] as $key) {
++            $this->assertSame([], $second[$key]);
++        }
++        $this->assertSame('', $second['diff']);
++        $this->assertSame($before, $this->snapshot());
++    }
++
++    /** @dataProvider unappliedPages */
++    public function test_unapplied_page_edits_are_reported_and_no_existing_file_is_deleted(string $source, string $reason): void
++    {
++        $this->make(['path' => 'people.table']);
++        $relative = 'app/Domains/People/Panel/Pages/PeoplePagesManage.php';
++        File::ensureDirectoryExists(dirname($this->output.'/'.$relative));
++        File::put($this->output.'/'.$relative, $source);
++        File::put($this->output.'/keep.txt', 'keep this unrelated app file');
++        $before = $this->snapshot();
++
++        $dry = $this->make(['path' => 'people.actions.add', '--dry-run' => true]);
++        $this->assertSame($before, $this->snapshot());
++        $real = $this->make(['path' => 'people.actions.add']);
++        $this->assertSame($dry, $real);
++        $this->assertCount(1, $real['unapplied']);
++        $this->assertSame('people.pages.manage', $real['unapplied'][0]['path']);
++        $this->assertSame($relative, $real['unapplied'][0]['file']);
++        $this->assertStringContainsString($reason, $real['unapplied'][0]['reason']);
++        $this->assertNotContains($relative, $real['modified']);
++        foreach ($before as $file => $contents) {
++            if ($file !== 'streams.lock') {
++                $this->assertSame($contents, File::get($this->output.'/'.$file));
++            }
++        }
++    }
++
++    public static function unappliedPages(): array
++    {
++        $fixture = file_get_contents(__DIR__.'/../../Fixtures/PeopleMake/ExistingManage.php');
++
++        return [
++            'missing component method' => [str_replace('function getComponents()', 'function customComponents()', $fixture), 'getComponents() are required'],
++            'unparseable page' => ['<?php class PeoplePagesManage { invalid syntax', 'Syntax error'],
++            'empty commented array' => [str_replace(["                            ImportPeopleModal::resolve(),\n", "                            PeopleActionsMenu::make(),\n"], '', $fixture), 'comments that cannot be preserved'],
++            'ambiguous heading actions' => [str_replace('                    PeopleTable::resolve(),', "                    Heading::make('Another heading')->actions([]),\n                    PeopleTable::resolve(),", $fixture), 'expected one Heading actions array'],
++        ];
++    }
++
++    public function test_table_dot_path_builds_only_the_table(): void
++    {
++        $report = $this->make(['path' => 'people.table']);
++        $relative = 'app/Domains/People/Panel/Tables/PeopleTable.php';
++
++        $this->assertSame([$relative], $report['created']);
++        $this->assertSame(File::get(__DIR__.'/../../Fixtures/Golden/people-make/'.$relative), File::get($this->output.'/'.$relative));
++        $this->assertFileDoesNotExist($this->output.'/app/Domains/People/Panel/Pages/PeoplePagesManage.php');
++    }
++
++    public function test_hand_edits_to_an_attached_page_are_preserved_and_reported_as_conflicts(): void
++    {
++        $relative = 'app/Domains/People/Panel/Pages/PeoplePagesManage.php';
++        File::ensureDirectoryExists(dirname($this->output.'/'.$relative));
++        File::put($this->output.'/'.$relative, File::get(__DIR__.'/../../Fixtures/PeopleMake/ExistingManage.php'));
++        $this->make(['path' => 'people.actions.add']);
++        $edited = str_replace('Manage people', 'Our custom title', File::get($this->output.'/'.$relative));
++        File::put($this->output.'/'.$relative, $edited);
++        $before = $this->snapshot();
++        $dry = $this->make(['path' => 'people.actions.add', '--dry-run' => true]);
++        $real = $this->make(['path' => 'people.actions.add']);
++
++        $this->assertSame($dry, $real);
++        $this->assertCount(1, $real['conflicts']);
++        $this->assertSame($relative, $real['conflicts'][0]['file']);
++        $this->assertSame([], $real['modified']);
++        $this->assertSame($before, $this->snapshot());
++    }
++
++    protected function snapshot(): array
++    {
++        $files = [];
++        foreach (File::allFiles($this->output) as $file) {
++            $files[$file->getRelativePathname()] = $file->getContents();
++        }
++        ksort($files);
++
++        return $files;
++    }
++}
+diff --git a/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Actions/PeopleActionsAdd.php b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Actions/PeopleActionsAdd.php
+new file mode 100644
+index 0000000..dd26490
+--- /dev/null
++++ b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Actions/PeopleActionsAdd.php
+@@ -0,0 +1,40 @@
++<?php
++
++namespace App\Domains\People\Panel\Actions;
++
++use App\Domains\People\Panel\Forms\PeopleActionsAddForm;
++use Streams\Sdk\Attributes\Generated;
++use Streams\Ui\Builders\Actions\MountableAction;
++
++/**
++ * Generated by streams/sdk.
++ * Node: people.actions.add
++ */
++#[Generated('people.actions.add')]
++class PeopleActionsAdd extends MountableAction
++{
++    protected function setUp(): void
++    {
++        $name = $this->getName();
++        PeopleActionsAddForm::register($this->getLivewire());
++
++        $this
++            ->label('Add person')
++            ->modalWidth('xl')
++            ->modalHeading('Add person')
++            ->modalComponents(fn (): array => [PeopleActionsAddForm::resolve()])
++            ->mergeHtmlAttributes([
++                'wire:click' => 'mountAction(\''.$name.'\')',
++            ]);
++    }
++
++    public function nodePath(): string
++    {
++        return 'people.actions.add';
++    }
++
++    public function generatedLabel(): string
++    {
++        return 'Add person';
++    }
++}
+diff --git a/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Forms/PeopleActionsAddForm.php b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Forms/PeopleActionsAddForm.php
+new file mode 100644
+index 0000000..5e91436
+--- /dev/null
++++ b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Forms/PeopleActionsAddForm.php
+@@ -0,0 +1,34 @@
++<?php
++
++namespace App\Domains\People\Panel\Forms;
++
++use Streams\Sdk\Attributes\Generated;
++use Streams\Ui\Builders\Forms\Form;
++
++/**
++ * Generated by streams/sdk.
++ * Node: people.actions.add.form
++ */
++#[Generated('people.actions.add.form')]
++class PeopleActionsAddForm extends Form
++{
++    protected function setUp(): void
++    {
++        $this
++            ->stream('people')
++            ->fields([
++                'name',
++                'email',
++            ]);
++    }
++
++    public function nodePath(): string
++    {
++        return 'people.actions.add.form';
++    }
++
++    public function generatedLabel(): string
++    {
++        return 'Add person';
++    }
++}
+diff --git a/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Pages/PeoplePagesManage.php b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Pages/PeoplePagesManage.php
+new file mode 100644
+index 0000000..31f65d4
+--- /dev/null
++++ b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Pages/PeoplePagesManage.php
+@@ -0,0 +1,53 @@
++<?php
++
++namespace App\Domains\People\Panel\Pages;
++
++use App\Domains\People\Panel\Actions\PeopleActionsAdd;
++use App\Domains\People\Panel\Tables\PeopleTable;
++use App\Livewire\PanelPage;
++use Streams\Sdk\Attributes\Generated;
++use Streams\Ui\Builders\Containers\Container;
++use Streams\Ui\Builders\Headings\Heading;
++use Streams\Ui\Livewire\Actions\InteractsWithActions;
++use Streams\Ui\Livewire\Tables\InteractsWithTables;
++
++/**
++ * Generated by streams/sdk.
++ * Node: people.pages.manage
++ */
++#[Generated('people.pages.manage')]
++class PeoplePagesManage extends PanelPage
++{
++    use InteractsWithActions;
++    use InteractsWithTables;
++
++    public function boot(): void
++    {
++        PeopleActionsAdd::register($this);
++        PeopleTable::register($this);
++    }
++
++    public function getComponents(): array
++    {
++        return [
++            Container::make('group')
++                ->components([
++                    Heading::make('Manage people')
++                        ->actions([
++                            PeopleActionsAdd::resolve(),
++                        ]),
++                    PeopleTable::resolve(),
++                ]),
++        ];
++    }
++
++    public function nodePath(): string
++    {
++        return 'people.pages.manage';
++    }
++
++    public function generatedLabel(): string
++    {
++        return 'Manage people';
++    }
++}
+diff --git a/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Tables/PeopleTable.php b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Tables/PeopleTable.php
+new file mode 100644
+index 0000000..c742c4f
+--- /dev/null
++++ b/tests/Fixtures/Golden/people-make/app/Domains/People/Panel/Tables/PeopleTable.php
+@@ -0,0 +1,37 @@
++<?php
++
++namespace App\Domains\People\Panel\Tables;
++
++use Streams\Sdk\Attributes\Generated;
++use Streams\Ui\Builders\Tables\Columns\TextColumn;
++use Streams\Ui\Builders\Tables\Table;
++
++/**
++ * Generated by streams/sdk.
++ * Node: people.table
++ */
++#[Generated('people.table')]
++class PeopleTable extends Table
++{
++    protected function setUp(): void
++    {
++        $this
++            ->columns([
++                TextColumn::make('name')
++                    ->label('Name'),
++                TextColumn::make('email')
++                    ->label('Email address'),
++            ])
++            ->query(entries('people'));
++    }
++
++    public function nodePath(): string
++    {
++        return 'people.table';
++    }
++
++    public function generatedLabel(): string
++    {
++        return 'People table';
++    }
++}
+diff --git a/tests/Fixtures/PeopleMake/ExistingManage.php b/tests/Fixtures/PeopleMake/ExistingManage.php
+new file mode 100644
+index 0000000..23d9332
+--- /dev/null
++++ b/tests/Fixtures/PeopleMake/ExistingManage.php
+@@ -0,0 +1,48 @@
++<?php
++
++namespace App\Domains\People\Panel\Pages;
++
++use App\Domains\People\Panel\Actions\PeopleActionsAdd as AddPersonModal;
++use App\Domains\People\Panel\Tables\PeopleTable;
++use App\Livewire\PanelPage;
++use Streams\Ui\Builders\Containers\Container;
++use Streams\Ui\Builders\Headings\Heading;
++use Streams\Ui\Livewire\Actions\InteractsWithActions;
++use Streams\Ui\Livewire\Tables\InteractsWithTables;
++
++class PeoplePagesManage extends PanelPage
++{
++    use InteractsWithActions;
++    use InteractsWithTables;
++
++    // Keep the author's page state and unrelated behavior.
++    public array $peopleStats = [];
++
++    protected string $pendingAction = AddPersonModal::class;
++
++    public function boot(): void
++    {
++        PeopleTable::register($this);
++    }
++
++    public function getComponents(): array
++    {
++        return [
++            Container::make('group')
++                ->components([
++                    Heading::make('Manage people')
++                        ->actions([
++                            // The add action belongs here.
++                            ImportPeopleModal::resolve(),
++                            PeopleActionsMenu::make(),
++                        ]),
++                    PeopleTable::resolve(),
++                ]),
++        ];
++    }
++
++    protected function loadPeopleStats(): void
++    {
++        $this->peopleStats = ['total' => entries('people')->count()];
++    }
++}
+diff --git a/tests/Fixtures/PeopleMake/snapshot.php b/tests/Fixtures/PeopleMake/snapshot.php
+new file mode 100644
+index 0000000..b2fecf9
+--- /dev/null
++++ b/tests/Fixtures/PeopleMake/snapshot.php
+@@ -0,0 +1,56 @@
++<?php
++
++// Maintainer-only snapshot writer; feature tests never update expectations.
++require __DIR__.'/../../../vendor/autoload.php';
++
++use Illuminate\Support\Str;
++use Streams\Sdk\Console\Make\ComponentRenderer;
++use Streams\Sdk\Console\Make\Paths;
++use Streams\Sdk\Support\AppTree;
++
++$tree = AppTree::load(__DIR__.'/streams.json');
++$paths = new Paths(Paths::DEFAULTS);
++$renderer = new ComponentRenderer($paths);
++
++foreach ($tree->types() as $path => $type) {
++    if (! in_array($type, Paths::FILE_TYPES, true)) {
++        continue;
++    }
++    $class = $tree->classForPath($path);
++    $relative = $paths->resolve($type, Str::studly(explode('.', $path)[0]), $class);
++    $namespace = $paths->namespaceFor($relative);
++    $node = $tree->node($path);
++    $label = var_export($node['label'] ?? $node['title'] ?? $node['name'] ?? $path, true);
++    $exportedPath = var_export($path, true);
++    $fallback = <<<PHP
++<?php
++
++namespace {$namespace};
++
++use Streams\Sdk\Attributes\Generated;
++
++/**
++ * Generated by streams/sdk.
++ * Node: {$path}
++ */
++#[Generated({$exportedPath})]
++class {$class}
++{
++    public function nodePath(): string
++    {
++        return {$exportedPath};
++    }
++
++    public function label(): string
++    {
++        return {$label};
++    }
++}
++
++PHP;
++    $output = __DIR__.'/../Golden/people-make/'.$relative;
++    if (! is_dir(dirname($output))) {
++        mkdir(dirname($output), 0777, true);
++    }
++    file_put_contents($output, $renderer->render($tree, $path, $type, $namespace, $class, $fallback));
++}
+diff --git a/tests/Fixtures/PeopleMake/streams.json b/tests/Fixtures/PeopleMake/streams.json
+new file mode 100644
+index 0000000..feb6807
+--- /dev/null
++++ b/tests/Fixtures/PeopleMake/streams.json
+@@ -0,0 +1,47 @@
++{
++    "name": "People",
++    "streams": {
++        "people": {
++            "handle": "people",
++            "name": "People",
++            "fields": [
++                {"handle": "name", "type": "string", "required": true},
++                {"handle": "email", "type": "email", "required": true}
++            ],
++            "ui": {
++                "table": {
++                    "handle": "table",
++                    "name": "People table",
++                    "columns": {
++                        "name": {"handle": "name", "label": "Name"},
++                        "email": {"handle": "email", "label": "Email address"}
++                    }
++                },
++                "pages": {
++                    "manage": {"handle": "manage", "title": "Manage people", "section": "people", "table": "table"}
++                },
++                "actions": {
++                    "add": {
++                        "handle": "add",
++                        "label": "Add person",
++                        "type": "modal",
++                        "form": {
++                            "handle": "form",
++                            "name": "Add person",
++                            "sections": {
++                                "basics": {
++                                    "handle": "basics",
++                                    "name": "Basics",
++                                    "fields": [
++                                        {"handle": "name", "type": "string", "required": true},
++                                        {"handle": "email", "type": "email", "required": true}
++                                    ]
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
++}

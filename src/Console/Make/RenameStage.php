@@ -40,7 +40,7 @@ class RenameStage
                 throw new TreeEditException('Destination lock entry already exists.');
             }
             foreach ($nodeFiles as $relative => $hash) {
-                if (str_starts_with($relative, '/') || in_array('..', explode('/', str_replace('\\', '/', $relative)), true)) {
+                if (! StreamLock::validFile($relative)) {
                     throw new TreeEditException('Invalid file path in streams.lock.');
                 }
                 $absolute = rtrim($output, '/').'/'.$relative;

@@ -207,7 +207,7 @@ class BuildStage
             $relative = $this->paths->resolve($type, $domain, $class);
 
             $lockedFiles = array_keys($this->lock?->entries[$path] ?? []);
-            if (count($lockedFiles) === 1) {
+            if (count($lockedFiles) === 1 && StreamLock::validFile($lockedFiles[0])) {
                 $relative = $lockedFiles[0];
                 $class = pathinfo($relative, PATHINFO_FILENAME);
             }

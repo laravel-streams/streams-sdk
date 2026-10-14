@@ -390,6 +390,10 @@ PHP;
         $lock = StreamLock::read($this->output);
         $this->assertArrayNotHasKey('people.actions.add', $lock->entries);
         $this->assertSame(StreamLock::hashContents($after), $lock->hash('people.actions.create', $relative));
+        $form = 'app/Domains/People/Panel/Forms/PeopleActionsAddForm.php';
+        $this->assertArrayNotHasKey('people.actions.add.form', $lock->entries);
+        $this->assertSame(StreamLock::hashContents(File::get($this->output.'/'.$form)), $lock->hash('people.actions.create.form', $form));
+        $this->assertStringContainsString("#[Generated('people.actions.create.form')]", File::get($this->output.'/'.$form));
         $report = $this->runJson(['--tree' => $copy.'/streams.json']);
         $this->assertSame([], $report['created']);
         $this->assertSame([], $report['modified']);
@@ -416,6 +420,48 @@ PHP;
         $this->assertSame($codeBefore."// user edit\n", File::get($file));
         $this->assertSame($treeBefore, File::get($copy.'/streams/people.json'));
         $this->assertSame($lockBefore, File::get(StreamLock::path($this->output)));
+    }
+
+    public function test_rename_rejects_collisions_cross_parent_moves_and_missing_arguments_without_writes(): void
+    {
+        $copy = $this->copyFixture();
+        $this->runJson(['--tree' => $copy.'/streams.json']);
+        $lockBefore = File::get(StreamLock::path($this->output));
+        $treeBefore = File::get($copy.'/streams/people.json');
+        $base = ['path' => 'rename', '--tree' => $copy.'/streams.json', '--output' => $this->output];
+        foreach ([
+            ['from' => 'people.actions.add', 'to' => 'people.actions.add'],
+            ['from' => 'people.actions.missing', 'to' => 'people.actions.create'],
+            ['from' => 'people.actions.add', 'to' => 'people.pages.create'],
+            ['from' => 'people.actions.add'],
+        ] as $paths) {
+            $this->assertSame(1, Artisan::call('streams:make', $base + $paths));
+            $this->assertSame($treeBefore, File::get($copy.'/streams/people.json'));
+            $this->assertSame($lockBefore, File::get(StreamLock::path($this->output)));
+        }
+    }
+
+    public function test_build_ignores_unsafe_lock_file_mappings(): void
+    {
+        $this->runJson();
+        $relative = 'app/Domains/People/Panel/Actions/PeopleActionsAdd.php';
+        $original = File::get($this->output.'/'.$relative);
+        $outside = $this->output.'-outside.php';
+        File::put($outside, $original);
+        try {
+            foreach (['../'.basename($outside), $outside, 'C:/outside.php', '..\\outside.php'] as $unsafe) {
+                $lock = StreamLock::read($this->output);
+                $lock->entries['people.actions.add'] = [$unsafe => StreamLock::hashContents($original)];
+                $lock->write($this->output);
+                $report = $this->runJson();
+                $this->assertSame([], $report['created']);
+                $this->assertSame([], $report['modified']);
+                $this->assertSame($original, File::get($outside));
+                $this->assertSame($original, File::get($this->output.'/'.$relative));
+            }
+        } finally {
+            File::delete($outside);
+        }
     }
 
     /**

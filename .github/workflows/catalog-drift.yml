@@ -1,0 +1,28 @@
+name: Catalog drift
+
+on:
+  push:
+    branches: ['1.0']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Catalog drift and command regression tests
+        run: vendor/bin/phpunit --filter 'Catalog(Drift|ManifestMerge|Check)Test'
+      - name: TypeScript types drift check (task 65)
+        if: ${{ false }} # Enable and replace the placeholder when task 65 lands.
+        run: echo 'Task 65 will supply the TypeScript drift-check command.'

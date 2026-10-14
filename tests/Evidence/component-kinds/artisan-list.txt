@@ -1,0 +1,12 @@
+vendor/bin/testbench list
+(streams-sdk commands; Laravel's own make:* commands are omitted from this excerpt)
+
+  streams:catalog       Generate the machine-readable SDK catalog, its schema, and streams.schema.json.
+  streams:list          List registered streams.
+  streams:make          Compare the app JSON tree with the code, then add or edit generated files.
+  streams:schema        Write per-stream schema files and the app-definition schema.
+  streams:tap           Call a tap URL with query-string input.
+  streams:validate      Validate stream source configuration against the installed Core repository.
+
+No make:stream, make:entry, make:addon, make:table, make:page, make:action, make:form, or make:manage line is present.
+ComponentKindMakeTest::test_artisan_list_shows_streams_make_and_no_component_kind_commands asserts the same inside the testbench app: streams:make is listed, and no command whose class is in Streams\Sdk starts with make:.

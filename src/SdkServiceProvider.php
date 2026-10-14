@@ -9,10 +9,6 @@ use Streams\Core\Field\Field;
 use Streams\Sdk\Console\Commands\CatalogGenerate;
 use Streams\Sdk\Console\Commands\ListEntries;
 use Streams\Sdk\Console\Commands\ListStreams;
-use Streams\Sdk\Console\Commands\MakeAddon;
-use Streams\Sdk\Console\Commands\MakeEntry;
-use Streams\Sdk\Console\Commands\MakeStream;
-use Streams\Sdk\Console\Commands\MakeTable;
 use Streams\Sdk\Console\Commands\ShowEntry;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
@@ -24,17 +20,18 @@ use Streams\Sdk\Console\Inputs\IntegerConsoleInput;
 use Streams\Sdk\Console\Inputs\ObjectConsoleInput;
 use Streams\Sdk\Console\Inputs\SelectConsoleInput;
 use Streams\Sdk\Console\Inputs\StringConsoleInput;
+use Streams\Sdk\Console\Make\Kinds\KindRegistry;
 
 class SdkServiceProvider extends ServiceProvider
 {
     public function register()
     {
+        $this->app->singleton(KindRegistry::class, function () {
+            return KindRegistry::withBuiltIns()->loadConfigured();
+        });
+
         if ($this->app->runningInConsole()) {
             $this->commands([
-                MakeAddon::class,
-                MakeEntry::class,
-                MakeStream::class,
-                MakeTable::class,
                 StreamsMake::class,
                 CatalogGenerate::class,
                 StreamsSchema::class,

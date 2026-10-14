@@ -21,9 +21,6 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 
 | Command | What it does |
 |---------|--------------|
-| [`make:stream`](#makestream) | Writes a validated `streams/{id}.json` |
-| [`make:entry`](#makeentry) | Creates or updates an entry in the stream's source |
-| [`make:addon`](#makeaddon) | Scaffolds an addon package in `addons/{vendor}/{name}/` |
 | [`streams:list`](#streamslist) | Lists registered streams by delegating to `entries:list` |
 | [`entries:list`](#entrieslist) | Paginated table of a stream's entries |
 | [`entries:show`](#entriesshow) | Shows one entry as a field and value table |
@@ -34,6 +31,8 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 | [`streams:tap`](#streamstap) | Calls a tap URL with query-string input |
 
 Agents can call the same operations through the [MCP server](/docs/mcp) (`php artisan mcp:start streams`), which needs `laravel/mcp` and Laravel 11.45+ or 12.41+.
+
+`make:stream`, `make:entry`, `make:addon`, and `make:table` are documented here so the class behavior stays findable. They are not registered. `php artisan` does not list them.
 
 ### make:stream
 
@@ -147,7 +146,52 @@ The app-definition schema is the same set of committed files that ships in the S
 php artisan streams:make {path?} {--tree=} {--output=} {--dry-run} {--json}
 ```
 
-`streams:make` is the only build command. Component kinds are nodes in the app tree, addressed by dot path (`people`, `people.table`, `people.pages.manage`, `people.actions.add`). There is no `streams:build` command and no per-component `make:page`, `make:action`, or `make:form` command.
+`streams:make` is the only build command. Component kinds are nodes in the app tree, addressed by dot path (`people`, `people.table`, `people.pages.manage`, `people.actions.add`). There is no `streams:build` command and no per-component `make:page`, `make:action`, or `make:form` command. `make:stream`, `make:entry`, `make:addon`, and `make:table` are command classes in this package and are not registered. `php artisan list` shows `streams:make` and no `make:*` command from streams-sdk. Laravel's own `make:*` commands are unchanged.
+
+### Component kinds
+
+Kinds are definitions in `Streams\Sdk\Console\Make\Kinds\KindRegistry`. They are not commands. `php artisan list` shows `streams:make` and does not gain a `make:*` command when a kind is registered.
+
+The SDK registers five kinds:
+
+| Kind | Dot path | What it is |
+|------|----------|------------|
+| `stream` | `people` | Stream handle, name, and fields |
+| `page` | `people.pages.manage` | Control panel page |
+| `table` | `people.table` | Table |
+| `action` | `people.actions.add` | Action. `type` is `button`, `link`, `modal`, or `dropdown`. `modal` requires `form` |
+| `manage` | `people.pages.manage` + `people.table` + `people.actions.add` | Chained manage page: the page, the table it shows, and a modal add action |
+
+Each kind has an input schema. The same definition supplies the JSON key, the prompt, and the flag. `Kind::validate()` returns a list of errors, and each error names its `field`.
+
+An app or a package adds a kind without a new command:
+
+```php
+use Streams\Sdk\Console\Make\Kinds\InputField;
+use Streams\Sdk\Console\Make\Kinds\Kind;
+use Streams\Sdk\Console\Make\Kinds\KindRegistry;
+
+$kind = Kind::define('badge', 'A badge on the stream.', [
+    InputField::string('handle')->required()->prompt('Badge handle')->flag('handle'),
+    InputField::string('label')->required()->prompt('Badge label')->flag('label'),
+])->placedOn('ui', 'badges', map: true, mapOf: 'badge');
+
+app(KindRegistry::class)->registerFromPackage($kind, 'example/badges');
+```
+
+`registerFromSdk()`, `registerFromApp()`, and `registerFromPackage()` are the registry API. Config does the same when the registry is first resolved:
+
+```php
+// config: streams.sdk.make.kinds
+return [
+    'app' => [$appKind],
+    'packages' => [
+        'example/badges' => [$packageKind],
+    ],
+];
+```
+
+`placedOn()` adds a tree container. `streams:make people.badges.star` then resolves that dot path to the `badge` kind. `--json` includes a `kinds` object keyed by dot path: `kind`, `source`, `package` when the kind came from a package, and `errors` from the input schema. Kind errors are reported there. They do not by themselves change the file plan.
 
 The command loads the app tree (`streams.json` plus its `$ref` files), generates the code into an in-memory file tree, and diffs that tree against the working directory. `--dry-run` prints the unified diff and writes nothing. The plan from a dry run is the plan the real run applies: the same created, modified, skipped, and unapplied files.
 
@@ -167,6 +211,7 @@ php artisan streams:make --json
 | `unapplied` | Edits that were not written. Each item has `path` (dot path), `file`, and `reason` |
 | `conflicts` | Tagged files whose hash does not match `streams.lock`. Each item has `path`, `file`, and `reason`. The file is left unchanged |
 | `diff` | The unified diff of created and modified files |
+| `kinds` | Component kinds for the nodes in scope. Each value has `kind`, `source`, `errors`, and `package` when a package registered the kind |
 
 A second run with no tree changes reports `created: []` and `modified: []`.
 
@@ -238,6 +283,10 @@ These command classes exist in the SDK source but are **not registered**, so `ph
 
 | Command | Intended purpose | State |
 |---------|------------------|-------|
+| `make:stream` | Write a stub `streams/{id}.json` | Implemented, not registered. Use `streams:make` and the `stream` kind. |
+| `make:entry` | Create or update an entry | Implemented, not registered. |
+| `make:addon` | Scaffold an addon package | Implemented, not registered. |
+| `make:table` | Make a table stream and register it in a panel or page | Implemented, not registered. The `table` kind is data on `streams:make`. |
 | `streams:show` | Show one stream's attributes | Implemented, registration commented out. Use the MCP `describe-stream` tool. |
 | `streams:describe` | Write `streams/{id}.json` by inspecting a URL, JSON, database table, or Eloquent model | Implemented, registration commented out |
 

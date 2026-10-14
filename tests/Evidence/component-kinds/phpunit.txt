@@ -1,0 +1,14 @@
+vendor/bin/phpunit
+OK, but incomplete, skipped, or risky tests!
+Tests: 108, Assertions: 3003, Skipped: 1.
+Exit code: 0
+
+Skipped (pre-existing, not part of this change):
+  MakeAddonTest::test_it_makes_addons — markTestSkipped('Not ready.')
+
+Filtered run of the new tests plus streams:make, the app tree, and make:table:
+  vendor/bin/phpunit --filter 'MakeTableTest|ComponentKindMakeTest|KindRegistryTest|KindSchemaTest|BuiltInKindsTest|StreamsMakeTest|AppTreeTest'
+  OK (48 tests, 914 assertions)
+
+vendor/bin/phpstan is not installed in this package.
+Changed PHP files were formatted with resources/bin/pint.phar.

@@ -59,64 +59,78 @@ class DocExamplesTest extends SdkTestCase
     public function test_every_streams_capture_example_runs_green(): void
     {
         // php artisan streams:capture
-        $this->assertSame(0, Artisan::call('streams:capture'), Artisan::output());
+        $code = Artisan::call('streams:capture');
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $output);
         $this->assertFileExists($this->root.'/streams.json');
+        $this->assertStringContainsString('"people"', (string) File::get($this->root.'/streams.json'));
 
         // php artisan streams:capture --dry-run
-        $this->assertSame(0, Artisan::call('streams:capture', ['--dry-run' => true]), Artisan::output());
-        $this->assertStringContainsString('"people"', Artisan::output());
+        $code = Artisan::call('streams:capture', ['--dry-run' => true]);
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $output);
+        $this->assertStringContainsString('"people"', $output);
 
         // php artisan streams:capture --json
-        $this->assertSame(0, Artisan::call('streams:capture', ['--json' => true]), Artisan::output());
-        $this->assertStringContainsString('"people"', Artisan::output());
+        $code = Artisan::call('streams:capture', ['--json' => true]);
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $output);
+        $this->assertStringContainsString('"people"', $output);
 
         // php artisan streams:capture --root=... --tree=...
-        $this->assertSame(0, Artisan::call('streams:capture', [
+        $code = Artisan::call('streams:capture', [
             '--root' => $this->root,
             '--tree' => $this->root.'/streams-other.json',
-        ]), Artisan::output());
+        ]);
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $output);
         $this->assertFileExists($this->root.'/streams-other.json');
     }
 
     public function test_every_streams_make_build_example_runs_green(): void
     {
         // php artisan streams:make --list
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             '--list' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
 
         // --list --json
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             '--list' => true,
             '--json' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
 
         // php artisan streams:make --json
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             '--json' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
 
         // php artisan streams:make --dry-run
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             '--dry-run' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
 
         // php artisan streams:make people.table --dry-run --json
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             'path' => 'people.table',
             '--dry-run' => true,
             '--json' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
     }
 
     public function test_every_streams_make_rename_example_runs_green(): void
@@ -126,22 +140,19 @@ class DocExamplesTest extends SdkTestCase
         $this->runMake(['--tree' => $copy.'/streams.json']);
 
         // php artisan streams:make rename people.actions.add people.actions.create
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             'path' => 'rename', 'from' => 'people.actions.add', 'to' => 'people.actions.create',
-            '--tree' => $copy.'/streams.json', '--output' => $this->output,
-        ]), Artisan::output());
-
-        // rename back (the pair above already swapped the tree), then dry-run.
-        Artisan::call('streams:make', [
-            'path' => 'rename', 'from' => 'people.actions.create', 'to' => 'people.actions.add',
             '--tree' => $copy.'/streams.json', '--output' => $this->output,
         ]);
+        $this->assertSame(0, $code, Artisan::output());
 
-        $this->assertSame(0, Artisan::call('streams:make', [
-            'path' => 'rename', 'from' => 'people.actions.add', 'to' => 'people.actions.create',
+        // php artisan streams:make rename ... --dry-run
+        $code = Artisan::call('streams:make', [
+            'path' => 'rename', 'from' => 'people.actions.create', 'to' => 'people.actions.add',
             '--dry-run' => true,
             '--tree' => $copy.'/streams.json', '--output' => $this->output,
-        ]), Artisan::output());
+        ]);
+        $this->assertSame(0, $code, Artisan::output());
     }
 
     public function test_every_streams_make_fix_example_runs_green(): void
@@ -154,21 +165,25 @@ class DocExamplesTest extends SdkTestCase
         File::put($absolute, str_replace("return 'Add person';", "return 'Added by hand';", $original));
 
         // php artisan streams:make --fix --dry-run
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             '--fix' => true,
             '--dry-run' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
-        $this->assertStringContainsString('would fix: people.actions.add', Artisan::output());
+        ]);
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $output);
+        $this->assertStringContainsString('would fix: people.actions.add', $output);
 
         // php artisan streams:make --fix
-        $this->assertSame(0, Artisan::call('streams:make', [
+        $code = Artisan::call('streams:make', [
             '--fix' => true,
             '--tree' => $this->makeFixture,
             '--output' => $this->output,
-        ]), Artisan::output());
-        $this->assertStringContainsString('fixed: people.actions.add', Artisan::output());
+        ]);
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $output);
+        $this->assertStringContainsString('fixed: people.actions.add', $output);
         $this->assertStringContainsString("return 'Add person';", File::get($absolute));
     }
 
@@ -177,7 +192,8 @@ class DocExamplesTest extends SdkTestCase
      */
     protected function runMake(array $arguments): void
     {
-        $this->assertSame(0, Artisan::call('streams:make', $arguments + ['--output' => $this->output]), Artisan::output());
+        $code = Artisan::call('streams:make', $arguments + ['--output' => $this->output, '--json' => true]);
+        $this->assertSame(0, $code, Artisan::output());
     }
 
     protected function copyFixture(): string

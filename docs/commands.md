@@ -27,6 +27,7 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 | [`streams:validate`](#streamsvalidate) | Checks definitions against the JSON Schema and the running app |
 | [`streams:schema`](#streamsschema) | Writes per-stream `{id}.schema.json` entry schemas and the app-definition schema |
 | [`streams:make`](#streamsmake) | Compares the app JSON tree with generated code, prints a plan, then adds or edits files |
+| [`streams:capture`](#streamscapture) | Reads existing builder settings into the app JSON tree (`streams.json`) |
 | [`streams:livewire`](#streamslivewire) | Generates Livewire 3 index, form, and show components |
 | [`streams:tap`](#streamstap) | Calls a tap URL with query-string input |
 
@@ -281,6 +282,16 @@ Each generated class carries `#[Generated('people.actions.add')]` (`Streams\Sdk\
 
 If the lock or a file's lock entry is missing, the build can regenerate that managed file and restore its hash. Preserve `streams.lock` to retain hand-edit detection; deleting it removes the recorded baseline.
 
+`--fix` runs fix providers against the failed edits of the build. The only provider shipped today is the conflict regenerator: for a tagged file whose hash does not match `streams.lock`, it regenerates the file from the tree and restores the lock. With `--dry-run`, fixes are previewed (`would fix:`) and nothing is written; in both modes the summary line includes a `fixed:` count. Fixes never touch opaque nodes or files with real hand edits that a provider cannot solve.
+
+```bash
+php artisan streams:make --fix
+php artisan streams:make --fix --dry-run
+php artisan streams:make people.table --fix --json
+```
+
+Providers come from `Streams\Sdk\Console\Make\Reports\FixRegistry` (a `canSolve(FailedEdit)` / `getSolutions(FailedEdit)` contract mirroring Spatie's solution registry, with no Spatie dependency). The engine ships without Spatie; the optional `spatie/ignition` suggestion surfaces `streams:make` fix solutions on Ignition and Flare error pages.
+
 Paths and the namespace come from `config('streams.sdk.make.paths')`. When that config is absent, paths match the reference layout:
 
 ```text
@@ -328,6 +339,34 @@ change the no-delete rule or the command registration surface.
 
 Generated builders expose `generatedLabel()` for metadata rather than
 overriding their parent builder's `label()` setter.
+
+### streams:capture
+
+```bash
+php artisan streams:capture {--root=} {--tree=} {--dry-run} {--json}
+```
+
+`streams:capture` reads builder settings from the reference layout (`app/Domains/*/Panel/{Tables,Pages,Actions,Resources,Forms,Public}`) and writes them into the app JSON tree (`streams.json`). It is the opposite of `streams:make`: make builds PHP from the tree, capture builds the tree from existing PHP. `--root` is the app root to read from (default `config('streams.sdk.capture.root')`, then the app base). `--tree` is where to write the captured tree (default `config('streams.sdk.capture.tree')`, then `base_path('streams.json')`).
+
+Literal builder settings become data in the tree. Closures, permission callbacks, class resolvers, and computed options become **opaque nodes** that point at their source file and line. `streams:make` never rewrites an opaque node, so a capture-then-build round trip is clean: capture writes the tree, build regenerates everything else, and the two runs produce zero diff.
+
+```bash
+# Write streams.json from the default app root.
+php artisan streams:capture
+
+# Print the tree without writing it.
+php artisan streams:capture --dry-run
+
+# Print the tree as machine-readable JSON.
+php artisan streams:capture --json
+
+# Read from a different app root and write to a different tree.
+php artisan streams:capture --root=/path/to/app --tree=/path/to/streams.json
+```
+
+`--dry-run` and `--json` print the captured tree and exit success without writing. On a write, the command prints `captured: {tree file}`. Builder files that cannot be parsed or have no builder class are reported as `skipped builder [{file}]: {reason}` warnings and skipped; the rest of the tree is still written. If the tree's directory does not exist, the command fails with a message.
+
+The captured tree is meant for humans and agents to review and edit before `streams:make` builds from it. Opaque nodes keep the parts that cannot be represented as data attached to their source, so the tree remains valid for the app schema.
 
 ### streams:livewire
 

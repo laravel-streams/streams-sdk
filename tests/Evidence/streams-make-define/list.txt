@@ -1,0 +1,30 @@
+stream
+  people
+  A stream definition, addressed at the stream handle (people).
+
+page
+  people.pages.{handle}
+  people.pages.manage
+  A control panel page, addressed at people.pages.manage.
+
+table
+  people.table
+  A table, addressed at people.table.
+
+action
+  people.actions.{handle}
+  people.table.actions.{handle}
+  people.actions.add
+  people.actions.add.actions.more
+  people.actions.add.actions.more.actions.export
+  people.actions.add.actions.more.actions.import
+  people.table.actions.delete
+  people.table.actions.edit
+  An action, addressed at people.actions.add. type modal requires a form.
+
+manage
+  people.actions.add
+  people.pages.manage
+  people.table
+  A manage page chained with its table and a modal add action.
+

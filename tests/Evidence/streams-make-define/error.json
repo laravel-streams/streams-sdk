@@ -1,0 +1,14 @@
+{
+    "message": "Invalid component definition.",
+    "field": "label",
+    "errors": [
+        {
+            "field": "label",
+            "message": "The label field is required."
+        },
+        {
+            "field": "type",
+            "message": "The type field is required."
+        }
+    ]
+}

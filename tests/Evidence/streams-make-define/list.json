@@ -1,0 +1,229 @@
+{
+    "kinds": [
+        {
+            "kind": "stream",
+            "source": "sdk",
+            "description": "A stream definition, addressed at the stream handle (people).",
+            "paths": [
+                "people"
+            ],
+            "nodes": [
+                "people"
+            ],
+            "inputs": [
+                {
+                    "field": "handle",
+                    "flag": "handle",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Stream handle"
+                },
+                {
+                    "field": "name",
+                    "flag": "name",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Stream name"
+                },
+                {
+                    "field": "fields",
+                    "flag": "fields",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Stream fields"
+                },
+                {
+                    "field": "description",
+                    "flag": "description",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Stream description"
+                }
+            ]
+        },
+        {
+            "kind": "page",
+            "source": "sdk",
+            "description": "A control panel page, addressed at people.pages.manage.",
+            "paths": [
+                "people.pages.{handle}"
+            ],
+            "nodes": [
+                "people.pages.manage"
+            ],
+            "inputs": [
+                {
+                    "field": "handle",
+                    "flag": "handle",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Page handle"
+                },
+                {
+                    "field": "title",
+                    "flag": "title",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Page title"
+                },
+                {
+                    "field": "section",
+                    "flag": "section",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Panel section"
+                },
+                {
+                    "field": "table",
+                    "flag": "table",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Table path"
+                }
+            ]
+        },
+        {
+            "kind": "table",
+            "source": "sdk",
+            "description": "A table, addressed at people.table.",
+            "paths": [
+                "people.table"
+            ],
+            "nodes": [
+                "people.table"
+            ],
+            "inputs": [
+                {
+                    "field": "handle",
+                    "flag": "handle",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Table handle"
+                },
+                {
+                    "field": "name",
+                    "flag": "name",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Table name"
+                },
+                {
+                    "field": "columns",
+                    "flag": "columns",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Columns"
+                },
+                {
+                    "field": "actions",
+                    "flag": "actions",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Row actions"
+                }
+            ]
+        },
+        {
+            "kind": "action",
+            "source": "sdk",
+            "description": "An action, addressed at people.actions.add. type modal requires a form.",
+            "paths": [
+                "people.actions.{handle}",
+                "people.table.actions.{handle}"
+            ],
+            "nodes": [
+                "people.actions.add",
+                "people.actions.add.actions.more",
+                "people.actions.add.actions.more.actions.export",
+                "people.actions.add.actions.more.actions.import",
+                "people.table.actions.delete",
+                "people.table.actions.edit"
+            ],
+            "inputs": [
+                {
+                    "field": "handle",
+                    "flag": "handle",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Action handle"
+                },
+                {
+                    "field": "label",
+                    "flag": "label",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Action label"
+                },
+                {
+                    "field": "type",
+                    "flag": "type",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Action type"
+                },
+                {
+                    "field": "target",
+                    "flag": "target",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Link target"
+                },
+                {
+                    "field": "form",
+                    "flag": "form",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Modal form"
+                }
+            ]
+        },
+        {
+            "kind": "manage",
+            "source": "sdk",
+            "description": "A manage page chained with its table and a modal add action.",
+            "paths": [
+                "people.actions.add",
+                "people.pages.manage",
+                "people.table"
+            ],
+            "nodes": [],
+            "inputs": [
+                {
+                    "field": "title",
+                    "flag": "title",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Page title"
+                },
+                {
+                    "field": "section",
+                    "flag": "section",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Panel section"
+                },
+                {
+                    "field": "add_label",
+                    "flag": "add-label",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Add action label"
+                },
+                {
+                    "field": "form",
+                    "flag": "form",
+                    "required": true,
+                    "default": null,
+                    "prompt": "Modal form"
+                },
+                {
+                    "field": "table_name",
+                    "flag": "table-name",
+                    "required": false,
+                    "default": null,
+                    "prompt": "Table name"
+                }
+            ]
+        }
+    ]
+}

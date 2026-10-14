@@ -1,0 +1,10 @@
+No syntax errors detected in src/Console/Commands/StreamsMake.php
+No syntax errors detected in src/Console/Make/DefinitionCollector.php
+No syntax errors detected in src/Console/Make/KindCatalog.php
+No syntax errors detected in src/Console/Make/MakeDefinition.php
+No syntax errors detected in src/Console/Make/TreeEditException.php
+No syntax errors detected in src/Console/Make/TreeEditor.php
+No syntax errors detected in src/Console/Make/Kinds/InputField.php
+No syntax errors detected in src/Support/AppTree.php
+No syntax errors detected in tests/Console/Commands/StreamsMakeDefineTest.php
+No syntax errors detected in tests/Evidence/streams-make-define/capture.php

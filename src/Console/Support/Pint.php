@@ -25,7 +25,7 @@ class Pint
     {
         $binary = static::binary();
 
-        if ($binary === null || !is_file($path)) {
+        if ($binary === null || ! is_file($path)) {
             return false;
         }
 
@@ -63,7 +63,7 @@ class Pint
             return $hostBinary;
         }
 
-        $bundled = dirname(__DIR__, 3) . '/resources/bin/pint.phar';
+        $bundled = dirname(__DIR__, 3).'/resources/bin/pint.phar';
 
         return is_file($bundled) ? $bundled : null;
     }

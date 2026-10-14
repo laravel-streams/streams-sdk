@@ -47,9 +47,7 @@ class PhpEditor
      */
     protected array $tokens = [];
 
-    public function __construct(protected string $path)
-    {
-    }
+    public function __construct(protected string $path) {}
 
     public static function read(string $path): static
     {
@@ -119,7 +117,7 @@ class PhpEditor
      * Existing keys are updated in place; missing ones are appended, so the
      * edit is idempotent.
      *
-     * @param array<string, bool> $flags
+     * @param  array<string, bool>  $flags
      */
     public function put(string $key, array $flags = []): bool
     {
@@ -129,9 +127,7 @@ class PhpEditor
 
         $traverser->addVisitor(new class($key, $flags) extends NodeVisitorAbstract
         {
-            public function __construct(protected string $key, protected array $flags)
-            {
-            }
+            public function __construct(protected string $key, protected array $flags) {}
 
             public function enterNode(Node $node)
             {
@@ -162,7 +158,7 @@ class PhpEditor
                     return $array;
                 }
 
-                if (!$item->value instanceof Array_) {
+                if (! $item->value instanceof Array_) {
                     $item->value = new Array_([], ['kind' => Array_::KIND_SHORT]);
                 }
 
@@ -190,7 +186,7 @@ class PhpEditor
                         }
                     }
 
-                    if (!$replaced) {
+                    if (! $replaced) {
                         $array->items[] = new ArrayItem($valueNode, new String_($flag));
                     }
                 }

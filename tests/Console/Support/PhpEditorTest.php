@@ -3,14 +3,14 @@
 namespace Streams\Sdk\Tests\Console\Support;
 
 use Illuminate\Support\Facades\File;
-use Streams\Sdk\Tests\SdkTestCase;
 use Streams\Sdk\Console\Support\PhpEditor;
+use Streams\Sdk\Tests\SdkTestCase;
 
 class PhpEditorTest extends SdkTestCase
 {
     public function test_editing_one_array_entry_changes_only_that_entry()
     {
-        $original = (string) File::get(__DIR__ . '/../../Fixtures/PhpEditor/registry.php');
+        $original = (string) File::get(__DIR__.'/../../Fixtures/PhpEditor/registry.php');
 
         $editor = PhpEditor::fromString($original, 'tables.php');
 
@@ -31,7 +31,7 @@ class PhpEditorTest extends SdkTestCase
 
     public function test_noop_edit_prints_the_file_byte_for_byte()
     {
-        $original = (string) File::get(__DIR__ . '/../../Fixtures/PhpEditor/registry.php');
+        $original = (string) File::get(__DIR__.'/../../Fixtures/PhpEditor/registry.php');
 
         $editor = PhpEditor::fromString($original, 'tables.php');
 
@@ -50,11 +50,11 @@ class PhpEditorTest extends SdkTestCase
         $lines = [];
 
         foreach (explode("\n", $diff) as $line) {
-            if (str_starts_with($line, '+') && !str_starts_with($line, '+++')) {
+            if (str_starts_with($line, '+') && ! str_starts_with($line, '+++')) {
                 $lines[] = $line;
             }
 
-            if (str_starts_with($line, '-') && !str_starts_with($line, '---')) {
+            if (str_starts_with($line, '-') && ! str_starts_with($line, '---')) {
                 $lines[] = $line;
             }
         }

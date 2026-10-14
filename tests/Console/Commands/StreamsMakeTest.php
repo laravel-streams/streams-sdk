@@ -399,6 +399,12 @@ PHP;
         $this->assertSame([], $report['modified']);
         $this->assertSame([], $report['skipped']);
         $this->assertSame($after, File::get($this->output.'/'.$relative));
+        $page = File::get($this->output.'/app/Domains/People/Panel/Pages/PeoplePagesManage.php');
+        $this->assertStringContainsString('PeopleActionsAdd::resolve()', $page);
+        $this->assertStringContainsString('PeopleActionsAddForm::resolve()', $after);
+        $scoped = $this->runJson(['--tree' => $copy.'/streams.json', 'path' => 'people.pages.manage']);
+        $this->assertSame([], $scoped['created']);
+        $this->assertSame([], $scoped['modified']);
     }
 
     public function test_rename_dry_run_and_hand_edit_failure_leave_all_files_unchanged(): void

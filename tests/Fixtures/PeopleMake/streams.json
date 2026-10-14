@@ -1,0 +1,47 @@
+{
+    "name": "People",
+    "streams": {
+        "people": {
+            "handle": "people",
+            "name": "People",
+            "fields": [
+                {"handle": "name", "type": "string", "required": true},
+                {"handle": "email", "type": "email", "required": true}
+            ],
+            "ui": {
+                "table": {
+                    "handle": "table",
+                    "name": "People table",
+                    "columns": {
+                        "name": {"handle": "name", "label": "Name"},
+                        "email": {"handle": "email", "label": "Email address"}
+                    }
+                },
+                "pages": {
+                    "manage": {"handle": "manage", "title": "Manage people", "section": "people", "table": "table"}
+                },
+                "actions": {
+                    "add": {
+                        "handle": "add",
+                        "label": "Add person",
+                        "type": "modal",
+                        "form": {
+                            "handle": "form",
+                            "name": "Add person",
+                            "sections": {
+                                "basics": {
+                                    "handle": "basics",
+                                    "name": "Basics",
+                                    "fields": [
+                                        {"handle": "name", "type": "string", "required": true},
+                                        {"handle": "email", "type": "email", "required": true}
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

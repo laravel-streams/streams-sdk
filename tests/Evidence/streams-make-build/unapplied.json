@@ -1,0 +1,17 @@
+{
+    "created": [],
+    "modified": [],
+    "skipped": [],
+    "unapplied": [
+        {
+            "path": "people.table",
+            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+            "reason": "cannot apply edit [declare class PeopleTable]: no class declaration found"
+        },
+        {
+            "path": "people.table",
+            "file": "app/Domains/People/Panel/Tables/PeopleTable.php",
+            "reason": "cannot apply edit [set label]: method label() was not found"
+        }
+    ]
+}

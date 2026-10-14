@@ -2,6 +2,7 @@
 
 namespace App\Domains\People\Panel\Pages;
 
+use App\Domains\People\Panel\Actions\PeopleActionsAdd as AddPersonModal;
 use App\Domains\People\Panel\Tables\PeopleTable;
 use App\Livewire\PanelPage;
 use Streams\Ui\Builders\Containers\Container;
@@ -17,6 +18,8 @@ class PeoplePagesManage extends PanelPage
     // Keep the author's page state and unrelated behavior.
     public array $peopleStats = [];
 
+    protected string $pendingAction = AddPersonModal::class;
+
     public function boot(): void
     {
         PeopleTable::register($this);
@@ -30,6 +33,7 @@ class PeoplePagesManage extends PanelPage
                     Heading::make('Manage people')
                         ->actions([
                             // The add action belongs here.
+                            ImportPeopleModal::resolve(),
                             PeopleActionsMenu::make(),
                         ]),
                     PeopleTable::resolve(),

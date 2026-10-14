@@ -5,9 +5,9 @@ namespace Streams\Sdk\Console\Make;
 /**
  * The plan for one streams:make run.
  *
- * created, modified, skipped, and unapplied are computed before any write,
- * so a dry run and the real run that follows report the same plan.
- * Nothing in the plan deletes a file.
+ * created, modified, skipped, unapplied, and conflicts are computed before
+ * any write, so a dry run and the real run that follows report the same plan.
+ * Nothing in the plan deletes a file. A conflict is left unchanged.
  */
 class BuildPlan
 {
@@ -40,6 +40,14 @@ class BuildPlan
     public array $unapplied = [];
 
     /**
+     * Tagged files whose hash does not match streams.lock.
+     * Each item has path, file, and reason. The file is left unchanged.
+     *
+     * @var list<array{path: string, file: string, reason: string}>
+     */
+    public array $conflicts = [];
+
+    /**
      * Unified diffs keyed by relative path, for created and modified files.
      *
      * @var array<string, string>
@@ -47,7 +55,7 @@ class BuildPlan
     public array $diffs = [];
 
     /**
-     * @return array{created: list<string>, modified: list<string>, skipped: list<string>, unapplied: list<array{path: string, file: string, reason: string}>, diff: string}
+     * @return array{created: list<string>, modified: list<string>, skipped: list<string>, unapplied: list<array{path: string, file: string, reason: string}>, conflicts: list<array{path: string, file: string, reason: string}>, diff: string}
      */
     public function toArray(): array
     {
@@ -56,6 +64,7 @@ class BuildPlan
             'modified' => $this->modified,
             'skipped' => $this->skipped,
             'unapplied' => $this->unapplied,
+            'conflicts' => $this->conflicts,
             'diff' => $this->unifiedDiff(),
         ];
     }

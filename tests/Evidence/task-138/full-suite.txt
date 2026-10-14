@@ -64,6 +64,10 @@ Streams Make (Streams\Sdk\Tests\Console\Commands\StreamsMake)
  ✔ Removing a node leaves its file and lists it as skipped
  ✔ An unapplied edit reports path file and reason and writes nothing
  ✔ No separate build command is registered
+ ✔ Rename updates tree lock and tag in place and rebuild is stable
+ ✔ Rename dry run and hand edit failure leave all files unchanged
+ ✔ Rename rejects collisions cross parent moves and missing arguments without writes
+ ✔ Build ignores unsafe lock file mappings
 
 Streams Tap (Streams\Sdk\Tests\Console\Commands\StreamsTap)
  ✔ Streams tap is registered and calls the url with query string input
@@ -201,14 +205,14 @@ Stream Source Validator (Streams\Sdk\Tests\Support\StreamSourceValidator)
  ✔ Streams validate fails the documented legacy configuration
  ✔ Streams validate passes the testing fixtures
 
-Time: 00:18.641, Memory: 50.00 MB
+Time: 00:16.870, Memory: 50.00 MB
 
 Summary of non-successful tests:
 
 Make Addon (Streams\Sdk\Tests\Console\Commands\MakeAddon)
  ↩ It makes addons
 OK, but incomplete, skipped, or risky tests!
-Tests: 132, Assertions: 3413, Skipped: 1.
+Tests: 136, Assertions: 3544, Skipped: 1.
 PHP Deprecated:  Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-114-a249-d996111d/vendor/spatie/laravel-ray/src/Ray.php on line 45
 
 Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-114-a249-d996111d/vendor/spatie/laravel-ray/src/Ray.php on line 45

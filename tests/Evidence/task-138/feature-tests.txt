@@ -16,6 +16,10 @@ Streams Make (Streams\Sdk\Tests\Console\Commands\StreamsMake)
  ✔ Removing a node leaves its file and lists it as skipped
  ✔ An unapplied edit reports path file and reason and writes nothing
  ✔ No separate build command is registered
+ ✔ Rename updates tree lock and tag in place and rebuild is stable
+ ✔ Rename dry run and hand edit failure leave all files unchanged
+ ✔ Rename rejects collisions cross parent moves and missing arguments without writes
+ ✔ Build ignores unsafe lock file mappings
 
 Fix Registry (Streams\Sdk\Tests\Console\Make\Reports\FixRegistry)
  ✔ Registry runs providers in order
@@ -23,9 +27,9 @@ Fix Registry (Streams\Sdk\Tests\Console\Make\Reports\FixRegistry)
  ✔ Recorded fixes are kept when the report replans
  ✔ Conflict solution summary names the file
 
-Time: 00:02.533, Memory: 38.00 MB
+Time: 00:02.797, Memory: 42.00 MB
 
-OK (16 tests, 759 assertions)
+OK (20 tests, 890 assertions)
 PHP Deprecated:  Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-114-a249-d996111d/vendor/spatie/laravel-ray/src/Ray.php on line 45
 
 Deprecated: Spatie\LaravelRay\Ray::__construct(): Implicitly marking parameter $client as nullable is deprecated, the explicit nullable type must be used instead in /Users/ryanthompson/Sites/fundamental.operations/storage/worktrees.noindex/run-114-a249-d996111d/vendor/spatie/laravel-ray/src/Ray.php on line 45

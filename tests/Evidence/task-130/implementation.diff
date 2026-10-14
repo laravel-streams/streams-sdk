@@ -1,0 +1,889 @@
+diff --git a/src/Console/Support/Transforms/AddAttribute.php b/src/Console/Support/Transforms/AddAttribute.php
+new file mode 100644
+index 0000000..a6aa320
+--- /dev/null
++++ b/src/Console/Support/Transforms/AddAttribute.php
+@@ -0,0 +1,108 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use InvalidArgumentException;
++use PhpParser\Node;
++use PhpParser\Node\Arg;
++use PhpParser\Node\Attribute;
++use PhpParser\Node\AttributeGroup;
++use PhpParser\Node\Expr;
++use PhpParser\Node\Expr\ConstFetch;
++use PhpParser\Node\Expr\DNumber;
++use PhpParser\Node\Expr\LNumber;
++use PhpParser\Node\Identifier;
++use PhpParser\Node\Name;
++use PhpParser\Node\Scalar\String_;
++use PhpParser\Node\Stmt\ClassLike;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * Add a PHP 8 attribute to the first named class-like declaration.
++ *
++ * $args are the attribute arguments and may be plain scalars (string, int,
++ * float, bool, null) or already-built php-parser expression nodes. Adding an
++ * attribute that is already present is a no-op, so the transform is
++ * idempotent across repeated generations.
++ */
++class AddAttribute implements Transform
++{
++    use EditsStatements;
++
++    /**
++     * @param  list<mixed>  $args
++     */
++    public function __construct(
++        protected string $name,
++        protected array $args = [],
++    ) {}
++
++    public function apply(PhpEditor $editor): PhpEditor
++    {
++        return $this->edit($editor, function (Node $node): void {
++            if ($node instanceof ClassLike && $node->name !== null && $this->missing($node)) {
++                $node->attrGroups[] = new AttributeGroup([
++                    new Attribute(new Name($this->name), $this->arguments()),
++                ]);
++            }
++        });
++    }
++
++    protected function missing(ClassLike $class): bool
++    {
++        foreach ($class->attrGroups as $group) {
++            foreach ($group->attrs as $attribute) {
++                if ($attribute->name->toString() === $this->name) {
++                    return false;
++                }
++            }
++        }
++
++        return true;
++    }
++
++    /**
++     * @return list<Arg>
++     */
++    protected function arguments(): array
++    {
++        $arguments = [];
++
++        foreach ($this->args as $key => $value) {
++            $name = is_string($key) ? new Identifier($key) : null;
++
++            $arguments[] = new Arg($this->value($value), false, false, [], $name);
++        }
++
++        return $arguments;
++    }
++
++    protected function value(mixed $value): Expr
++    {
++        if ($value instanceof Expr) {
++            return $value;
++        }
++
++        if (is_string($value)) {
++            return new String_($value);
++        }
++
++        if (is_int($value)) {
++            return new LNumber($value);
++        }
++
++        if (is_float($value)) {
++            return new DNumber($value);
++        }
++
++        if (is_bool($value)) {
++            return new ConstFetch(new Name($value ? 'true' : 'false'));
++        }
++
++        if ($value === null) {
++            return new ConstFetch(new Name('null'));
++        }
++
++        throw new InvalidArgumentException('Unsupported attribute argument: '.get_debug_type($value));
++    }
++}
+diff --git a/src/Console/Support/Transforms/AddMember.php b/src/Console/Support/Transforms/AddMember.php
+new file mode 100644
+index 0000000..13bcbbf
+--- /dev/null
++++ b/src/Console/Support/Transforms/AddMember.php
+@@ -0,0 +1,62 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use PhpParser\Node;
++use PhpParser\Node\Stmt\ClassConst;
++use PhpParser\Node\Stmt\ClassLike;
++use PhpParser\Node\Stmt\ClassMethod;
++use PhpParser\Node\Stmt\Property;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * Add a member (method, property, or class constant) to the first named
++ * class-like declaration.
++ *
++ * The member is a php-parser statement node built by the caller. Adding a
++ * member whose name already exists on the class is a no-op, so applying the
++ * transform twice never duplicates a member.
++ */
++class AddMember implements Transform
++{
++    use EditsStatements;
++
++    public function __construct(protected Node\Stmt $member) {}
++
++    public function apply(PhpEditor $editor): PhpEditor
++    {
++        return $this->edit($editor, function (Node $node): void {
++            if ($node instanceof ClassLike && $node->name !== null && $this->missing($node)) {
++                $node->stmts[] = $this->member;
++            }
++        });
++    }
++
++    protected function missing(ClassLike $class): bool
++    {
++        foreach ($class->stmts as $existing) {
++            if ($this->sameName($existing, $this->member)) {
++                return false;
++            }
++        }
++
++        return true;
++    }
++
++    protected function sameName(Node $existing, Node $member): bool
++    {
++        if ($existing instanceof ClassMethod && $member instanceof ClassMethod) {
++            return $existing->name->toString() === $member->name->toString();
++        }
++
++        if ($existing instanceof Property && $member instanceof Property) {
++            return $existing->props[0]->name->toString() === $member->props[0]->name->toString();
++        }
++
++        if ($existing instanceof ClassConst && $member instanceof ClassConst) {
++            return $existing->consts[0]->name->toString() === $member->consts[0]->name->toString();
++        }
++
++        return false;
++    }
++}
+diff --git a/src/Console/Support/Transforms/EditsStatements.php b/src/Console/Support/Transforms/EditsStatements.php
+new file mode 100644
+index 0000000..accb260
+--- /dev/null
++++ b/src/Console/Support/Transforms/EditsStatements.php
+@@ -0,0 +1,44 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use PhpParser\Node;
++use PhpParser\NodeTraverser;
++use PhpParser\NodeVisitorAbstract;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * Shared traversal plumbing for transforms.
++ *
++ * Each transform describes a single enter-node edit; this trait runs that
++ * edit across the editor's editable statements and writes the traversed
++ * tree back. Nodes are mutated in place (the PhpEditor tree is already
++ * deep-cloned), so untouched nodes keep their original tokens and the
++ * format-preserving printer only re-prints what changed.
++ */
++trait EditsStatements
++{
++    /**
++     * Traverse the editor's statements with $enter and write the result back.
++     *
++     * @param  callable(Node): void  $enter
++     */
++    protected function edit(PhpEditor $editor, callable $enter): PhpEditor
++    {
++        $traverser = new NodeTraverser;
++
++        $traverser->addVisitor(new class($enter) extends NodeVisitorAbstract
++        {
++            public function __construct(protected $enter) {}
++
++            public function enterNode(Node $node)
++            {
++                ($this->enter)($node);
++
++                return null;
++            }
++        });
++
++        return $editor->withStatements($traverser->traverse($editor->statements()));
++    }
++}
+diff --git a/src/Console/Support/Transforms/RemoveMember.php b/src/Console/Support/Transforms/RemoveMember.php
+new file mode 100644
+index 0000000..734670a
+--- /dev/null
++++ b/src/Console/Support/Transforms/RemoveMember.php
+@@ -0,0 +1,51 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use PhpParser\Node;
++use PhpParser\Node\Stmt\ClassConst;
++use PhpParser\Node\Stmt\ClassLike;
++use PhpParser\Node\Stmt\ClassMethod;
++use PhpParser\Node\Stmt\Property;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * Remove every member (method, property, or class constant) with the given
++ * name from the first named class-like declaration. Members without that
++ * name, and the surrounding class structure, are left untouched.
++ */
++class RemoveMember implements Transform
++{
++    use EditsStatements;
++
++    public function __construct(protected string $name) {}
++
++    public function apply(PhpEditor $editor): PhpEditor
++    {
++        return $this->edit($editor, function (Node $node): void {
++            if ($node instanceof ClassLike && $node->name !== null) {
++                $node->stmts = array_values(array_filter(
++                    $node->stmts,
++                    fn (Node $stmt): bool => ! $this->matches($stmt),
++                ));
++            }
++        });
++    }
++
++    protected function matches(Node $stmt): bool
++    {
++        if ($stmt instanceof ClassMethod) {
++            return $stmt->name->toString() === $this->name;
++        }
++
++        if ($stmt instanceof Property) {
++            return $stmt->props[0]->name->toString() === $this->name;
++        }
++
++        if ($stmt instanceof ClassConst) {
++            return $stmt->consts[0]->name->toString() === $this->name;
++        }
++
++        return false;
++    }
++}
+diff --git a/src/Console/Support/Transforms/RenameClass.php b/src/Console/Support/Transforms/RenameClass.php
+new file mode 100644
+index 0000000..f42a8fb
+--- /dev/null
++++ b/src/Console/Support/Transforms/RenameClass.php
+@@ -0,0 +1,28 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use PhpParser\Node;
++use PhpParser\Node\Identifier;
++use PhpParser\Node\Stmt\ClassLike;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * Rename the first named class-like declaration (class, interface, trait,
++ * or enum) in the file. Anonymous classes are ignored.
++ */
++class RenameClass implements Transform
++{
++    use EditsStatements;
++
++    public function __construct(protected string $name) {}
++
++    public function apply(PhpEditor $editor): PhpEditor
++    {
++        return $this->edit($editor, function (Node $node): void {
++            if ($node instanceof ClassLike && $node->name !== null) {
++                $node->name = new Identifier($this->name);
++            }
++        });
++    }
++}
+diff --git a/src/Console/Support/Transforms/SetNamespace.php b/src/Console/Support/Transforms/SetNamespace.php
+new file mode 100644
+index 0000000..15e3108
+--- /dev/null
++++ b/src/Console/Support/Transforms/SetNamespace.php
+@@ -0,0 +1,48 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use PhpParser\Node;
++use PhpParser\Node\Name;
++use PhpParser\Node\Stmt\Namespace_;
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * Set the namespace of the file.
++ *
++ * When the file already has a namespace declaration its name is replaced in
++ * place. When it has none, the top-level statements are wrapped in one so
++ * the file still parses the same way.
++ */
++class SetNamespace implements Transform
++{
++    use EditsStatements;
++
++    public function __construct(protected string $namespace) {}
++
++    public function apply(PhpEditor $editor): PhpEditor
++    {
++        $found = false;
++
++        $editor = $this->edit($editor, function (Node $node) use (&$found): void {
++            if ($node instanceof Namespace_ && $node->name !== null) {
++                $node->name = new Name($this->namespace);
++                $found = true;
++            }
++        });
++
++        if ($found) {
++            return $editor;
++        }
++
++        $statements = $editor->statements();
++
++        if ($statements === []) {
++            return $editor;
++        }
++
++        return $editor->withStatements([
++            new Namespace_(new Name($this->namespace), $statements),
++        ]);
++    }
++}
+diff --git a/src/Console/Support/Transforms/Transform.php b/src/Console/Support/Transforms/Transform.php
+new file mode 100644
+index 0000000..5e2a93d
+--- /dev/null
++++ b/src/Console/Support/Transforms/Transform.php
+@@ -0,0 +1,27 @@
++<?php
++
++namespace Streams\Sdk\Console\Support\Transforms;
++
++use Streams\Sdk\Console\Support\PhpEditor;
++
++/**
++ * A small, named AST edit applied to a reference file.
++ *
++ * A transform loads nothing itself: it mutates the editable statements of
++ * a PhpEditor and returns the same editor, so transforms compose in order:
++ *
++ *     $editor = PhpEditor::read($reference);
++ *
++ *     (new SetNamespace('App\Domains\Posts\Panel\Tables'))->apply($editor);
++ *     (new RenameClass('PostsTable'))->apply($editor);
++ *     (new AddAttribute('Streams\Sdk\Attributes\Table', ['posts']))->apply($editor);
++ *
++ *     $output = $editor->print();
++ *
++ * A transform that has nothing to edit is a no-op: it leaves the statements
++ * untouched, so print() stays byte-for-byte identical (idempotent).
++ */
++interface Transform
++{
++    public function apply(PhpEditor $editor): PhpEditor;
++}
+diff --git a/tests/Console/Support/Transforms/AddAttributeTest.php b/tests/Console/Support/Transforms/AddAttributeTest.php
+new file mode 100644
+index 0000000..ae91e73
+--- /dev/null
++++ b/tests/Console/Support/Transforms/AddAttributeTest.php
+@@ -0,0 +1,30 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Transforms\AddAttribute;
++
++class AddAttributeTest extends TransformsTestCase
++{
++    public function test_it_adds_an_attribute_group_and_touches_only_that_line()
++    {
++        $original = $this->fixture();
++
++        $editor = PhpEditor::fromString($original, 'widgets.php');
++
++        (new AddAttribute('App\Attributes\Widgets', ['widgets', 'icon' => 'w']))->apply($editor);
++
++        // The only +/- line is the new attribute; nothing else moves.
++        $this->assertSame([
++            "+#[App\Attributes\Widgets('widgets', icon: 'w')]",
++        ], $this->changedLines($editor->diff($original)));
++
++        $this->assertStringContainsString("#[App\Attributes\Widgets('widgets', icon: 'w')]", $editor->print());
++
++        // Adding the same attribute again is a no-op.
++        $first = $editor->print();
++        (new AddAttribute('App\Attributes\Widgets', ['widgets']))->apply($editor);
++        $this->assertSame($first, $editor->print());
++    }
++}
+diff --git a/tests/Console/Support/Transforms/AddMemberTest.php b/tests/Console/Support/Transforms/AddMemberTest.php
+new file mode 100644
+index 0000000..5735d9e
+--- /dev/null
++++ b/tests/Console/Support/Transforms/AddMemberTest.php
+@@ -0,0 +1,42 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use PhpParser\Node\Identifier;
++use PhpParser\Node\Scalar\String_;
++use PhpParser\Node\Stmt\Class_;
++use PhpParser\Node\Stmt\ClassMethod;
++use PhpParser\Node\Stmt\Return_;
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Transforms\AddMember;
++
++class AddMemberTest extends TransformsTestCase
++{
++    public function test_it_adds_a_method_and_touches_only_the_added_member()
++    {
++        $original = $this->fixture();
++
++        $editor = PhpEditor::fromString($original, 'widgets.php');
++
++        (new AddMember(new ClassMethod(new Identifier('heading'), [
++            'flags' => Class_::MODIFIER_PUBLIC,
++            'returnType' => new Identifier('string'),
++            'stmts' => [new Return_(new String_('Widgets'))],
++        ])))->apply($editor);
++
++        // The only +/- lines are the new method; setUp() and the class
++        // declaration are printed from their original tokens.
++        $this->assertSame([
++            '+    public function heading() : string',
++            '+    {',
++            "+        return 'Widgets';",
++            '+    }',
++        ], $this->changedLines($editor->diff($original)));
++
++        // Adding another member with the same name is a no-op, so repeated
++        // generations never duplicate a member.
++        $first = $editor->print();
++        (new AddMember(new ClassMethod(new Identifier('heading'), [])))->apply($editor);
++        $this->assertSame($first, $editor->print());
++    }
++}
+diff --git a/tests/Console/Support/Transforms/RemoveMemberTest.php b/tests/Console/Support/Transforms/RemoveMemberTest.php
+new file mode 100644
+index 0000000..6bebfe2
+--- /dev/null
++++ b/tests/Console/Support/Transforms/RemoveMemberTest.php
+@@ -0,0 +1,33 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Transforms\RemoveMember;
++
++class RemoveMemberTest extends TransformsTestCase
++{
++    public function test_it_removes_the_named_member_and_keeps_everything_else()
++    {
++        $original = $this->fixture();
++
++        $editor = PhpEditor::fromString($original, 'widgets.php');
++
++        (new RemoveMember('setUp'))->apply($editor);
++
++        $diff = $editor->diff($original);
++
++        // The whole setUp() method is removed...
++        $this->assertStringContainsString('-    protected function setUp(): void', $diff);
++        $this->assertStringNotContainsString('function setUp', $editor->print());
++
++        // ...and the class, namespace, and remaining structure are intact.
++        $this->assertStringContainsString('class WidgetsTable extends Widget', $editor->print());
++        $this->assertStringContainsString('namespace App\Widgets;', $editor->print());
++
++        // Removing a member that is not there is a no-op.
++        $first = $editor->print();
++        (new RemoveMember('missing'))->apply($editor);
++        $this->assertSame($first, $editor->print());
++    }
++}
+diff --git a/tests/Console/Support/Transforms/RenameClassTest.php b/tests/Console/Support/Transforms/RenameClassTest.php
+new file mode 100644
+index 0000000..ec249da
+--- /dev/null
++++ b/tests/Console/Support/Transforms/RenameClassTest.php
+@@ -0,0 +1,33 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Transforms\RenameClass;
++
++class RenameClassTest extends TransformsTestCase
++{
++    public function test_it_renames_the_class_and_touches_only_the_declaration()
++    {
++        $original = $this->fixture();
++
++        $editor = PhpEditor::fromString($original, 'widgets.php');
++
++        (new RenameClass('PostsTable'))->apply($editor);
++
++        // The only +/- line is the class declaration; the namespace, use
++        // statements, and setUp() body are printed from their original tokens.
++        $this->assertSame([
++            '-class WidgetsTable extends Widget',
++            '+class PostsTable extends Widget',
++        ], $this->changedLines($editor->diff($original)));
++
++        $this->assertStringContainsString('class PostsTable extends Widget', $editor->print());
++        $this->assertStringNotContainsString('WidgetsTable', $editor->print());
++
++        // Applying the same rename again leaves the file byte-for-byte alone.
++        $first = $editor->print();
++        (new RenameClass('PostsTable'))->apply($editor);
++        $this->assertSame($first, $editor->print());
++    }
++}
+diff --git a/tests/Console/Support/Transforms/SetNamespaceTest.php b/tests/Console/Support/Transforms/SetNamespaceTest.php
+new file mode 100644
+index 0000000..44f0ef4
+--- /dev/null
++++ b/tests/Console/Support/Transforms/SetNamespaceTest.php
+@@ -0,0 +1,51 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Transforms\SetNamespace;
++
++class SetNamespaceTest extends TransformsTestCase
++{
++    public function test_it_replaces_an_existing_namespace_and_touches_only_that_line()
++    {
++        $original = $this->fixture();
++
++        $editor = PhpEditor::fromString($original, 'widgets.php');
++
++        (new SetNamespace('App\Widgets\Panel\Tables'))->apply($editor);
++
++        $this->assertSame([
++            '-namespace App\Widgets;',
++            '+namespace App\Widgets\Panel\Tables;',
++        ], $this->changedLines($editor->diff($original)));
++
++        $this->assertStringContainsString('namespace App\Widgets\Panel\Tables;', $editor->print());
++    }
++
++    public function test_it_wraps_a_file_that_has_no_namespace()
++    {
++        $original = <<<'PHP'
++<?php
++
++class WidgetsTable
++{
++    public function heading(): string
++    {
++        return 'Widgets';
++    }
++}
++PHP;
++
++        $editor = PhpEditor::fromString($original, 'widgets.php');
++
++        (new SetNamespace('App\Widgets\Panel\Tables'))->apply($editor);
++
++        $this->assertStringContainsString('namespace App\Widgets\Panel\Tables;', $editor->print());
++        $this->assertStringContainsString('class WidgetsTable', $editor->print());
++
++        // The edited file still parses and the class is inside the namespace.
++        $editor2 = PhpEditor::fromString($editor->print(), 'widgets.php');
++        $this->assertSame($editor->print(), $editor2->print());
++    }
++}
+diff --git a/tests/Console/Support/Transforms/TransformGoldenTest.php b/tests/Console/Support/Transforms/TransformGoldenTest.php
+new file mode 100644
+index 0000000..aa1fe53
+--- /dev/null
++++ b/tests/Console/Support/Transforms/TransformGoldenTest.php
+@@ -0,0 +1,90 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use Illuminate\Support\Facades\File;
++use PhpParser\Node\Identifier;
++use PhpParser\Node\Scalar\String_;
++use PhpParser\Node\Stmt\Class_;
++use PhpParser\Node\Stmt\ClassMethod;
++use PhpParser\Node\Stmt\Return_;
++use Streams\Sdk\Console\Support\PhpEditor;
++use Streams\Sdk\Console\Support\Pint;
++use Streams\Sdk\Console\Support\Transforms\AddAttribute;
++use Streams\Sdk\Console\Support\Transforms\AddMember;
++use Streams\Sdk\Console\Support\Transforms\RenameClass;
++use Streams\Sdk\Console\Support\Transforms\SetNamespace;
++use Symfony\Component\Process\Process;
++
++/**
++ * Generates a People table class from the GroupVitals reference fixture by
++ * loading its AST and applying named transforms, then checks that the
++ * generated file is what the golden file says it is, that php -l accepts it,
++ * and that Pint formats it and stays stable across repeated runs.
++ */
++class TransformGoldenTest extends TransformsTestCase
++{
++    protected string $outputPath;
++
++    protected function setUp(): void
++    {
++        parent::setUp();
++
++        $directory = sys_get_temp_dir().'/streams-sdk-transforms-'.uniqid();
++
++        $this->outputPath = $directory.'/PeopleTable.php';
++
++        File::ensureDirectoryExists($directory);
++    }
++
++    protected function tearDown(): void
++    {
++        File::deleteDirectory(dirname($this->outputPath));
++
++        parent::tearDown();
++    }
++
++    public function test_generating_a_people_table_from_the_reference_matches_the_golden_and_passes_pint_and_lint()
++    {
++        $reference = __DIR__.'/../../../Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php';
++
++        $editor = PhpEditor::read($reference);
++
++        // The generation recipe: fix the namespace and class name (idempotent
++        // here because the reference already carries the target identity),
++        // mark the table with the SDK attribute, and add the generated member.
++        (new SetNamespace('App\Domains\People\Panel\Tables'))->apply($editor);
++        (new RenameClass('PeopleTable'))->apply($editor);
++        (new AddAttribute('Streams\Sdk\Attributes\Table', ['people']))->apply($editor);
++        (new AddMember(new ClassMethod(new Identifier('heading'), [
++            'flags' => Class_::MODIFIER_PUBLIC,
++            'returnType' => new Identifier('string'),
++            'stmts' => [new Return_(new String_('People'))],
++        ])))->apply($editor);
++
++        File::put($this->outputPath, $editor->print());
++
++        // Lint check: php -l accepts the generated file.
++        $lint = new Process([PHP_BINARY, '-l', $this->outputPath]);
++        $lint->run();
++
++        $this->assertTrue($lint->isSuccessful(), $lint->getErrorOutput());
++        $this->assertStringContainsString('No syntax errors', $lint->getOutput());
++
++        // Pint check: the post-write step formats the generated file...
++        $this->assertTrue(Pint::format($this->outputPath));
++
++        // ...and Pint is stable: a second pass leaves the file byte-for-byte
++        // identical, so repeated generations converge.
++        $formatted = (string) File::get($this->outputPath);
++
++        $this->assertTrue(Pint::format($this->outputPath));
++        $this->assertSame($formatted, (string) File::get($this->outputPath));
++
++        // The generated People table class matches the golden file exactly.
++        $this->assertSame(
++            (string) File::get(__DIR__.'/../../../Fixtures/Golden/transforms/PeopleTable.php'),
++            $formatted,
++        );
++    }
++}
+diff --git a/tests/Console/Support/Transforms/TransformsTestCase.php b/tests/Console/Support/Transforms/TransformsTestCase.php
+new file mode 100644
+index 0000000..168a24c
+--- /dev/null
++++ b/tests/Console/Support/Transforms/TransformsTestCase.php
+@@ -0,0 +1,50 @@
++<?php
++
++namespace Streams\Sdk\Tests\Console\Support\Transforms;
++
++use Streams\Sdk\Tests\SdkTestCase;
++
++abstract class TransformsTestCase extends SdkTestCase
++{
++    /**
++     * A small self-contained class file every transform test edits.
++     */
++    protected function fixture(): string
++    {
++        return <<<'PHP'
++<?php
++
++namespace App\Widgets;
++
++use App\Base\Widget;
++
++class WidgetsTable extends Widget
++{
++    protected function setUp(): void
++    {
++        $this->heading('Widgets');
++    }
++}
++PHP;
++    }
++
++    /**
++     * The added/removed lines in a unified diff, in order.
++     */
++    protected function changedLines(string $diff): array
++    {
++        $lines = [];
++
++        foreach (explode("\n", $diff) as $line) {
++            if (str_starts_with($line, '+') && ! str_starts_with($line, '+++')) {
++                $lines[] = $line;
++            }
++
++            if (str_starts_with($line, '-') && ! str_starts_with($line, '---')) {
++                $lines[] = $line;
++            }
++        }
++
++        return $lines;
++    }
++}
+diff --git a/tests/Fixtures/Golden/transforms/PeopleTable.php b/tests/Fixtures/Golden/transforms/PeopleTable.php
+new file mode 100644
+index 0000000..d3e25fb
+--- /dev/null
++++ b/tests/Fixtures/Golden/transforms/PeopleTable.php
+@@ -0,0 +1,102 @@
++<?php
++
++namespace App\Domains\People\Panel\Tables;
++
++use App\Domains\People\Panel\Actions\DeactivateSelectedPeople;
++use App\Domains\People\Panel\Actions\DeleteSelectedPeople;
++use App\Domains\People\Panel\Actions\RestoreSelectedPeople;
++use App\Domains\People\Panel\Resources\PeoplePanelResource;
++use App\Domains\Tags\Support\TagPillsHtml;
++use Streams\Ui\Builders\Tables\Columns\BadgeColumn;
++use Streams\Ui\Builders\Tables\Columns\LinkColumn;
++use Streams\Ui\Builders\Tables\Columns\TextColumn;
++use Streams\Ui\Builders\Tables\Filters\SelectFilter;
++use Streams\Ui\Builders\Tables\Filters\TextFilter;
++use Streams\Ui\Builders\Tables\Table;
++
++#[Streams\Sdk\Attributes\Table('people')]
++class PeopleTable extends Table
++{
++    protected function setUp(): void
++    {
++        DeactivateSelectedPeople::register($this->getLivewire());
++        RestoreSelectedPeople::register($this->getLivewire());
++        DeleteSelectedPeople::register($this->getLivewire());
++
++        $this
++            ->filters([
++                TextFilter::make('first_name')
++                    ->placeholder(__('domains/people.fields.first_name.label')),
++                TextFilter::make('last_name')
++                    ->placeholder(__('domains/people.fields.last_name.label')),
++                TextFilter::make('email')
++                    ->placeholder(__('domains/people.fields.email.label')),
++                SelectFilter::make('status')
++                    ->label(__('domains/people.fields.status.label'))
++                    ->placeholder(__('domains/people.fields.status.label'))
++                    ->options([
++                        'active' => __('domains/people.fields.status.options.active'),
++                        'inactive' => __('domains/people.fields.status.options.inactive'),
++                        'invited' => __('domains/people.fields.status.options.invited'),
++                    ]),
++            ])
++            ->columns([
++                BadgeColumn::make('status')
++                    ->label(__('domains/people.fields.status.label'))
++                    ->color(fn ($entry) => match ($entry?->status) {
++                        'active' => 'success',
++                        'inactive' => 'warning',
++                        'invited' => 'gray',
++                        default => 'gray',
++                    })
++                    ->title(fn ($entry) => match ($entry?->status) {
++                        'active' => __('domains/people.fields.status.options.active'),
++                        'inactive' => __('domains/people.fields.status.options.inactive'),
++                        'invited' => __('domains/people.fields.status.options.invited'),
++                        default => __('domains/people.labels.unknown'),
++                    })
++                    ->sortable(),
++                LinkColumn::make('first_name')
++                    ->label(__('domains/people.fields.first_name.label'))
++                    ->value(fn ($entry) => $entry->first_name.' '.$entry->last_name)
++                    ->url(fn ($entry) => route('streams.ui.admin.people.profile', $entry->id))
++                    ->sortable()
++                    ->searchable(['first_name', 'last_name']),
++                TextColumn::make('email')
++                    ->sortable()
++                    ->searchable()
++                    ->label(__('domains/people.fields.email.label')),
++                TextColumn::make('phone_number')
++                    ->label(__('domains/people.fields.phone_number.label'))
++                    ->searchable()
++                    ->sortable(),
++                TextColumn::make('tags')
++                    ->label(__('domains/people.fields.tags.label'))
++                    ->value(function ($entry) {
++                        $assignments = entries('tag_assignments')
++                            ->where('taggable_id', $entry->id)
++                            ->where('taggable_type', 'person')
++                            ->get();
++
++                        $names = $assignments->map(function ($assignment) {
++                            return $assignment->tag()?->name;
++                        })->filter();
++
++                        return TagPillsHtml::fromNames($names);
++                    }),
++            ])
++            ->bulkActions([
++                DeactivateSelectedPeople::resolve(),
++                RestoreSelectedPeople::resolve(),
++                DeleteSelectedPeople::resolve(),
++            ])
++            ->query(PeoplePanelResource::scopedQuery())
++            ->emptyStateDescription(__('domains/people.empty_state_description'))
++            ->emptyStateIcon('heroicon-o-users');
++    }
++
++    public function heading(): string
++    {
++        return 'People';
++    }
++}

@@ -4,6 +4,7 @@ namespace Streams\Sdk\Tests\Console\Commands;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Streams\Sdk\Console\Make\Paths;
 use Streams\Sdk\Support\AppTree;
 use Streams\Sdk\Tests\SdkTestCase;
 use Streams\Sdk\Tests\Support\SchemaValidator;
@@ -272,6 +273,136 @@ class StreamsCaptureTest extends SdkTestCase
         }
         $this->assertSame('', $second['diff']);
         $this->assertSame($before, $this->snapshot());
+    }
+
+    public function test_litmus_capture_rebuild_clean_and_report_opaque_share(): void
+    {
+        Artisan::call('streams:capture');
+
+        // Snapshot the captured tree before any build touches the output dir.
+        $tree = AppTree::load($this->root.'/streams.json');
+
+        // Every code-bearing node is either rebuilt from JSON data or is a
+        // deliberately opaque node (captured closure/callback, never rewritten).
+        $total = 0;
+        $opaque = [];
+        foreach (Paths::FILE_TYPES as $type) {
+            foreach ($tree->types() as $path => $nodeType) {
+                if ($nodeType !== $type) {
+                    continue;
+                }
+                $total++;
+                if ($this->isOpaqueSubtree($tree, $path)) {
+                    $opaque[$path] = $this->opaqueEntries($tree, $path);
+                }
+            }
+        }
+
+        $this->assertGreaterThan(0, $total);
+        $this->assertGreaterThan(0, count($opaque));
+
+        // Rebuild into a clean directory from the snapshot: streams:make
+        // regenerates every non-opaque code-bearing node and never writes an
+        // opaque one.
+        $report = $this->make();
+        $this->assertSame([], $report['modified']);
+        $this->assertSame([], $report['conflicts']);
+        $this->assertSame([], $report['unapplied']);
+
+        // The people reference slice is entirely opaque, so the rebuild from
+        // the snapshot creates nothing: every code-bearing node is either
+        // rebuilt from JSON data or deliberately opaque.
+        $rebuilt = $total - count($opaque);
+        $this->assertSame($rebuilt, count($report['created']));
+
+        // Opaque share: the fraction of code-bearing nodes the toolkit cannot
+        // rebuild from JSON yet (number + list).
+        $share = count($opaque) / $total;
+        $this->assertGreaterThan(0.0, $share);
+        $this->assertLessThanOrEqual(1.0, $share);
+
+        $lines = [];
+        foreach ($opaque as $path => $entries) {
+            foreach ($entries as $entry) {
+                $lines[] = sprintf(
+                    '- [ ] `%s` — `%s` (%s:%d) — toolkit gap candidate',
+                    $entry['handle'],
+                    $path,
+                    $entry['file'],
+                    $entry['line'],
+                );
+            }
+        }
+
+        $reportMarkdown = implode("\n", [
+            '# Task 139 — Litmus: capture → rebuild → opaque share',
+            '',
+            sprintf('Code-bearing nodes: **%d**', $total),
+            sprintf('Opaque nodes (not rebuildable from JSON): **%d**', count($opaque)),
+            sprintf('Opaque share: **%.1f%%** (%d/%d)', $share * 100, count($opaque), $total),
+            '',
+            'Every code-bearing node is either rebuilt from the captured JSON',
+            'snapshot or is a deliberately opaque node (a captured closure,',
+            'permission callback or computed option) that `streams:make` never',
+            'rewrites. The opaque nodes below are toolkit gap candidates:',
+            '',
+            ...$lines,
+            '',
+        ]);
+
+        $evidenceDir = __DIR__.'/../../Evidence/task-139';
+        File::ensureDirectoryExists($evidenceDir);
+        File::put($evidenceDir.'/litmus-report.md', $reportMarkdown);
+    }
+
+    /**
+     * Whether a code-bearing node is owned by people: its own node or any
+     * descendant carries a non-empty `opaque` list. Mirrors
+     * `BuildStage::isOpaqueSubtree` so the litmus reports the same verdict.
+     */
+    protected function isOpaqueSubtree(AppTree $tree, string $path): bool
+    {
+        foreach ($tree->types() as $nodePath => $type) {
+            if ($nodePath !== $path && ! str_starts_with($nodePath, $path.'.')) {
+                continue;
+            }
+
+            $node = $tree->node($nodePath);
+
+            if (isset($node['opaque']) && is_array($node['opaque']) && $node['opaque'] !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<array{handle: string, file: string, line: int}>
+     */
+    protected function opaqueEntries(AppTree $tree, string $path): array
+    {
+        $entries = [];
+        foreach ($tree->types() as $nodePath => $type) {
+            if ($nodePath !== $path && ! str_starts_with($nodePath, $path.'.')) {
+                continue;
+            }
+
+            $node = $tree->node($nodePath);
+            $opaque = $node['opaque'] ?? [];
+
+            if (is_array($opaque) && $opaque !== []) {
+                foreach ($opaque as $entry) {
+                    $entries[] = [
+                        'handle' => $entry['handle'] ?? $nodePath,
+                        'file' => $entry['file'] ?? '',
+                        'line' => $entry['line'] ?? 0,
+                    ];
+                }
+            }
+        }
+
+        return $entries;
     }
 
     /**

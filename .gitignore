@@ -1,6 +1,8 @@
 /bin
 /vendor
 /coverage
+/evidence/
+/tests/Evidence/
 /mix-manifest.json
 /package-lock.json
 /yarn.lock

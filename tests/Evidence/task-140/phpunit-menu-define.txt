@@ -1,6 +1,0 @@
- ✔ Menu json and no interaction list pages and components by path
- ✔ Menu saves a components settings with faked prompts
- ✔ Menu override writes the settings and a second run changes nothing
- ✔ Menu save writes the same tree as flags and a json recipe
- ✔ Menu refuses a path recipe or authoring flags
-OK (5 tests, 81 assertions)

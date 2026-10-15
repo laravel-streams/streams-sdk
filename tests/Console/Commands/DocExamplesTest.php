@@ -6,35 +6,27 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Streams\Sdk\Tests\SdkTestCase;
 
-/**
- * Every copy-pasteable example command from docs/commands.md runs green.
- * Each example is invoked exactly as documented (arguments and options
- * only), against the Reference v1 people fixtures for streams:capture and
- * the schema fixture for streams:make build, rename, --fix, and --json.
- * If you change a command's signature or output, update docs/commands.md
- * and this file together.
- */
 class DocExamplesTest extends SdkTestCase
 {
     protected string $root;
 
     protected string $output;
 
-    protected string $makeFixture;
-
-    protected ?string $treeCopy = null;
+    protected string $workingDirectory;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->workingDirectory = getcwd();
         $this->root = sys_get_temp_dir().'/streams-sdk-doc-examples-'.bin2hex(random_bytes(8));
         $this->output = $this->root.'/build';
 
         File::copyDirectory(__DIR__.'/../../Fixtures/References/v1/app', $this->root.'/app');
-        File::copyDirectory(__DIR__.'/../../Fixtures/References/v1/streams', $this->root.'/streams');
+        File::copyDirectory(dirname(__DIR__, 3).'/resources/schemas/fixtures/people', $this->root);
         File::ensureDirectoryExists($this->output);
-
+        $this->app->setBasePath($this->root);
+        chdir($this->root);
         config([
             'streams.sdk.capture.root' => $this->root,
             'streams.sdk.capture.tree' => $this->root.'/streams.json',
@@ -42,168 +34,155 @@ class DocExamplesTest extends SdkTestCase
             'streams.sdk.make.output' => $this->output,
         ]);
 
-        $this->makeFixture = dirname(__DIR__, 3).'/resources/schemas/fixtures/people/streams.json';
+        // Use the documented recipe bytes, so documentation drift fails here.
+        preg_match_all('/```json\R(.*?)\R```/s', self::documentation(), $blocks);
+
+        foreach ($blocks[1] as $block) {
+            $recipe = json_decode($block, true, flags: JSON_THROW_ON_ERROR);
+
+            if (($recipe['path'] ?? null) === 'people.actions.add' && isset($recipe['input'])) {
+                File::put($this->root.'/add.json', $block);
+            }
+        }
     }
 
     protected function tearDown(): void
     {
-        if ($this->treeCopy !== null && is_dir($this->treeCopy)) {
-            File::deleteDirectory($this->treeCopy);
-        }
-
+        chdir($this->workingDirectory);
         File::deleteDirectory($this->root);
 
         parent::tearDown();
     }
 
-    public function test_every_streams_capture_example_runs_green(): void
-    {
-        // php artisan streams:capture
-        $code = Artisan::call('streams:capture');
-        $output = Artisan::output();
-        $this->assertSame(0, $code, $output);
-        $this->assertFileExists($this->root.'/streams.json');
-        $this->assertStringContainsString('"people"', (string) File::get($this->root.'/streams.json'));
-
-        // php artisan streams:capture --dry-run
-        $code = Artisan::call('streams:capture', ['--dry-run' => true]);
-        $output = Artisan::output();
-        $this->assertSame(0, $code, $output);
-        $this->assertStringContainsString('"people"', $output);
-
-        // php artisan streams:capture --json
-        $code = Artisan::call('streams:capture', ['--json' => true]);
-        $output = Artisan::output();
-        $this->assertSame(0, $code, $output);
-        $this->assertStringContainsString('"people"', $output);
-
-        // php artisan streams:capture --root=... --tree=...
-        $code = Artisan::call('streams:capture', [
-            '--root' => $this->root,
-            '--tree' => $this->root.'/streams-other.json',
-        ]);
-        $output = Artisan::output();
-        $this->assertSame(0, $code, $output);
-        $this->assertFileExists($this->root.'/streams-other.json');
-    }
-
-    public function test_every_streams_make_build_example_runs_green(): void
-    {
-        // php artisan streams:make --list
-        $code = Artisan::call('streams:make', [
-            '--list' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-
-        // --list --json
-        $code = Artisan::call('streams:make', [
-            '--list' => true,
-            '--json' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-
-        // php artisan streams:make --json
-        $code = Artisan::call('streams:make', [
-            '--json' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-
-        // php artisan streams:make --dry-run
-        $code = Artisan::call('streams:make', [
-            '--dry-run' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-
-        // php artisan streams:make people.table --dry-run --json
-        $code = Artisan::call('streams:make', [
-            'path' => 'people.table',
-            '--dry-run' => true,
-            '--json' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-    }
-
-    public function test_every_streams_make_rename_example_runs_green(): void
-    {
-        // A rename needs the source node built and locked first.
-        $copy = $this->copyFixture();
-        $this->runMake(['--tree' => $copy.'/streams.json']);
-
-        // php artisan streams:make rename people.actions.add people.actions.create
-        $code = Artisan::call('streams:make', [
-            'path' => 'rename', 'from' => 'people.actions.add', 'to' => 'people.actions.create',
-            '--tree' => $copy.'/streams.json', '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-
-        // php artisan streams:make rename ... --dry-run
-        $code = Artisan::call('streams:make', [
-            'path' => 'rename', 'from' => 'people.actions.create', 'to' => 'people.actions.add',
-            '--dry-run' => true,
-            '--tree' => $copy.'/streams.json', '--output' => $this->output,
-        ]);
-        $this->assertSame(0, $code, Artisan::output());
-    }
-
-    public function test_every_streams_make_fix_example_runs_green(): void
-    {
-        // Build once, then hand-edit a generated file so --fix has work.
-        $this->runMake(['--tree' => $this->makeFixture]);
-        $relative = 'app/Domains/People/Panel/Actions/PeopleActionsAdd.php';
-        $absolute = $this->output.'/'.$relative;
-        $original = File::get($absolute);
-        File::put($absolute, str_replace("return 'Add person';", "return 'Added by hand';", $original));
-
-        // php artisan streams:make --fix --dry-run
-        $code = Artisan::call('streams:make', [
-            '--fix' => true,
-            '--dry-run' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $output = Artisan::output();
-        $this->assertSame(0, $code, $output);
-        $this->assertStringContainsString('would fix: people.actions.add', $output);
-
-        // php artisan streams:make --fix
-        $code = Artisan::call('streams:make', [
-            '--fix' => true,
-            '--tree' => $this->makeFixture,
-            '--output' => $this->output,
-        ]);
-        $output = Artisan::output();
-        $this->assertSame(0, $code, $output);
-        $this->assertStringContainsString('fixed: people.actions.add', $output);
-        $this->assertStringContainsString("return 'Add person';", File::get($absolute));
-    }
-
     /**
-     * @param  array<string, mixed>  $arguments
+     * Execute concrete make/capture examples directly from the reference.
+     * Signature notation with {arguments} is not a shell example.
+     *
+     * @dataProvider documentedCommands
      */
-    protected function runMake(array $arguments): void
+    public function test_documented_command_runs_green(string $command): void
     {
-        $code = Artisan::call('streams:make', $arguments + ['--output' => $this->output, '--json' => true]);
-        $this->assertSame(0, $code, Artisan::output());
+        $rename = str_contains($command, 'streams:make rename ');
+        $fix = str_contains($command, '--fix');
+
+        if ($rename || $fix) {
+            $code = Artisan::call('streams:make --json');
+            $this->assertSame(0, $code, Artisan::output());
+        }
+
+        $relative = str_contains($command, 'streams:make people.table ')
+            ? 'app/Domains/People/Panel/Tables/PeopleTable.php'
+            : 'app/Domains/People/Panel/Actions/PeopleActionsAdd.php';
+        $conflicted = $this->output.'/'.$relative;
+
+        if ($fix) {
+            File::append($conflicted, "\n// Local edit that regeneration will discard.\n");
+        }
+
+        $before = $this->snapshot();
+        $code = Artisan::call($command);
+        $output = Artisan::output();
+        $this->assertSame(0, $code, $command."\n".$output);
+
+        if (str_contains($command, '--dry-run') || $command === 'streams:capture --json') {
+            $this->assertSame($before, $this->snapshot(), 'Preview wrote files: '.$command);
+        }
+
+        if (str_contains($command, '--json') && ! str_contains($command, '--json=')) {
+            $payload = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+            $this->assertIsArray($payload);
+
+            if ($fix) {
+                $this->assertCount(1, $payload['report']['fixed']);
+                $this->assertSame([], $payload['report']['failed']);
+            } elseif (str_contains($command, '--menu')) {
+                $this->assertNotEmpty($payload['pages']);
+                $this->assertSame('people.pages.manage', $payload['pages'][0]['path']);
+                $this->assertNotEmpty($payload['pages'][0]['components']);
+            } elseif (str_contains($command, '--list')) {
+                $this->assertNotEmpty($payload['kinds']);
+                $this->assertContains('action', array_column($payload['kinds'], 'kind'));
+            } elseif (isset($payload['report'])) {
+                foreach (['created', 'modified', 'skipped', 'unapplied', 'conflicts', 'diff', 'kinds'] as $key) {
+                    $this->assertArrayHasKey($key, $payload);
+                }
+            }
+        }
+
+        if ($fix) {
+            if (str_contains($command, '--dry-run')) {
+                $this->assertStringContainsString('would fix:', $output);
+            } else {
+                $this->assertStringNotContainsString('// Local edit', File::get($conflicted));
+            }
+        }
+
+        if ($rename && ! str_contains($command, '--dry-run')) {
+            $lock = File::get($this->output.'/streams.lock');
+            $this->assertStringContainsString('people.actions.create', $lock);
+            $this->assertStringNotContainsString('people.actions.add', $lock);
+        }
+
+        if ($command === 'streams:make --json') {
+            $this->assertFileExists($this->output.'/streams.lock');
+            $this->assertNotSame($before, $this->snapshot(), 'JSON build must apply its plan.');
+        }
+
+        if (str_contains($command, '--json=add.json') && ! str_contains($command, '--dry-run')) {
+            $tree = File::get($this->root.'/streams/people.actions.add.json');
+            $label = str_contains($command, '--label=') ? 'Create person' : 'Add person';
+            $this->assertStringContainsString($label, $tree);
+            $this->assertFileDoesNotExist($this->output.'/streams.lock');
+        }
+
+        if ($command === 'streams:capture') {
+            $this->assertStringContainsString('captured:', $output);
+            $this->assertStringContainsString('"people"', File::get($this->root.'/streams.json'));
+        }
+
+        if (str_contains($command, '--tree=streams-captured.json')) {
+            $this->assertFileExists($this->root.'/streams-captured.json');
+        }
     }
 
-    protected function copyFixture(): string
+    /** @return array<string, array{string}> */
+    public static function documentedCommands(): array
     {
-        $dest = sys_get_temp_dir().'/streams-sdk-doc-tree-'.uniqid();
+        preg_match_all('/```bash\R(.*?)\R```/s', self::documentation(), $blocks);
+        $commands = [];
 
-        File::copyDirectory(dirname($this->makeFixture), $dest);
+        foreach ($blocks[1] as $block) {
+            foreach (explode("\n", $block) as $line) {
+                if (preg_match('/^php artisan (streams:(?:make|capture)(?: .*)?)$/', trim($line), $match)
+                    && ! str_contains($line, '{')) {
+                    $commands[$match[1]] = [$match[1]];
+                }
+            }
+        }
 
-        $this->treeCopy = $dest;
+        if ($commands === []) {
+            throw new \RuntimeException('No make/capture documentation examples found.');
+        }
 
-        return $dest;
+        return $commands;
+    }
+
+    protected static function documentation(): string
+    {
+        return file_get_contents(dirname(__DIR__, 3).'/docs/commands.md');
+    }
+
+    /** @return array<string, string> */
+    protected function snapshot(): array
+    {
+        $files = [];
+
+        foreach (File::allFiles($this->root) as $file) {
+            $files[$file->getRelativePathname()] = hash_file('sha256', $file->getPathname());
+        }
+
+        ksort($files);
+
+        return $files;
     }
 }

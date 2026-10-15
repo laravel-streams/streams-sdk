@@ -147,6 +147,7 @@ The app-definition schema is the same set of committed files that ships in the S
 ```bash
 php artisan streams:make {path?} {--list} {--json=file} {--menu} {--tree=} {--output=} {--dry-run}
 php artisan streams:make --list
+php artisan streams:make --list --json
 php artisan streams:make people.actions.add --label="Add person" --type=modal --form=people.actions.add.form
 php artisan streams:make people.actions.add --json=add.json
 ```
@@ -209,9 +210,12 @@ After the component is chosen, the menu prompts exactly like defining a node, va
 
 ### Renaming a node
 
+Build the source first with `streams:make --json` so it has generated tags
+and a lock entry. Preview the rename before applying it:
+
 ```bash
-php artisan streams:make rename people.actions.add people.actions.create
 php artisan streams:make rename people.actions.add people.actions.create --dry-run --json
+php artisan streams:make rename people.actions.add people.actions.create
 ```
 
 Rename is a mode of `streams:make`; it registers no command. It accepts one pair of distinct sibling map-entry paths. The source must exist and the destination must be absent. It changes the map key while retaining its `$ref`, then edits the existing PHP `#[Generated]` tag, generated `nodePath()` return, and `Node:` comment through the format-preserving editor. Nested generated nodes (such as the action's form) follow the new prefix. Files and class names stay in place; the lock maps the new dot paths to those existing files and their updated hashes. Subsequent builds use that mapping.
@@ -273,8 +277,10 @@ The command loads the app tree (`streams.json` plus its `$ref` files), generates
 
 ```bash
 php artisan streams:make --dry-run
+php artisan streams:make --dry-run --json
 php artisan streams:make people.table --dry-run --json
 php artisan streams:make --json
+php artisan streams:make --tree=streams.json --output=build --dry-run --json
 ```
 
 `--json` prints one object:

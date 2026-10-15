@@ -350,7 +350,7 @@ class StreamsCaptureTest extends SdkTestCase
             '',
         ]);
 
-        $evidenceDir = __DIR__.'/../../Evidence/task-139';
+        $evidenceDir = $this->root.'/evidence';
         File::ensureDirectoryExists($evidenceDir);
         File::put($evidenceDir.'/litmus-report.md', $reportMarkdown);
     }

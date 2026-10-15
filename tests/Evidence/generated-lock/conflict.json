@@ -1,5 +1,0 @@
-{
-    "path": "people.actions.add",
-    "file": "app/Domains/People/Panel/Actions/PeopleActionsAdd.php",
-    "reason": "hand edit; hash does not match streams.lock"
-}

@@ -1,4 +1,0 @@
-drift: evidence/task-126/missing-catalog/catalog/catalog.json
-drift: evidence/task-126/missing-catalog/catalog/catalog.schema.json
-drift: evidence/task-126/missing-catalog/schemas/streams.schema.json
-Catalog is stale. Run streams:catalog to regenerate the files.

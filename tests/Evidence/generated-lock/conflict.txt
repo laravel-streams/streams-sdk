@@ -1,1 +1,0 @@
-conflict: people.actions.add app/Domains/People/Panel/Actions/PeopleActionsAdd.php

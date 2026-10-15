@@ -11,6 +11,24 @@ status: ready
 
 This guide provides AI assistants with specific prompts, patterns, and examples for effectively using the Laravel Streams SDK to help developers build applications.
 
+## Make, build, and capture
+
+Start with the [command reference](/docs/sdk/commands) and the repository's
+`AGENTS.md`. `streams:make` is the one command for editing the JSON app tree,
+building PHP, and renaming nodes. Capture existing builders with
+`streams:capture`; preserve opaque nodes and `streams.lock`. Use
+`--dry-run --json` for a build preview: `--json` alone still builds and writes.
+Prefer a JSON recipe or explicit flags with `--no-interaction` for agent calls.
+
+Follow [Spatie's Laravel/PHP guidelines](https://github.com/spatie/guidelines.spatie.be/blob/master/content/code-style/laravel-php.md)
+and [guidelines-skills](https://github.com/spatie/guidelines-skills).
+Run Pint on changed PHP files for formatting, and review conventions that
+cannot be checked by a formatter.
+
+The legacy `make:stream`, `make:entry`, `make:addon`, and `make:table`
+classes are not registered. The older prompt examples below describe those
+classes; use `streams:make` for the current app-tree workflow.
+
 ## AI Assistant Workflow
 
 When helping users with Laravel Streams, follow this structured approach:

@@ -31,16 +31,23 @@ files), and two commands that move it:
 2. `php artisan streams:make` edits that tree (prompts, flags, `--json=file`
    recipe, `--menu`, `rename` mode) and builds generated PHP from it.
 
-`--json` (no recipe file) and `--dry-run` print machine-readable JSON and a
-plan without writing. Use them to preview before applying. Prefer
+For a build preview use `--dry-run --json`: `--json` alone selects JSON
+output and still writes PHP and `streams.lock`. Capture's `--json` prints
+the captured tree without writing. Prefer
 `--no-interaction` and flags or a recipe over interactive prompts in scripts
 and agent tool calls.
 
+Keep the tree and `streams.lock` together. Build never deletes files;
+inspect `unapplied`, `conflicts`, and `report.failed` even on exit code zero.
+`--fix --dry-run` previews solutions; `--fix` regenerates conflicted managed
+files and discards their hand edits. Preserve wanted edits before applying.
+
 ## Style
 
-- Follow the Spatie Laravel/PHP guidelines (Spatie guidelines, plus the
-  guidelines-skills repos) — Pint enforces them on changed files and the
-  docs' AI prompts page links the source of truth.
+- Follow [Spatie's Laravel/PHP guidelines](https://github.com/spatie/guidelines.spatie.be/blob/master/content/code-style/laravel-php.md)
+  and the [Spatie agent skills](https://github.com/spatie/guidelines-skills).
+  Pint enforces the automated formatting rules on changed PHP files; review
+  Laravel conventions and design guidance separately.
 - Docs use the front-matter and heading conventions in `docs/`.
 - Keep changes in the reference layout (`app/Domains/{Domain}/Panel/...`),
   the dot-path addressing (`people.actions.add`), and the report keys

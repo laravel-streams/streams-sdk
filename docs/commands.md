@@ -147,9 +147,8 @@ The app-definition schema is the same set of committed files that ships in the S
 ```bash
 php artisan streams:make {path?} {--list} {--json=file} {--menu} {--tree=} {--output=} {--dry-run}
 php artisan streams:make --list
-php artisan streams:make --menu
 php artisan streams:make people.actions.add --label="Add person" --type=modal --form=people.actions.add.form
-php artisan streams:make people.actions.add --json=recipe.json
+php artisan streams:make people.actions.add --json=add.json
 ```
 
 `streams:make` is the only registered command for making and building. Component kinds are nodes in the app tree, addressed by dot path (`people`, `people.table`, `people.pages.manage`, `people.actions.add`). There is no `streams:build` command and no per-component `make:page`, `make:action`, or `make:form` command. `make:stream`, `make:entry`, `make:addon`, and `make:table` are command classes in this package and are not registered. `php artisan list` shows `streams:make` and no `make:*` command from streams-sdk. Laravel's own `make:*` commands are unchanged.
@@ -176,15 +175,28 @@ Every prompt comes from the kind's input schema. The same definition supplies th
 
 `--json=recipe.json` is the recipe. The file is either the node object or `{"path": "people.actions.add", "input": { ... }}`. Field flags override recipe keys. Unknown fields, invalid JSON objects, and a recipe path that differs from the command path produce a JSON field error before writing. `--dry-run` with a recipe or flags prints the edit and does not write the JSON file.
 
+For the examples below, start with a `streams.json` tree containing the `people` stream (the SDK's `resources/schemas/fixtures/people` directory is a complete example; copy the directory including its `$ref` files). Save this object as `add.json` in your current working directory:
+
+```json
+{
+    "path": "people.actions.add",
+    "input": {
+        "label": "Add person",
+        "type": "modal",
+        "form": "people.actions.add.form"
+    }
+}
+```
+
 ```bash
 php artisan streams:make people.actions.add --no-interaction --label="Add person" --type=modal --form=people.actions.add.form
 php artisan streams:make people.actions.add --json=add.json --dry-run
+php artisan streams:make people.actions.add --json=add.json --label="Create person" --no-interaction
 ```
 
 ### The page menu
 
 ```bash
-php artisan streams:make --menu
 php artisan streams:make --menu --json
 php artisan streams:make --menu --no-interaction
 ```
@@ -194,8 +206,6 @@ php artisan streams:make --menu --no-interaction
 After the component is chosen, the menu prompts exactly like defining a node, validates the answer, and writes only the JSON tree (`streams.json` and its `$ref` files). It never writes PHP: building remains the separate build step, and a second run with the same answers leaves the tree unchanged.
 
 `--menu --json` (no recipe file) and `--menu --no-interaction` print the same listing as machine-readable JSON without prompting: one object with a `pages` array, each entry holding `path` and `components` (`path`, `type`, `kind`). The non-interactive equivalent of a menu save/override is `streams:make <path> --no-interaction --flags` or `--json=recipe.json` on the same command; all three write the same tree. `--menu` cannot be combined with a path, a recipe, or authoring flags.
-
-### Component kinds
 
 ### Renaming a node
 
@@ -255,7 +265,11 @@ return [
 
 `placedOn()` adds a tree container. `streams:make people.badges.star` then resolves that dot path to the `badge` kind. `--json` includes a `kinds` object keyed by dot path: `kind`, `source`, `package` when the kind came from a package, and `errors` from the input schema. Kind errors are reported there. They do not by themselves change the file plan.
 
+### Building from the tree
+
 The command loads the app tree (`streams.json` plus its `$ref` files), generates the code into an in-memory file tree, and diffs that tree against the working directory. `--dry-run` prints the unified diff and writes nothing. The plan from a dry run is the plan the real run applies: the same created, modified, skipped, and unapplied files.
+
+`--json` selects machine-readable output; in build mode it still writes PHP and `streams.lock`. Use `--dry-run --json` for a machine-readable preview. With no path or build flags, `streams:make` lists kinds; use `--json` to build the whole tree, or `--dry-run` to preview it.
 
 ```bash
 php artisan streams:make --dry-run
@@ -273,6 +287,8 @@ php artisan streams:make --json
 | `unapplied` | Edits that were not written. Each item has `path` (dot path), `file`, and `reason` |
 | `conflicts` | Tagged files whose hash does not match `streams.lock`. Each item has `path`, `file`, and `reason`. The file is left unchanged |
 | `diff` | The unified diff of created and modified files |
+| `still in code, no longer in the config` | Orphan objects with `path` and `file`; files are retained |
+| `report` | `applied`, `fixed`, and `failed` arrays. Failed/fixed entries include `path`, `file`, `reason`, and nullable `suggestedChange` |
 | `kinds` | Component kinds for the nodes in scope. Each value has `kind`, `source`, `errors`, and `package` when a package registered the kind |
 
 A second run with no tree changes reports `created: []` and `modified: []`.
@@ -283,7 +299,7 @@ Each generated class carries `#[Generated('people.actions.add')]` (`Streams\Sdk\
 
 If the lock or a file's lock entry is missing, the build can regenerate that managed file and restore its hash. Preserve `streams.lock` to retain hand-edit detection; deleting it removes the recorded baseline.
 
-`--fix` runs fix providers against the failed edits of the build. The only provider shipped today is the conflict regenerator: for a tagged file whose hash does not match `streams.lock`, it regenerates the file from the tree and restores the lock. With `--dry-run`, fixes are previewed (`would fix:`) and nothing is written; in both modes the summary line includes a `fixed:` count. Fixes never touch opaque nodes or files with real hand edits that a provider cannot solve.
+`--fix` runs fix providers against the failed edits of the build. The only provider shipped today is the conflict regenerator: for a tagged file whose hash does not match `streams.lock`, it overwrites the file from the tree and restores the lock, discarding hand edits in that file. Review the diff and preserve any wanted edits before applying it. With `--dry-run`, fixes are previewed (`would fix:`) and nothing is written; in both modes the text summary includes a `fixed:` count. Opaque nodes and failures without a provider remain untouched. JSON fixes are in `report.fixed`; unresolved failures remain in `report.failed`. A successful exit code does not mean every edit was applied: inspect `unapplied`, `conflicts`, and `report.failed`.
 
 ```bash
 php artisan streams:make --fix
@@ -379,8 +395,8 @@ php artisan streams:capture --dry-run
 # Print the tree as machine-readable JSON.
 php artisan streams:capture --json
 
-# Read from a different app root and write to a different tree.
-php artisan streams:capture --root=/path/to/app --tree=/path/to/streams.json
+# Read from the app root explicitly and write a separate tree for review.
+php artisan streams:capture --root=. --tree=streams-captured.json
 ```
 
 `--dry-run` and `--json` print the captured tree and exit success without writing. On a write, the command prints `captured: {tree file}`. Builder files that cannot be parsed or have no builder class are reported as `skipped builder [{file}]: {reason}` warnings and skipped; the rest of the tree is still written. If the tree's directory does not exist, the command fails with a message.

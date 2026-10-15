@@ -30,6 +30,7 @@ Commands are registered only when the app runs in the console. Run `php artisan 
 | [`streams:capture`](#streamscapture) | Reads existing builder settings into the app JSON tree (`streams.json`) |
 | [`streams:livewire`](#streamslivewire) | Generates Livewire 3 index, form, and show components |
 | [`streams:tap`](#streamstap) | Calls a tap URL with query-string input |
+| [`streams:stub:publish`](#streamsstubpublish) | Copies the versioned SDK stub set into the app so generated output can be overridden |
 
 Agents can call the same operations through the [MCP server](/docs/mcp) (`php artisan mcp:start streams`), which needs `laravel/mcp` and Laravel 11.45+ or 12.41+.
 
@@ -306,6 +307,24 @@ app/Domains/{Domain}/Public/Pages/{Class}.php
 Tokens are `{root}`, `{Domain}`, and `{Class}`. `{root}` defaults to `app/Domains` and the namespace defaults to `App\Domains`. `config('streams.sdk.make.tree')` is the `streams.json` to load (default `streams.json` in the app base). `config('streams.sdk.make.output')` is the directory generated paths are written under (default the app base). `--tree` and `--output` override those for one run.
 
 Class names are the StudlyCase of the full dot path (`people.table` becomes `PeopleTable`), except a panel node, which uses the reference suffix (`people.panel` becomes `PeoplePanelResource`).
+
+### streams:stub:publish
+
+```bash
+php artisan streams:stub:publish {--force} {--dry-run}
+```
+
+Copies the versioned SDK stub set into `config('streams.sdk.make.stubs_dir')` (default `streams/stubs` in the app base). Existing files are skipped unless `--force` re-copies them; `--dry-run` lists the files without writing. The same set can be copied with `php artisan vendor:publish --tag=streams-stubs`.
+
+Which generated outputs are **stub-based** (trivial files rendered from the published set) and which are **reference-based** (component classes generated from the reference layout in the previous section):
+
+| Output | Source |
+|--------|--------|
+| `make:table`'s `streams/{id}.json` and `app/Streams/tables.php` | Stub-based. `Stub::make('table')` and `Stub::make('table.registry')` resolve a published stub under `streams/stubs` first, then the SDK copy. Publishing and editing `streams/stubs/table/v1/table.stub` or `registry.stub` overrides the generated output |
+| `streams:make` component classes (`PeopleTable`, `PeoplePage`, and so on) | Reference-based. Rendered from the GroupVitals reference layout; not stubs and not published by this command |
+| The `streams:make` path and namespace layout (`config('streams.sdk.make.paths')`) | Reference-based. Configured, not stubbed |
+
+The stub set rendered by `Stub` (`streams/stubs/table/v1/*.stub`) is the only stub-based surface; it stays overridable by design while reference-based generators are not converted to stubs.
 
 #### People manage pages
 

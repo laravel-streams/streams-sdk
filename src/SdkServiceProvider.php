@@ -14,6 +14,7 @@ use Streams\Sdk\Console\Commands\StreamsCapture;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Commands\StreamsTap;
+use Streams\Sdk\Console\Commands\StreamsTui;
 use Streams\Sdk\Console\Commands\StreamsOnboard;
 use Streams\Sdk\Console\Commands\StreamsValidate;
 use Streams\Sdk\Console\Commands\StubPublish;
@@ -37,6 +38,7 @@ class SdkServiceProvider extends ServiceProvider
             $this->commands([
                 StreamsMake::class,
                 StreamsOnboard::class,
+                StreamsTui::class,
                 StreamsCapture::class,
                 CatalogGenerate::class,
                 StreamsSchema::class,

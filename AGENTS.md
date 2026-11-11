@@ -6,9 +6,9 @@ declared done.
 
 ## Where things live
 
-- Commands: `src/Console/Commands/` (`streams:make`, `streams:capture`,
+- Commands: `src/Console/Commands/` (`streams:tui`, `streams:make`, `streams:capture`,
   `streams:validate`, `streams:schema`, `streams:tap`, `streams:list`,
-  `entries:*`). `streams:make` is the **only** build command. There is no
+  `entries:*`). `streams:tui` is the human menu (Streams, then a stream landing). `streams:make` is the **only** build command. There is no
   `streams:build` command and no per-component `make:*` command.
 - Component kinds: `src/Console/Make/Kinds/` — registry data, not commands.
 - Build reports and fix providers: `src/Console/Make/Reports/` (`BuildReport`,

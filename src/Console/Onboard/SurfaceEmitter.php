@@ -29,8 +29,9 @@ final class SurfaceEmitter
 
         if ($frontend) {
             $this->write($base.'/app/Http/Controllers/TodosPageController.php', $this->controller(), $force, $files, $skipped);
-            $this->write($base.'/resources/views/todos.blade.php', $this->blade(), $force, $files, $skipped);
-            $this->write($base.'/resources/js/todos.js', $this->alpine(), $force, $files, $skipped);
+            // App-owned after first emit: never overwrite these, even with --force.
+            $this->writeOnce($base.'/resources/views/todos.blade.php', $this->blade(), $files, $skipped);
+            $this->writeOnce($base.'/resources/js/todos.js', $this->alpine(), $files, $skipped);
             $this->pointHomeRoute($base, $files, $skipped);
             $this->ensureVite($base, $files, $skipped);
         }
@@ -40,9 +41,12 @@ final class SurfaceEmitter
         }
 
         if ($panel && $auth === 'env-admin') {
-            $this->write($base.'/app/Http/Controllers/AdminLoginController.php', $this->loginController(), $force, $files, $skipped);
+            $this->write($base.'/app/Livewire/BasicPage.php', $this->basicPage(), $force, $files, $skipped);
+            $this->write($base.'/app/Domains/Admin/Panel/Forms/LoginForm.php', $this->loginForm(), $force, $files, $skipped);
+            $this->write($base.'/app/Domains/Admin/Panel/Pages/Login.php', $this->loginPage(), $force, $files, $skipped);
             $this->write($base.'/app/Http/Middleware/EnsureEnvAdmin.php', $this->middleware(), $force, $files, $skipped);
-            $this->write($base.'/resources/views/admin/login.blade.php', $this->loginBlade(), $force, $files, $skipped);
+            $this->write($base.'/resources/views/layouts/admin-login.blade.php', $this->loginLayout(), $force, $files, $skipped);
+            $this->write($base.'/resources/views/livewire/admin/login.blade.php', $this->loginLivewireView(), $force, $files, $skipped);
             $this->ensureAdminRoutes($base, $files, $skipped);
             $this->seedEnvState($base, $files, $skipped);
         }
@@ -57,6 +61,29 @@ final class SurfaceEmitter
     protected function write(string $path, string $contents, bool $force, array &$files, array &$skipped): void
     {
         if (is_file($path) && ! $force) {
+            $skipped[] = $path;
+
+            return;
+        }
+
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        file_put_contents($path, $contents);
+        $files[] = $path;
+    }
+
+    /**
+     * Seed a file only when it does not exist yet (ignores --force).
+     *
+     * @param  list<string>  $files
+     * @param  list<string>  $skipped
+     */
+    protected function writeOnce(string $path, string $contents, array &$files, array &$skipped): void
+    {
+        if (is_file($path)) {
             $skipped[] = $path;
 
             return;
@@ -86,6 +113,9 @@ final class SurfaceEmitter
         $pages = [];
         foreach (glob(app_path('Domains/*/Panel/Pages/*.php')) ?: [] as $file) {
             $class = 'App\\Domains\\'.basename(dirname($file, 3)).'\\Panel\\Pages\\'.basename($file, '.php');
+            if ($class === \\App\\Domains\\Admin\\Panel\\Pages\\Login::class) {
+                continue;
+            }
             if (class_exists($class)) {
                 $pages[] = $class;
             }
@@ -213,6 +243,7 @@ PHP;
     protected function blade(): string
     {
         return <<<'HTML'
+{{-- Public todos page is app-owned after first onboard emit. Customize this file in your application. --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -220,26 +251,13 @@ PHP;
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Todos</title>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    @vite(['resources/js/todos.js'])
+    @vite(['resources/css/app.css', 'resources/js/todos.js'])
 </head>
-<body class="font-sans antialiased">
-    <main class="max-w-xl mx-auto p-6" x-data="todosPage()" x-init="load()">
-        <h1 class="text-2xl font-semibold">Todos</h1>
-        <form class="mt-4 flex gap-2" @submit.prevent="create()">
-            <input class="border rounded px-3 py-2 flex-1" x-model="title" placeholder="What needs doing?" required>
-            <button class="border rounded px-3 py-2" type="submit">Add</button>
-        </form>
-        <ul class="mt-6 space-y-2">
-            <template x-for="todo in todos" :key="todo.id">
-                <li class="flex items-center gap-2">
-                    <input type="checkbox" :checked="todo.completed" @change="toggle(todo)">
-                    <span :class="todo.completed ? 'line-through' : ''" x-text="todo.title"></span>
-                </li>
-            </template>
-        </ul>
-        <p class="mt-6 text-sm"><a href="/admin">Panel</a></p>
-    </main>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+    <div class="mx-auto max-w-lg px-4 py-14" x-data="todosPage" x-init="load()">
+        <h1 class="text-2xl font-semibold text-slate-900">Todos</h1>
+        <p class="mt-2 text-sm text-slate-600">Replace resources/views/todos.blade.php with your public UI.</p>
+    </div>
 </body>
 </html>
 HTML;
@@ -248,6 +266,8 @@ HTML;
     protected function alpine(): string
     {
         return <<<'JS'
+// Public todos Alpine entry is app-owned after first onboard emit. Customize resources/js/todos.js.
+import Alpine from 'alpinejs';
 import { Client, CsrfMiddleware } from '@laravel-streams/api-client';
 
 const client = new Client({
@@ -255,26 +275,17 @@ const client = new Client({
     middlewares: [new CsrfMiddleware()],
 });
 
-window.todosPage = function todosPage() {
-    return {
-        todos: [],
-        title: '',
-        async load() {
-            const response = await client.entries.get('todos');
-            const body = response.data || response;
-            this.todos = body.data || body;
-        },
-        async create() {
-            await client.entries.post('todos', { title: this.title, completed: false });
-            this.title = '';
-            await this.load();
-        },
-        async toggle(todo) {
-            await client.entries.patch('todos', todo.id, { completed: ! todo.completed });
-            await this.load();
-        },
-    };
-};
+Alpine.data('todosPage', () => ({
+    todos: [],
+    async load() {
+        const response = await client.entries.get('todos');
+        const payload = response?.data ?? response;
+        this.todos = Array.isArray(payload?.data) ? payload.data : [];
+    },
+}));
+
+window.Alpine = Alpine;
+Alpine.start();
 
 JS;
     }
@@ -314,6 +325,7 @@ JS;
             $json = json_decode((string) file_get_contents($package), true);
             if (is_array($json)) {
                 $json['dependencies']['@laravel-streams/api-client'] = 'file:../_packages/api-client';
+                $json['dependencies']['alpinejs'] = '^3.14.0';
                 file_put_contents($package, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
                 $files[] = $package;
             }
@@ -363,42 +375,133 @@ abstract class PanelPage extends StreamsPanelPage
 PHP;
     }
 
-    protected function loginController(): string
+    protected function basicPage(): string
     {
         return <<<'PHP'
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Livewire;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Livewire\Component;
+use Illuminate\Contracts\View\View;
+use Streams\Ui\Livewire\Forms\InteractsWithForms;
+use Streams\Ui\Builders\Concerns\HasComponents;
 
-class AdminLoginController extends Controller
+/**
+ * Lightweight Livewire host for non-panel pages (e.g. login) without table/action chrome.
+ */
+abstract class BasicPage extends Component
 {
-    public function show()
+    use HasComponents;
+    use InteractsWithForms;
+
+    public ?array $data = [];
+
+    protected static string $view;
+
+    protected static string $layout = 'layouts.admin-login';
+
+    public function render(): View
     {
-        return view('admin.login');
+        return view(static::$view)->layout(static::$layout);
+    }
+}
+
+PHP;
     }
 
-    public function store(Request $request)
+    protected function loginForm(): string
     {
-        $state = $this->state();
+        return <<<'PHP'
+<?php
+
+namespace App\Domains\Admin\Panel\Forms;
+
+use Streams\Ui\Builders\Forms\Form;
+use Illuminate\Support\Facades\Hash;
+use Streams\Ui\Builders\Actions\Action;
+use Streams\Ui\Builders\Inputs\TextInput;
+
+class LoginForm extends Form
+{
+    protected function setUp(): void
+    {
+        $name = $this->getName();
+
+        $this
+            ->components([
+                TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required()
+                    ->autofocus(),
+                TextInput::make('password')
+                    ->label('Password')
+                    ->password()
+                    ->required(),
+                Action::make('submit')
+                    ->label('Sign in')
+                    ->tag('button')
+                    ->loadingIndicator()
+                    ->mergeHtmlAttributes([
+                        'type' => 'submit',
+                        'class' => 'w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 sm:w-auto',
+                    ]),
+            ])
+            ->mergeHtmlAttributes([
+                'class' => 'mt-6 flex flex-col gap-4',
+                'wire:submit.prevent' => "handleForm('{$name}', 'attempt')",
+            ]);
+    }
+
+    /**
+     * @return array{email: string, password: string}
+     */
+    public static function defaultState(): array
+    {
+        return [
+            'email' => '',
+            'password' => '',
+        ];
+    }
+
+    /**
+     * Authenticate the operator. Subclasses override this method to swap guards
+     * without redefining email/password fields or submit wiring.
+     */
+    public function attempt(array $payload = []): mixed
+    {
+        $livewire = $this->getLivewire();
+        $validData = $this->getRawState();
+
+        $livewire->resetErrorBag('email');
+
+        $state = static::envState();
         $email = $state['ADMIN_EMAIL'] ?? '';
         $password = $state['ADMIN_PASSWORD'] ?? '';
 
-        if ($email === '' || $password === '' || ! hash_equals($email, (string) $request->input('email')) || ! Hash::check((string) $request->input('password'), $password)) {
-            return back()->withErrors(['email' => 'Those credentials do not match.'])->onlyInput('email');
+        if (
+            $email === ''
+            || $password === ''
+            || ! hash_equals($email, (string) ($validData['email'] ?? ''))
+            || ! Hash::check((string) ($validData['password'] ?? ''), $password)
+        ) {
+            $livewire->addError('email', 'Those credentials do not match.');
+
+            return null;
         }
 
-        $request->session()->put('env_admin', true);
+        session(['env_admin' => true]);
 
-        return redirect('/admin');
+        $livewire->redirect('/admin');
+
+        return null;
     }
 
     /**
      * @return array<string, string>
      */
-    protected function state(): array
+    protected static function envState(): array
     {
         $path = base_path('.env.state');
         if (! is_file($path)) {
@@ -415,6 +518,41 @@ class AdminLoginController extends Controller
         }
 
         return $values;
+    }
+}
+
+PHP;
+    }
+
+    protected function loginPage(): string
+    {
+        return <<<'PHP'
+<?php
+
+namespace App\Domains\Admin\Panel\Pages;
+
+use App\Livewire\BasicPage;
+use App\Domains\Admin\Panel\Forms\LoginForm;
+
+class Login extends BasicPage
+{
+    protected static string $view = 'livewire.admin.login';
+
+    public function boot(): void
+    {
+        LoginForm::register($this);
+    }
+
+    public function mount(): void
+    {
+        $this->getForm('login-form')->fill(LoginForm::defaultState());
+    }
+
+    public function getComponents(): array
+    {
+        return [
+            $this->getForm('login-form'),
+        ];
     }
 }
 
@@ -450,28 +588,55 @@ class EnsureEnvAdmin
 PHP;
     }
 
-    protected function loginBlade(): string
+    protected function loginLayout(): string
     {
         return <<<'HTML'
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Admin login</title>
+    <title>Admin</title>
+    {!! \Streams\Core\Support\Facades\Assets::collection('styles')->tags() !!}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 </head>
-<body>
-    <form method="post" action="/admin/login">
-        @csrf
-        <label>Email <input type="email" name="email" value="{{ old('email') }}" required></label>
-        <label>Password <input type="password" name="password" required></label>
-        <button type="submit">Sign in</button>
-        @if ($errors->any())
-            <p>{{ $errors->first() }}</p>
-        @endif
-    </form>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+    <main class="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 py-10 sm:py-14">
+        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            {!! $slot !!}
+        </div>
+
+        <p class="mt-6 text-center text-sm text-slate-500">
+            <a class="font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900 hover:decoration-slate-500" href="/">Back to todos</a>
+        </p>
+    </main>
+    @livewireScriptConfig
+    {!! \Streams\Core\Support\Facades\Assets::collection('scripts')->tags() !!}
+    @livewireScripts
 </body>
 </html>
+HTML;
+    }
+
+    protected function loginLivewireView(): string
+    {
+        return <<<'HTML'
+<div>
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Admin</h1>
+    <p class="mt-1 text-sm text-slate-600">Panel sign-in for the Todos demo.</p>
+
+    @error('email')
+        <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            {{ $message }}
+        </p>
+    @enderror
+
+    @foreach ($this->getComponents() as $component)
+        {!! $component->render() !!}
+    @endforeach
+</div>
 HTML;
     }
 
@@ -483,7 +648,7 @@ HTML;
     {
         $path = $base.'/routes/web.php';
         $contents = (string) file_get_contents($path);
-        if (str_contains($contents, 'AdminLoginController')) {
+        if (str_contains($contents, 'Domains\\Admin\\Panel\\Pages\\Login')) {
             $skipped[] = $path;
 
             return;
@@ -491,8 +656,7 @@ HTML;
 
         $contents .= <<<'PHP'
 
-Route::get('/admin/login', [\App\Http\Controllers\AdminLoginController::class, 'show']);
-Route::post('/admin/login', [\App\Http\Controllers\AdminLoginController::class, 'store']);
+Route::get('/admin/login', \App\Domains\Admin\Panel\Pages\Login::class);
 
 PHP;
         file_put_contents($path, $contents);
@@ -512,7 +676,7 @@ PHP;
             return;
         }
 
-        $hash = password_hash('password', PASSWORD_BCRYPT);
+        $hash = password_hash('Password123123', PASSWORD_BCRYPT);
         file_put_contents($path, "ADMIN_EMAIL=admin@todos.test\nADMIN_PASSWORD={$hash}\n");
         $files[] = $path;
     }

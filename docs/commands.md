@@ -17,10 +17,20 @@ composer require --dev streams/sdk:1.0.x-dev
 
 Commands are registered only when the app runs in the console. Run `php artisan list` to see what your installed version provides.
 
+## streams:tui
+
+```bash
+php artisan streams:tui
+php artisan streams:tui --no-interaction
+```
+
+The interactive menu has two items: **Streams** and **Exit**. Streams prints a table of registered streams. Pick a handle to open its landing page (name, description, source, fields, entry count), or **Back** to return to that table. **Back** from the table returns to the main menu. `--no-interaction` prints the table and exits.
+
 ## Available commands
 
 | Command | What it does |
 |---------|--------------|
+| [`streams:tui`](#streamstui) | Menu: Streams (table, then a stream landing) or Exit |
 | [`streams:list`](#streamslist) | Lists registered streams by delegating to `entries:list` |
 | [`entries:list`](#entrieslist) | Paginated table of a stream's entries |
 | [`entries:show`](#entriesshow) | Shows one entry as a field and value table |

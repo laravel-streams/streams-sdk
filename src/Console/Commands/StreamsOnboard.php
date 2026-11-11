@@ -4,7 +4,9 @@ namespace Streams\Sdk\Console\Commands;
 
 use Illuminate\Console\Command;
 use Streams\Sdk\Console\Onboard\OnboardApplier;
+use Streams\Sdk\Console\Onboard\OnboardLock;
 use Streams\Sdk\Console\Onboard\OnboardRecipe;
+use Streams\Sdk\Console\Onboard\RecipeValidator;
 
 /**
  * SALLT / Streams create-project onboarding TUI.
@@ -25,7 +27,9 @@ class StreamsOnboard extends Command
                             {--json : Print the recipe as JSON}
                             {--no-write : Do not write streams.onboard.json}
                             {--apply : Apply implemented generator steps for this recipe}
-                            {--force : Overwrite existing scaffold files when applying}';
+                            {--force : Overwrite existing scaffold files when applying}
+                            {--recipe= : Preset name, path to a recipe JSON file, or - for stdin}
+                            {--check : Apply the recipe to a temp tree and diff lock-tracked files against this app}';
 
     /** @var list<string> */
     protected $aliases = ['sallt:onboard'];
@@ -76,6 +80,10 @@ class StreamsOnboard extends Command
             $this->components->success("Wrote {$path}");
         }
 
+        if ($this->option('check')) {
+            return $this->checkRecipe($applier, $recipe);
+        }
+
         if ($this->option('apply')) {
             return $this->applyRecipe($applier, $recipe);
         }
@@ -88,6 +96,18 @@ class StreamsOnboard extends Command
 
     protected function resolveRecipe(string $surface): ?OnboardRecipe
     {
+        $recipeOption = $this->option('recipe');
+
+        if (is_string($recipeOption) && $recipeOption !== '') {
+            try {
+                return OnboardRecipe::fromArray($this->loadRecipeOption($recipeOption));
+            } catch (\InvalidArgumentException $e) {
+                $this->components->error($e->getMessage());
+
+                return null;
+            }
+        }
+
         $rediscover = $this->option('kitchen-sink') || $this->option('defaults');
         $recipePath = OnboardRecipe::path();
 
@@ -187,6 +207,95 @@ class StreamsOnboard extends Command
         $this->newLine();
         $this->components->success('Apply finished.');
         $this->line('Run <comment>php artisan streams:validate</comment> to re-check stream sources.');
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function loadRecipeOption(string $recipe): array
+    {
+        if ($recipe === '-') {
+            $raw = stream_get_contents(STDIN);
+            $decoded = json_decode((string) $raw, true);
+            if (! is_array($decoded)) {
+                throw new \InvalidArgumentException('Stdin is not a JSON object.');
+            }
+            RecipeValidator::assertDocument($decoded);
+
+            return $decoded;
+        }
+
+        if (is_file($recipe)) {
+            return RecipeValidator::readDocument($recipe);
+        }
+
+        $preset = RecipeValidator::presetPath($recipe);
+        if ($preset !== null) {
+            return RecipeValidator::readDocument($preset);
+        }
+
+        throw new \InvalidArgumentException("Unknown onboard recipe [{$recipe}]. Pass a preset name, a JSON path, or -.");
+    }
+
+    protected function checkRecipe(OnboardApplier $applier, OnboardRecipe $recipe): int
+    {
+        $temp = sys_get_temp_dir().'/sallt-golden-'.uniqid('', true);
+        mkdir($temp, 0777, true);
+
+        try {
+            $results = $applier->apply($recipe, $temp, true);
+        } catch (\Throwable $e) {
+            $this->components->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $failed = array_filter($results, fn (array $step) => ($step['status'] ?? '') === 'failed');
+        if ($failed !== []) {
+            $this->components->error('Apply failed in the temp tree; golden check aborted.');
+
+            return self::FAILURE;
+        }
+
+        $drift = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($temp, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile()) {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($temp) + 1);
+            if ($relative === 'streams.lock') {
+                continue;
+            }
+
+            $appFile = base_path($relative);
+            if (! is_file($appFile)) {
+                $drift[] = "missing {$relative}";
+
+                continue;
+            }
+
+            if (file_get_contents($file->getPathname()) !== file_get_contents($appFile)) {
+                $drift[] = "differs {$relative}";
+            }
+        }
+
+        if ($drift !== []) {
+            $this->components->error('Golden check failed:');
+            foreach ($drift as $line) {
+                $this->line('  '.$line);
+            }
+
+            return self::FAILURE;
+        }
+
+        $this->components->success('Golden check passed for files this recipe emits.');
 
         return self::SUCCESS;
     }

@@ -28,6 +28,11 @@ class ComponentRenderer
                 $columns[] = '                TextColumn::make('.var_export($handle, true).')'."\n".
                     '                    ->label('.var_export($label, true).'),';
             }
+            if ($columns === []) {
+                $field = $stream === 'todos' ? 'title' : 'name';
+                $columns[] = '                TextColumn::make('.var_export($field, true).')'."\n".
+                    '                    ->label('.var_export(\Illuminate\Support\Str::headline($field), true).'),';
+            }
             $columns = implode("\n", $columns);
             $query = var_export($stream, true);
             $body = <<<PHP
@@ -48,7 +53,7 @@ PHP;
             $table = $this->classForPath($tree, $tablePath);
             $imports = [
                 $this->qualified($tree, $tablePath, 'table'),
-                'App\\Livewire\\PanelPage',
+                'Streams\\Ui\\Livewire\\Pages\\PanelPage',
                 'Streams\\Ui\\Builders\\Containers\\Container',
                 'Streams\\Ui\\Builders\\Headings\\Heading',
                 'Streams\\Ui\\Livewire\\Tables\\InteractsWithTables',

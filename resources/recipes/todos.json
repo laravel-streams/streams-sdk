@@ -1,0 +1,13 @@
+{
+    "$schema": "https://streams.dev/schema/onboard.schema.json",
+    "version": 1,
+    "surface": "laravel",
+    "frontend": true,
+    "panels": 1,
+    "multi_tenancy": true,
+    "api": true,
+    "discover_streams_api": false,
+    "streams_api_base_url": null,
+    "sample_domain": "Todos",
+    "created_at": "2026-11-11T00:00:00+00:00"
+}

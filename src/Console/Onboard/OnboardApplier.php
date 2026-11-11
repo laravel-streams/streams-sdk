@@ -32,6 +32,10 @@ final class OnboardApplier
 
                 $valid = $emit['validation']['valid'] ?? false;
                 $domainApplied = $valid ? $domain : null;
+                if ($valid) {
+                    OnboardLock::record($basePath, $emit['files'] ?? []);
+                }
+
                 $results[] = [
                     'id' => $id,
                     'status' => $valid ? 'applied' : 'failed',
@@ -58,6 +62,8 @@ final class OnboardApplier
 
                 try {
                     $emit = $this->manageUi->emit($domain, $basePath);
+                    OnboardLock::record($basePath, array_merge($emit['tree_files'] ?? [], $emit['php_files'] ?? []));
+
                     $results[] = [
                         'id' => $id,
                         'status' => 'applied',
@@ -91,6 +97,37 @@ final class OnboardApplier
                 'note' => $step['note'],
             ];
         }
+
+        $streams = [];
+        if ($recipe->sampleDomain) {
+            $streams[] = \Illuminate\Support\Str::snake($recipe->sampleDomain);
+            foreach (['Categories', 'Tags'] as $extra) {
+                if ($recipe->sampleDomain === 'Todos') {
+                    $emit = $this->domains->emit($extra, $basePath, $force);
+                    if ($emit['validation']['valid'] ?? false) {
+                        OnboardLock::record($basePath, $emit['files'] ?? []);
+                        $streams[] = \Illuminate\Support\Str::snake($extra);
+                    }
+                }
+            }
+        }
+
+        $surfaces = (new SurfaceEmitter)->emit(
+            $basePath,
+            $recipe->frontend,
+            $recipe->api || $recipe->discoverStreamsApi,
+            $recipe->panels > 0,
+            'env-admin',
+            $streams,
+            $force,
+        );
+        OnboardLock::record($basePath, $surfaces['files'] ?? []);
+        $results[] = [
+            'id' => 'surfaces',
+            'status' => 'applied',
+            'note' => 'API provider, public page, panel base, and env-admin login when those options are on',
+            'detail' => $surfaces,
+        ];
 
         return $results;
     }

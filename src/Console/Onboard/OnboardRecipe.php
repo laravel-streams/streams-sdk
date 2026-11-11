@@ -42,6 +42,8 @@ final class OnboardRecipe
      */
     public static function fromArray(array $input): self
     {
+        RecipeValidator::assertKnown($input);
+
         $panels = max(0, (int) ($input['panels'] ?? 0));
 
         return new self(
@@ -67,6 +69,7 @@ final class OnboardRecipe
     public function toArray(): array
     {
         return [
+            '$schema' => 'https://streams.dev/schema/onboard.schema.json',
             'version' => self::VERSION,
             'surface' => $this->surface,
             'frontend' => $this->frontend,
@@ -156,6 +159,8 @@ final class OnboardRecipe
         if (file_put_contents($absolutePath, $json) === false) {
             throw new \RuntimeException("Unable to write onboard recipe [{$absolutePath}].");
         }
+
+        RecipeValidator::assertDocument(json_decode($json, true));
     }
 
     public static function path(?string $base = null): string

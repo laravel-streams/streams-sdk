@@ -89,6 +89,7 @@ class StreamsSchema extends Command
         File::ensureDirectoryExists($target . '/nodes');
 
         File::copy($source . '/app.schema.json', $target . '/app.schema.json');
+        File::copy($source . '/onboard.schema.json', $target . '/onboard.schema.json');
 
         foreach (glob($source . '/nodes/*.schema.json') ?: [] as $file) {
             File::copy($file, $target . '/nodes/' . basename($file));

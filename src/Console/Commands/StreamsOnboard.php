@@ -156,16 +156,24 @@ class StreamsOnboard extends Command
         $failed = array_filter($results, fn (array $step) => ($step['status'] ?? '') === 'failed');
 
         foreach ($results as $step) {
-            if (($step['status'] ?? '') !== 'applied' || ! isset($step['detail']['files'])) {
+            if (($step['status'] ?? '') !== 'applied' || ! isset($step['detail'])) {
                 continue;
             }
-            foreach ($step['detail']['files'] as $file) {
-                $this->line('  + '.str_replace(base_path().'/', '', $file));
+
+            $detail = $step['detail'];
+            foreach ($detail['files'] ?? [] as $file) {
+                $this->line('  + '.$this->relativePath((string) $file));
             }
-            foreach ($step['detail']['skipped'] ?? [] as $file) {
-                $this->line('  · skipped '.str_replace(base_path().'/', '', $file));
+            foreach ($detail['tree_files'] ?? [] as $file) {
+                $this->line('  + '.$this->relativePath((string) $file));
             }
-            foreach ($step['detail']['validation']['errors'] ?? [] as $error) {
+            foreach ($detail['php_files'] ?? [] as $file) {
+                $this->line('  + '.$file);
+            }
+            foreach ($detail['skipped'] ?? [] as $file) {
+                $this->line('  · skipped '.$this->relativePath((string) $file));
+            }
+            foreach ($detail['validation']['errors'] ?? [] as $error) {
                 $this->error('    '.$error);
             }
         }
@@ -181,6 +189,13 @@ class StreamsOnboard extends Command
         $this->line('Run <comment>php artisan streams:validate</comment> to re-check stream sources.');
 
         return self::SUCCESS;
+    }
+
+    protected function relativePath(string $file): string
+    {
+        $base = base_path().'/';
+
+        return str_starts_with($file, $base) ? substr($file, strlen($base)) : $file;
     }
 
     protected function discoverInteractively(string $surface): OnboardRecipe

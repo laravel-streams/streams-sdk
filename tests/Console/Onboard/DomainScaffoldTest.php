@@ -96,6 +96,52 @@ class DomainScaffoldTest extends SdkTestCase
         $this->assertFileExists($this->root.'/streams/todos.json');
     }
 
+    public function test_onboard_applier_emits_manage_ui_when_panels_requested(): void
+    {
+        $recipe = OnboardRecipe::fromArray([
+            'surface' => 'laravel',
+            'frontend' => true,
+            'panels' => 1,
+            'multi_tenancy' => false,
+            'api' => false,
+            'discover_streams_api' => false,
+            'streams_api_base_url' => null,
+            'sample_domain' => 'Todos',
+            'created_at' => '2026-01-01T00:00:00+00:00',
+        ]);
+
+        $results = (new OnboardApplier)->apply($recipe, $this->root, true);
+        $ui = collect($results)->firstWhere('id', 'require-streams-ui');
+
+        $this->assertNotNull($ui);
+        $this->assertSame('applied', $ui['status'], $ui['note'] ?? '');
+
+        $panelRoot = $this->root.'/app/Domains/Todos/Panel';
+        $written = [];
+        if (is_dir($panelRoot)) {
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($panelRoot));
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $written[] = substr($file->getPathname(), strlen($this->root) + 1);
+                }
+            }
+        }
+
+        $this->assertNotEmpty($written, 'detail='.json_encode($ui['detail'] ?? null));
+        $this->assertTrue(
+            collect($written)->contains(fn (string $path) => str_contains($path, '/Pages/')),
+            'pages missing: '.implode(', ', $written),
+        );
+        $this->assertTrue(
+            collect($written)->contains(fn (string $path) => str_contains($path, '/Tables/')),
+            'tables missing: '.implode(', ', $written),
+        );
+        $this->assertTrue(
+            collect($written)->contains(fn (string $path) => str_contains($path, '/Actions/')),
+            'actions missing: '.implode(', ', $written),
+        );
+    }
+
     protected function deleteTree(string $path): void
     {
         if (! is_dir($path)) {

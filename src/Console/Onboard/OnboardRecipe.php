@@ -95,11 +95,20 @@ final class OnboardRecipe
             ],
         ];
 
+        // Domain before UI/API so manage-chain emit has a stream node to attach to.
+        if ($this->sampleDomain !== null) {
+            $steps[] = [
+                'id' => 'domain-'.$this->sampleDomain,
+                'status' => 'pending-generator',
+                'note' => "Domain recipe: {$this->sampleDomain} (dir, model, repositories, streams.json)",
+            ];
+        }
+
         if ($this->panels > 0) {
             $steps[] = [
                 'id' => 'require-streams-ui',
                 'status' => 'pending-generator',
-                'note' => "Composer require streams/ui; scaffold {$this->panels} panel(s)",
+                'note' => "Manage UI for {$this->panels} panel(s); Composer-require streams/ui separately",
             ];
         }
 
@@ -126,14 +135,6 @@ final class OnboardRecipe
                 'id' => 'tenancy',
                 'status' => 'pending-generator',
                 'note' => 'Tenant resolvers per surface (UI::getTenant / API::getTenant)',
-            ];
-        }
-
-        if ($this->sampleDomain !== null) {
-            $steps[] = [
-                'id' => 'domain-'.$this->sampleDomain,
-                'status' => 'pending-generator',
-                'note' => "Domain recipe: {$this->sampleDomain} (dir, model, repositories, streams.json)",
             ];
         }
 

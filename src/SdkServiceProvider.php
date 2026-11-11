@@ -14,6 +14,7 @@ use Streams\Sdk\Console\Commands\StreamsCapture;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Commands\StreamsTap;
+use Streams\Sdk\Console\Commands\StreamsOnboard;
 use Streams\Sdk\Console\Commands\StreamsValidate;
 use Streams\Sdk\Console\Commands\StubPublish;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
@@ -35,6 +36,7 @@ class SdkServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 StreamsMake::class,
+                StreamsOnboard::class,
                 StreamsCapture::class,
                 CatalogGenerate::class,
                 StreamsSchema::class,

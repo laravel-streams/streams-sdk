@@ -4,11 +4,11 @@ namespace App\Domains\People\Panel\Pages;
 
 use App\Domains\People\Panel\Actions\PeopleActionsAdd;
 use App\Domains\People\Panel\Tables\PeopleTable;
-use App\Livewire\PanelPage;
 use Streams\Sdk\Attributes\Generated;
 use Streams\Ui\Builders\Containers\Container;
 use Streams\Ui\Builders\Headings\Heading;
 use Streams\Ui\Livewire\Actions\InteractsWithActions;
+use Streams\Ui\Livewire\Pages\PanelPage;
 use Streams\Ui\Livewire\Tables\InteractsWithTables;
 
 /**

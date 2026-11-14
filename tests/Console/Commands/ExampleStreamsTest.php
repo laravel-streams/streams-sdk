@@ -26,12 +26,36 @@ class ExampleStreamsTest extends SdkTestCase
         return glob(dirname(__DIR__, 3) . '/streams/*.json');
     }
 
+    /**
+     * The published copies declare route handlers and filebase sources that no
+     * test app defines, so leaving them in the skeleton changes which streams
+     * every later test boots with. The generated components and views are
+     * removed by SdkTestCase, which restores the generated-code directories to
+     * the state they were in when the test started.
+     */
+    protected function tearDown(): void
+    {
+        $app = $this->app ?? null;
+
+        if ($app !== null) {
+            foreach ($this->examples() as $file) {
+                $path = $app->basePath('streams/'.basename($file));
+
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+        }
+
+        parent::tearDown();
+    }
+
     protected function publishExamples(): array
     {
         $paths = [];
 
         foreach ($this->examples() as $file) {
-            copy($file, $this->basePath('streams/' . basename($file)));
+            copy($file, base_path('streams/' . basename($file)));
 
             $paths[] = 'streams/' . basename($file);
         }
@@ -70,7 +94,7 @@ class ExampleStreamsTest extends SdkTestCase
 
             Stream::resetMemory();
 
-            Streams::load($this->basePath("streams/{$id}.json"));
+            Streams::load(base_path("streams/{$id}.json"));
 
             $namespace = 'App\\Livewire\\E' . bin2hex(random_bytes(4));
 

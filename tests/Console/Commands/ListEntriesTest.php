@@ -9,12 +9,14 @@ class ListEntriesTest extends SdkTestCase
 
     public function test_it_can_list_entries()
     {
+        $this->withFixtureStreams('posts', 'authors');
+
         $this->artisan('entries:list', [
-            'stream' => 'films',
+            'stream' => 'posts',
             '--show' => 'title',
             '--per-page' => 50,
         ])->assertSuccessful()
-            ->expectsOutputToContain('A New Hope')
-            ->expectsOutputToContain('The Empire Strikes Back');
+            ->expectsOutputToContain('Hello World')
+            ->expectsOutputToContain('Second Post');
     }
 }

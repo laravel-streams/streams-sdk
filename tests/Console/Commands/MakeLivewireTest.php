@@ -16,6 +16,25 @@ class MakeLivewireTest extends SdkTestCase
         return [...parent::getPackageProviders($app), LivewireServiceProvider::class];
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // streams:livewire needs a registered stream, and the only definitions
+        // this package ships for tests live under tests/fixtures. The old test
+        // app (the Streams\Testing fixture skeleton) provided one implicitly;
+        // the Testbench skeleton does not.
+        $this->withFixtureStreams('posts');
+    }
+
+    /**
+     * The generator writes into the application - classes under a per-test
+     * namespace, but Blade views under a name derived from the stream alone.
+     * Those views therefore collide between tests, and the second test to run
+     * was refused by the overwrite guard and exited 1. Everything this class
+     * writes is removed again here.
+     */
+
     /**
      * Generate the posts components into a namespace unique
      * to this test, so the classes can be loaded in-process.
@@ -55,8 +74,8 @@ class MakeLivewireTest extends SdkTestCase
             ->assertSuccessful();
 
         foreach (['Index', 'Form', 'Show'] as $type) {
-            $class = $this->basePath("app/Livewire/Posts{$type}.php");
-            $view = $this->basePath('resources/views/livewire/posts-' . strtolower($type) . '.blade.php');
+            $class = base_path("app/Livewire/Posts{$type}.php");
+            $view = base_path('resources/views/livewire/posts-' . strtolower($type) . '.blade.php');
 
             $this->assertFileExists($class);
             $this->assertFileExists($view);
@@ -70,7 +89,7 @@ class MakeLivewireTest extends SdkTestCase
             $this->assertStringNotContainsString('{{ ', $contents);
         }
 
-        $form = file_get_contents($this->basePath('app/Livewire/PostsForm.php'));
+        $form = file_get_contents(base_path('app/Livewire/PostsForm.php'));
 
         $this->assertStringContainsString("'id' => ['required', 'regex:", $form);
         $this->assertStringContainsString("'title' => ['required', 'max:120'],", $form);
@@ -94,17 +113,17 @@ class MakeLivewireTest extends SdkTestCase
 
         $this->artisan('streams:livewire', ['stream' => 'posts', '--type' => 'index'])->assertSuccessful();
 
-        file_put_contents($this->basePath('app/Livewire/PostsIndex.php'), 'custom');
+        file_put_contents(base_path('app/Livewire/PostsIndex.php'), 'custom');
 
         $this->artisan('streams:livewire', ['stream' => 'posts', '--type' => 'index'])
             ->expectsOutputToContain('--force')
             ->assertFailed();
 
-        $this->assertSame('custom', file_get_contents($this->basePath('app/Livewire/PostsIndex.php')));
+        $this->assertSame('custom', file_get_contents(base_path('app/Livewire/PostsIndex.php')));
 
         $this->artisan('streams:livewire', ['stream' => 'posts', '--type' => 'index', '--force' => true])->assertSuccessful();
 
-        $this->assertStringContainsString('class PostsIndex', file_get_contents($this->basePath('app/Livewire/PostsIndex.php')));
+        $this->assertStringContainsString('class PostsIndex', file_get_contents(base_path('app/Livewire/PostsIndex.php')));
     }
 
     public function test_it_rejects_unknown_streams_and_types()

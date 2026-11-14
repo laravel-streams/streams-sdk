@@ -9,12 +9,14 @@ class ShowEntryTest extends SdkTestCase
 
     public function test_it_can_show_an_entry()
     {
+        $this->withFixtureStreams('posts', 'authors');
+
         $this->artisan('entries:show', [
-            'stream' => 'films',
-            'entry' => 4,
-            '--show' => 'title,episode_id',
+            'stream' => 'posts',
+            'entry' => 'hello-world',
+            '--show' => 'title,status',
         ])->assertSuccessful()
-            ->expectsOutputToContain('A New Hope')
-            ->expectsOutputToContain('episode_id');
+            ->expectsOutputToContain('Hello World')
+            ->expectsOutputToContain('status');
     }
 }

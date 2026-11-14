@@ -647,6 +647,17 @@ HTML;
     protected function ensureAdminRoutes(string $base, array &$files, array &$skipped): void
     {
         $path = $base.'/routes/web.php';
+
+        // pointHomeRoute() guards this file and this one did not, so an app
+        // without routes/web.php - a Laravel 11+ slim skeleton, a package test
+        // app, or an API-only install - fataled the whole apply step instead of
+        // reporting the route wiring as skipped.
+        if (! is_file($path)) {
+            $skipped[] = $path;
+
+            return;
+        }
+
         $contents = (string) file_get_contents($path);
         if (str_contains($contents, 'Domains\\Admin\\Panel\\Pages\\Login')) {
             $skipped[] = $path;

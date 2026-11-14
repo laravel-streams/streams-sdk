@@ -46,6 +46,14 @@ class TransformGoldenTest extends TransformsTestCase
 
     public function test_generating_a_people_table_from_the_reference_matches_the_golden_and_passes_pint_and_lint()
     {
+        // The golden file is pint output, so this comparison is only meaningful
+        // where pint runs. The bundled pint.phar needs a newer PHP than
+        // streams-sdk supports; skip with the reason rather than compare against
+        // bytes pint was supposed to produce.
+        if (! Pint::usable()) {
+            $this->markTestSkipped(Pint::$lastError);
+        }
+
         $reference = __DIR__.'/../../../Fixtures/References/v1/app/Domains/People/Panel/Tables/PeopleTable.php';
 
         $editor = PhpEditor::read($reference);

@@ -136,6 +136,15 @@ class MakeTable extends Command
         }
 
         $this->line("<info>written:</info> {$path}");
+
+        // A resolved pint that cannot run means the file just written is not
+        // formatted, which the "(pint)" suffix would otherwise imply. Say it once
+        // instead of quietly writing unformatted code.
+        if (Pint::$lastError !== '' && ! str_contains(Pint::$lastError, 'no pint binary') && ! Pint::$warnedOnce) {
+            Pint::$warnedOnce = true;
+
+            $this->line("<fg=yellow>pint skipped:</> ".Pint::$lastError);
+        }
     }
 
     protected function diff(string $path, string $from, string $to): string

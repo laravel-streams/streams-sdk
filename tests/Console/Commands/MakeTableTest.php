@@ -111,6 +111,13 @@ class MakeTableTest extends SdkTestCase
 
     public function test_written_registry_is_pint_formatted_and_stable()
     {
+        // The bundled pint.phar needs a newer PHP than streams-sdk does, so on the
+        // lowest supported PHP the formatting step cannot run at all. Say so
+        // instead of failing a formatting assertion that never got a chance.
+        if (! Pint::usable()) {
+            $this->markTestSkipped(Pint::$lastError);
+        }
+
         $this->artisan('make:table', ['id' => 'posts', '--panel' => true])
             ->expectsOutputToContain('(pint)')
             ->assertSuccessful();
@@ -122,7 +129,7 @@ class MakeTableTest extends SdkTestCase
         $this->assertStringEndsWith("\n", $registry);
 
         // Pint is stable: a second pass leaves the file byte-for-byte identical.
-        $this->assertTrue(Pint::format($this->registryPath));
+        $this->assertTrue(Pint::format($this->registryPath), Pint::$lastError);
         $this->assertSame($registry, File::get($this->registryPath));
     }
 

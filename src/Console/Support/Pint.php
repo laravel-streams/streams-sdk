@@ -19,6 +19,16 @@ use Symfony\Component\Process\Process;
 class Pint
 {
     /**
+     * Why the last format() or usable() call failed, for callers that report it.
+     */
+    public static string $lastError = '';
+
+    /**
+     * Commands print the pint warning at most once per run.
+     */
+    public static bool $warnedOnce = false;
+
+    /**
      * Format a PHP file in place with Pint.
      */
     public static function format(string $path): bool
@@ -26,6 +36,8 @@ class Pint
         $binary = static::binary();
 
         if ($binary === null || ! is_file($path)) {
+            static::$lastError = 'no pint binary resolved';
+
             return false;
         }
 
@@ -35,7 +47,52 @@ class Pint
 
         $process->run();
 
+        if (! $process->isSuccessful()) {
+            static::$lastError = trim($process->getErrorOutput()."\n".$process->getOutput())
+                ?: 'pint exited with '.$process->getExitCodeText();
+        } else {
+            static::$lastError = '';
+        }
+
         return $process->isSuccessful();
+    }
+
+    /**
+     * Whether the resolved pint binary actually runs on this PHP.
+     *
+     * The bundled pint.phar declares its own platform requirements, and they can
+     * be stricter than this package's - the shipped build needs PHP ^8.3 while
+     * streams-sdk supports ^8.2, so on 8.2 the post-write formatting step fails
+     * silently and generated files simply are not formatted. Callers that assert
+     * formatting happened should ask this first and say why they skipped.
+     */
+    public static function usable(): bool
+    {
+        $binary = static::binary();
+
+        if ($binary === null) {
+            static::$lastError = 'no pint binary resolved';
+
+            return false;
+        }
+
+        $process = new Process([PHP_BINARY, $binary, '--version']);
+
+        $process->setTimeout(30);
+
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            static::$lastError = 'pint ('.basename($binary).') will not run on PHP '
+                .PHP_VERSION.': '.(trim($process->getErrorOutput()."\n".$process->getOutput())
+                    ?: 'exit '.$process->getExitCodeText());
+
+            return false;
+        }
+
+        static::$lastError = '';
+
+        return true;
     }
 
     /**

@@ -43,7 +43,7 @@
             "handle": "date",
             "class": "Streams\\Core\\Field\\Types\\DateFieldType",
             "schema": "Streams\\Core\\Field\\Schema\\DateSchema",
-            "decorator": "Streams\\Core\\Field\\Decorator\\DateDecorator",
+            "decorator": "Streams\\Core\\Field\\Decorator\\DatetimeDecorator",
             "config": {},
             "defaults": {},
             "allowed_parents": [
@@ -65,7 +65,7 @@
             "handle": "decimal",
             "class": "Streams\\Core\\Field\\Types\\DecimalFieldType",
             "schema": "Streams\\Core\\Field\\Schema\\DecimalSchema",
-            "decorator": "Streams\\Core\\Field\\Decorator\\DecimalDecorator",
+            "decorator": "Streams\\Core\\Field\\Decorator\\NumberDecorator",
             "config": {},
             "defaults": {},
             "allowed_parents": [
@@ -97,7 +97,7 @@
         {
             "handle": "file",
             "class": "Streams\\Core\\Field\\Types\\FileFieldType",
-            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
+            "schema": "Streams\\Core\\Field\\FieldSchema",
             "decorator": "Streams\\Core\\Field\\Decorator\\FileDecorator",
             "config": {},
             "defaults": {},
@@ -119,8 +119,8 @@
         {
             "handle": "image",
             "class": "Streams\\Core\\Field\\Types\\ImageFieldType",
-            "schema": "Streams\\Core\\Field\\Schema\\StringSchema",
-            "decorator": "Streams\\Core\\Field\\Decorator\\ImageDecorator",
+            "schema": "Streams\\Core\\Field\\FieldSchema",
+            "decorator": "Streams\\Core\\Field\\Decorator\\FileDecorator",
             "config": {},
             "defaults": {},
             "allowed_parents": [
@@ -131,18 +131,7 @@
             "handle": "integer",
             "class": "Streams\\Core\\Field\\Types\\IntegerFieldType",
             "schema": "Streams\\Core\\Field\\Schema\\IntegerSchema",
-            "decorator": "Streams\\Core\\Field\\Decorator\\IntegerDecorator",
-            "config": {},
-            "defaults": {},
-            "allowed_parents": [
-                "stream"
-            ]
-        },
-        {
-            "handle": "markdown",
-            "class": "Streams\\Core\\Field\\Types\\MarkdownFieldType",
-            "schema": "Streams\\Core\\Field\\FieldSchema",
-            "decorator": "Streams\\Core\\Field\\Decorator\\MarkdownDecorator",
+            "decorator": "Streams\\Core\\Field\\Decorator\\NumberDecorator",
             "config": {},
             "defaults": {},
             "allowed_parents": [
@@ -200,6 +189,17 @@
             "allowed_parents": [
                 "stream",
                 "object"
+            ]
+        },
+        {
+            "handle": "polymorphic",
+            "class": "Streams\\Core\\Field\\Types\\PolymorphicFieldType",
+            "schema": "Streams\\Core\\Field\\Schema\\ObjectSchema",
+            "decorator": "Streams\\Core\\Field\\FieldDecorator",
+            "config": {},
+            "defaults": {},
+            "allowed_parents": [
+                "stream"
             ]
         },
         {

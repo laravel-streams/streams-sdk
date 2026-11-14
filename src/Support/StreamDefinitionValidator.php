@@ -17,9 +17,15 @@ class StreamDefinitionValidator
 {
     public const SCHEMA_ID = 'https://streams.dev/schema/streams.schema.json';
 
+    /**
+     * The hand-written definition contract, not resources/schemas/streams.schema.json:
+     * that file is generated from the installed field types and guarded by the
+     * catalog drift test, so it cannot carry the semantic contract (field
+     * imports, allowed types, docs) this validator checks.
+     */
     public static function schemaPath(): string
     {
-        return dirname(__DIR__, 2) . '/resources/schemas/streams.schema.json';
+        return dirname(__DIR__, 2) . '/resources/schemas/streams.definition.schema.json';
     }
 
     public static function schema(): array

@@ -1,15 +1,16 @@
-name: Catalog drift
+name: Tests
 
 on:
   push:
     branches: ['1.0']
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  catalog-drift:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +22,16 @@ jobs:
           coverage: none
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+      # Kept as its own step so a catalog mismatch reads as one, rather than as
+      # one of a hundred failing assertions.
       - name: Catalog drift and command regression tests
         run: vendor/bin/phpunit --filter 'Catalog(Drift|ManifestMerge|Check)Test'
+      # The filter above covers three of roughly forty test files. The whole
+      # suite is what a contributor would run locally, and it is the only thing
+      # that exercises the generators, the TUI and the onboarding surfaces -
+      # which is where the breakages have been.
+      - name: Full suite
+        run: vendor/bin/phpunit
       - name: TypeScript types drift check (task 65)
         if: ${{ false }} # Enable and replace the placeholder when task 65 lands.
         run: echo 'Task 65 will supply the TypeScript drift-check command.'

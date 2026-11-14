@@ -75,6 +75,39 @@ class StreamsTui extends Command
         }
     }
 
+    /**
+     * The non-interactive render had no method behind it: any run that is not a
+     * TTY - CI, a pipe, an agent shell - reached this call and died with
+     * "Method Streams\Sdk\Console\Commands\StreamsTui::renderStreams does not
+     * exist". The interactive menu browses streams one at a time; blind runs get
+     * the whole catalog as a table and no prompts.
+     */
+    protected function renderStreams(): void
+    {
+        $summaries = StreamFacts::summaries();
+
+        $this->newLine();
+        $this->line('<options=bold>Streams</>');
+
+        if ($summaries === []) {
+            $this->line('None registered. Add streams/{id}.json, then php artisan streams:validate.');
+
+            return;
+        }
+
+        $this->table(
+            ['id', 'name', 'source', 'fields'],
+            array_map(fn (array $stream) => [
+                $stream['id'] ?? '',
+                $stream['name'] ?? '',
+                $stream['source'] ?? '',
+                (string) count($stream['fields'] ?? []),
+            ], $summaries)
+        );
+
+        $this->line(count($summaries).' stream(s). One in full: php artisan streams:tui --json, or the describe-stream MCP tool.');
+    }
+
     protected function renderStatus(ProjectStatus $status): void
     {
         $data = $status->toArray();
@@ -124,7 +157,7 @@ class StreamsTui extends Command
             $this->line('   <fg=cyan>'.$step['command'].'</>');
             $this->line('   docs: '.$step['docs']);
 
-            if ($this->isSafe($step['command'])) {
+            if ($this->input->isInteractive() && $this->isSafe($step['command'])) {
                 if ($this->confirm('Run it now?', false)) {
                     $this->runStep($step['command']);
                 }

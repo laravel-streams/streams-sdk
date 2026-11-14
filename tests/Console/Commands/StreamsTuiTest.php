@@ -11,7 +11,7 @@ class StreamsTuiTest extends SdkTestCase
     public function test_exit_leaves_the_main_menu(): void
     {
         $this->artisan('streams:tui')
-            ->expectsChoice('SALLT', 'Exit', ['Streams', 'Exit'])
+            ->expectsChoice('SALLT', 'Exit', ['Agents', 'Docs', 'Exit', 'How to', 'Status', 'Streams'])
             ->assertSuccessful();
     }
 
@@ -26,9 +26,9 @@ class StreamsTuiTest extends SdkTestCase
         $this->assertNotEmpty($ids);
 
         $this->artisan('streams:tui')
-            ->expectsChoice('SALLT', 'Streams', ['Streams', 'Exit'])
+            ->expectsChoice('SALLT', 'Streams', ['Agents', 'Docs', 'Exit', 'How to', 'Status', 'Streams'])
             ->expectsChoice('Select a stream', 'Back', ['Back', ...$ids])
-            ->expectsChoice('SALLT', 'Exit', ['Streams', 'Exit'])
+            ->expectsChoice('SALLT', 'Exit', ['Agents', 'Docs', 'Exit', 'How to', 'Status', 'Streams'])
             ->assertSuccessful();
     }
 
@@ -43,19 +43,21 @@ class StreamsTuiTest extends SdkTestCase
         $handle = $ids[0];
 
         $this->artisan('streams:tui')
-            ->expectsChoice('SALLT', 'Streams', ['Streams', 'Exit'])
+            ->expectsChoice('SALLT', 'Streams', ['Agents', 'Docs', 'Exit', 'How to', 'Status', 'Streams'])
             ->expectsChoice('Select a stream', $handle, ['Back', ...$ids])
             ->expectsOutputToContain($handle)
             ->expectsChoice($handle, 'Back', ['Back'])
             ->expectsChoice('Select a stream', 'Back', ['Back', ...$ids])
-            ->expectsChoice('SALLT', 'Exit', ['Streams', 'Exit'])
+            ->expectsChoice('SALLT', 'Exit', ['Agents', 'Docs', 'Exit', 'How to', 'Status', 'Streams'])
             ->assertSuccessful();
     }
 
     public function test_non_interactive_lists_streams_and_exits(): void
     {
+        $this->withFixtureStreams('posts');
+
         $this->artisan('streams:tui', ['--no-interaction' => true])
-            ->expectsOutputToContain('people')
+            ->expectsOutputToContain('posts')
             ->assertSuccessful();
     }
 }

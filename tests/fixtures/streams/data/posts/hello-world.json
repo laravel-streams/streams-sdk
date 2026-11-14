@@ -1,0 +1,8 @@
+{
+    "id": "hello-world",
+    "title": "Hello World",
+    "status": "live",
+    "author_id": "ada",
+    "views": 10,
+    "secret": "hidden"
+}

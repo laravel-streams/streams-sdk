@@ -1,0 +1,171 @@
+{
+    "id": "blog_posts",
+    "name": "Blog Posts",
+    "description": "A comprehensive blog management system with categories, tags, and SEO features.",
+    "config": {
+        "source": {
+            "format": "json"
+        }
+    },
+    "fields": [
+        {
+            "handle": "id",
+            "type": "integer",
+            "name": "ID",
+            "config": {
+                "auto_increment": true
+            }
+        },
+        {
+            "handle": "title",
+            "type": "string",
+            "name": "Title",
+            "required": true,
+            "config": {
+                "max": 255,
+                "placeholder": "Enter a compelling title..."
+            }
+        },
+        {
+            "handle": "slug",
+            "type": "slug",
+            "name": "URL Slug",
+            "unique": true,
+            "config": {
+                "slugify": "title",
+                "separator": "-"
+            }
+        },
+        {
+            "handle": "excerpt",
+            "type": "string",
+            "name": "Excerpt",
+            "config": {
+                "max": 500,
+                "placeholder": "Brief summary of the post..."
+            }
+        },
+        {
+            "handle": "content",
+            "type": "string",
+            "input": {
+                "type": "markdown"
+            },
+            "name": "Content",
+            "required": true,
+            "config": {
+                "toolbar": [
+                    "bold",
+                    "italic",
+                    "link",
+                    "image",
+                    "code",
+                    "quote"
+                ],
+                "preview": true,
+                "height": 400
+            }
+        },
+        {
+            "handle": "featured_image",
+            "type": "image",
+            "name": "Featured Image",
+            "config": {
+                "disk": "public",
+                "path": "blog/images",
+                "max_width": 1200,
+                "max_height": 800,
+                "quality": 85
+            }
+        },
+        {
+            "handle": "category_id",
+            "type": "relationship",
+            "name": "Category",
+            "required": true,
+            "config": {
+                "related": "blog_categories",
+                "title_field": "name",
+                "value_field": "id"
+            }
+        },
+        {
+            "handle": "author_id",
+            "type": "relationship",
+            "name": "Author",
+            "required": true,
+            "config": {
+                "related": "users",
+                "title_field": "name",
+                "value_field": "id"
+            }
+        },
+        {
+            "handle": "status",
+            "type": "select",
+            "name": "Status",
+            "required": true,
+            "config": {
+                "options": {
+                    "draft": "Draft",
+                    "published": "Published",
+                    "scheduled": "Scheduled",
+                    "archived": "Archived"
+                },
+                "default": "draft"
+            }
+        },
+        {
+            "handle": "is_featured",
+            "type": "boolean",
+            "name": "Featured Post",
+            "config": {
+                "default": false
+            }
+        },
+        {
+            "handle": "published_at",
+            "type": "datetime",
+            "name": "Publication Date",
+            "config": {
+                "format": "Y-m-d H:i:s"
+            }
+        },
+        {
+            "handle": "meta_title",
+            "type": "string",
+            "name": "SEO Title",
+            "config": {
+                "max": 60,
+                "placeholder": "SEO optimized title (60 chars max)"
+            }
+        },
+        {
+            "handle": "meta_description",
+            "type": "string",
+            "name": "SEO Description",
+            "config": {
+                "max": 160,
+                "placeholder": "SEO description (160 chars max)"
+            }
+        },
+        {
+            "handle": "view_count",
+            "type": "integer",
+            "name": "View Count",
+            "config": {
+                "default": 0
+            }
+        },
+        {
+            "handle": "created_at",
+            "type": "datetime",
+            "name": "Created At"
+        },
+        {
+            "handle": "updated_at",
+            "type": "datetime",
+            "name": "Updated At"
+        }
+    ]
+}

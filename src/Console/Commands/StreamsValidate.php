@@ -4,6 +4,7 @@ namespace Streams\Sdk\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Streams\Sdk\Support\StreamDefinitionValidator;
 use Streams\Sdk\Support\StreamSourceValidator;
 
 class StreamsValidate extends Command
@@ -12,9 +13,9 @@ class StreamsValidate extends Command
         {paths?* : Definition files to validate. Defaults to streams/*.json.}
         {--json : Output JSON for scripts and agents.}';
 
-    protected $description = 'Validate stream source configuration against the installed Core repository.';
+    protected $description = 'Validate stream definitions against the JSON Schema and the installed Core repository.';
 
-    public function handle(StreamSourceValidator $validator)
+    public function handle(StreamSourceValidator $validator, StreamDefinitionValidator $definition)
     {
         $paths = $this->argument('paths') ?: File::glob(base_path('streams/*.json'));
 
@@ -23,7 +24,7 @@ class StreamsValidate extends Command
         foreach ($paths as $path) {
             $absolute = str_starts_with($path, '/') ? $path : base_path($path);
 
-            $results[ltrim(str_replace(base_path(), '', $absolute), '/')] = $this->validateFile($validator, $absolute);
+            $results[ltrim(str_replace(base_path(), '', $absolute), '/')] = $this->validateFile($validator, $definition, $absolute);
         }
 
         $failed = array_filter($results, fn ($result) => ! $result['valid']);
@@ -57,7 +58,7 @@ class StreamsValidate extends Command
     /**
      * @return array{valid: bool, errors: array<int, string>, warnings: array<int, string>, source_type: string|null}
      */
-    protected function validateFile(StreamSourceValidator $validator, string $path): array
+    protected function validateFile(StreamSourceValidator $validator, StreamDefinitionValidator $schemaValidator, string $path): array
     {
         if (! is_file($path)) {
             return $this->invalid('File ['.$path.'] does not exist.');
@@ -69,7 +70,15 @@ class StreamsValidate extends Command
             return $this->invalid('Invalid JSON: '.json_last_error_msg());
         }
 
-        return $validator->validate($decoded);
+        $schema = $schemaValidator->validate($decoded, basename($path, '.json'));
+        $source = $validator->validate($decoded);
+
+        return [
+            'valid' => $schema['valid'] && $source['valid'],
+            'errors' => array_values(array_unique([...$schema['errors'], ...$source['errors']])),
+            'warnings' => array_values(array_unique([...$schema['warnings'], ...$source['warnings']])),
+            'source_type' => $source['source_type'],
+        ];
     }
 
     /**

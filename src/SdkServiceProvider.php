@@ -20,6 +20,7 @@ use Streams\Sdk\Console\Commands\StreamsTap;
 use Streams\Sdk\Console\Commands\StreamsTui;
 use Streams\Sdk\Console\Commands\StreamsOnboard;
 use Streams\Sdk\Console\Commands\StreamsValidate;
+use Streams\Sdk\Console\Commands\MakeLivewire;
 use Streams\Sdk\Console\Commands\StubPublish;
 use Streams\Sdk\Console\Inputs\ArrayConsoleInput;
 use Streams\Sdk\Console\Inputs\BooleanConsoleInput;
@@ -56,6 +57,7 @@ class SdkServiceProvider extends ServiceProvider
                 ShowEntry::class,
                 ListEntries::class,
                 ListStreams::class,
+                MakeLivewire::class,
                 // \Streams\Sdk\Console\Commands\ShowStream::class,     Necessary?
                 // \Streams\Sdk\Console\Commands\DescribeStream::class,
             ]);
@@ -64,6 +66,22 @@ class SdkServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../streams/files.json' => base_path('streams/files.json'),
         ], ['examples', 'files-example']);
+
+        $this->publishes([
+            __DIR__.'/../streams/blog_posts.json' => base_path('streams/blog_posts.json'),
+        ], ['examples', 'blog-example']);
+
+        $this->publishes([
+            __DIR__.'/../streams/products.json' => base_path('streams/products.json'),
+        ], ['examples', 'ecommerce-example']);
+
+        $this->publishes([
+            __DIR__.'/../streams/contacts.json' => base_path('streams/contacts.json'),
+        ], ['examples', 'crm-example']);
+
+        $this->publishes([
+            __DIR__.'/../streams/docs.json' => base_path('streams/docs.json'),
+        ], ['examples', 'docs-example']);
 
         $this->publishes([
             __DIR__.'/Console/Commands/stubs' => (string) config('streams.sdk.make.stubs_dir', base_path('streams/stubs')),
@@ -192,4 +210,5 @@ class SdkServiceProvider extends ServiceProvider
             $this->app->bind("streams.console.inputs.{$abstract}", $concrete);
         }
     }
+
 }

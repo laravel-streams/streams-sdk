@@ -1,0 +1,55 @@
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-gray-900">{{ title }}</h1>
+        @if (Route::has('{{ stream }}.create'))
+            <a href="{{ route('{{ stream }}.create') }}" class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white">New entry</a>
+        @endif
+    </div>
+
+    @if (session()->has('message'))
+        <div class="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">{{ session('message') }}</div>
+    @endif
+
+    <div class="flex items-center gap-2 text-sm">
+        <label for="perPage" class="text-gray-700">Per page</label>
+        <select wire:model.live="perPage" id="perPage" class="rounded-md border-gray-300 text-sm">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+        </select>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+{{ tableHeaders }}
+                    <th scope="col" class="px-4 py-3"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @forelse ($entries as $entry)
+                    <tr wire:key="entry-{{ $entry->{{ keyName }} }}">
+{{ tableCells }}
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                            @if (Route::has('{{ stream }}.show'))
+                                <a href="{{ route('{{ stream }}.show', $entry->{{ keyName }}) }}" class="text-gray-700 underline">View</a>
+                            @endif
+                            @if (Route::has('{{ stream }}.edit'))
+                                <a href="{{ route('{{ stream }}.edit', $entry->{{ keyName }}) }}" class="ml-2 text-gray-700 underline">Edit</a>
+                            @endif
+                            <button type="button" wire:click="delete(@js((string) $entry->{{ keyName }}))" wire:confirm="Delete this entry?" class="ml-2 text-red-600">Delete</button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="{{ columnCount }}" class="px-4 py-12 text-center text-sm text-gray-500">No entries yet.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{ $entries->links() }}
+</div>

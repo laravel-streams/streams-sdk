@@ -14,6 +14,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Streams\Sdk\Mcp\Tool;
 use Streams\Sdk\Support\StreamFacts;
+use Streams\Sdk\Support\StreamDefinitionValidator;
 use Streams\Sdk\Support\StreamSourceValidator;
 
 /**
@@ -168,6 +169,13 @@ class ValidateStreamDefinition extends Tool
     protected function check(array $definition): array
     {
         $report = $this->validator()->validate($definition);
+
+        // Same ladder as streams:validate: JSON Schema first, then the installed Core.
+        $schema = app(StreamDefinitionValidator::class)->validate($definition);
+
+        $report['valid'] = $report['valid'] && $schema['valid'];
+        $report['errors'] = array_values(array_unique([...$schema['errors'], ...$report['errors']]));
+        $report['warnings'] = array_values(array_unique([...$schema['warnings'], ...$report['warnings']]));
 
         $report['errors'] = array_merge($report['errors'], $this->structural($definition));
 

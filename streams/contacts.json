@@ -1,0 +1,246 @@
+{
+    "id": "contacts",
+    "name": "Contacts",
+    "description": "CRM contact management system with companies, activities, and communication tracking.",
+    "config": {
+        "source": {
+            "format": "json"
+        }
+    },
+    "fields": [
+        {
+            "handle": "id",
+            "type": "integer",
+            "name": "ID"
+        },
+        {
+            "handle": "first_name",
+            "type": "string",
+            "name": "First Name",
+            "required": true,
+            "config": {
+                "max": 100,
+                "placeholder": "Enter first name..."
+            }
+        },
+        {
+            "handle": "last_name",
+            "type": "string",
+            "name": "Last Name",
+            "required": true,
+            "config": {
+                "max": 100,
+                "placeholder": "Enter last name..."
+            }
+        },
+        {
+            "handle": "email",
+            "type": "email",
+            "name": "Email",
+            "unique": true,
+            "required": true,
+            "config": {
+                "placeholder": "contact@example.com"
+            }
+        },
+        {
+            "handle": "phone",
+            "type": "string",
+            "name": "Phone Number",
+            "config": {
+                "max": 20,
+                "placeholder": "+1 (555) 123-4567"
+            }
+        },
+        {
+            "handle": "mobile",
+            "type": "string",
+            "name": "Mobile Number",
+            "config": {
+                "max": 20,
+                "placeholder": "+1 (555) 123-4567"
+            }
+        },
+        {
+            "handle": "job_title",
+            "type": "string",
+            "name": "Job Title",
+            "config": {
+                "max": 150,
+                "placeholder": "e.g., Marketing Manager"
+            }
+        },
+        {
+            "handle": "company_id",
+            "type": "relationship",
+            "name": "Company",
+            "config": {
+                "related": "companies",
+                "title_field": "name",
+                "value_field": "id"
+            }
+        },
+        {
+            "handle": "lead_source",
+            "type": "select",
+            "name": "Lead Source",
+            "config": {
+                "options": {
+                    "website": "Website",
+                    "referral": "Referral",
+                    "social_media": "Social Media",
+                    "email_campaign": "Email Campaign",
+                    "trade_show": "Trade Show",
+                    "cold_call": "Cold Call",
+                    "other": "Other"
+                }
+            }
+        },
+        {
+            "handle": "status",
+            "type": "select",
+            "name": "Status",
+            "required": true,
+            "config": {
+                "options": {
+                    "new": "New",
+                    "qualified": "Qualified",
+                    "proposal": "Proposal Sent",
+                    "negotiation": "In Negotiation",
+                    "won": "Won",
+                    "lost": "Lost",
+                    "inactive": "Inactive"
+                },
+                "default": "new"
+            }
+        },
+        {
+            "handle": "assigned_to",
+            "type": "relationship",
+            "name": "Assigned To",
+            "config": {
+                "related": "users",
+                "title_field": "name",
+                "value_field": "id"
+            }
+        },
+        {
+            "handle": "tags",
+            "type": "array",
+            "name": "Tags",
+            "config": {
+                "item_type": "string",
+                "max_items": 10
+            }
+        },
+        {
+            "handle": "address",
+            "type": "object",
+            "name": "Address",
+            "config": {
+                "schema": {
+                    "street": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "state": {
+                        "type": "string"
+                    },
+                    "postal_code": {
+                        "type": "string"
+                    },
+                    "country": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        {
+            "handle": "social_profiles",
+            "type": "object",
+            "name": "Social Profiles",
+            "config": {
+                "schema": {
+                    "linkedin": {
+                        "type": "url"
+                    },
+                    "twitter": {
+                        "type": "url"
+                    },
+                    "facebook": {
+                        "type": "url"
+                    },
+                    "instagram": {
+                        "type": "url"
+                    }
+                }
+            }
+        },
+        {
+            "handle": "notes",
+            "type": "string",
+            "name": "Notes",
+            "config": {
+                "max": 2000,
+                "placeholder": "Add notes about this contact..."
+            }
+        },
+        {
+            "handle": "avatar",
+            "type": "image",
+            "name": "Avatar",
+            "config": {
+                "disk": "public",
+                "path": "contacts/avatars"
+            }
+        },
+        {
+            "handle": "is_customer",
+            "type": "boolean",
+            "name": "Is Customer",
+            "config": {
+                "default": false
+            }
+        },
+        {
+            "handle": "is_vendor",
+            "type": "boolean",
+            "name": "Is Vendor",
+            "config": {
+                "default": false
+            }
+        },
+        {
+            "handle": "lifetime_value",
+            "type": "decimal",
+            "name": "Lifetime Value",
+            "config": {
+                "decimals": 2,
+                "min": 0,
+                "default": 0
+            }
+        },
+        {
+            "handle": "last_contact_date",
+            "type": "datetime",
+            "name": "Last Contact Date"
+        },
+        {
+            "handle": "next_follow_up",
+            "type": "datetime",
+            "name": "Next Follow Up"
+        },
+        {
+            "handle": "created_at",
+            "type": "datetime",
+            "name": "Created At"
+        },
+        {
+            "handle": "updated_at",
+            "type": "datetime",
+            "name": "Updated At"
+        }
+    ]
+}

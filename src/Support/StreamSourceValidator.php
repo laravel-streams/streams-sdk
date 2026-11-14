@@ -51,6 +51,12 @@ class StreamSourceValidator
 
         $sourceType = $this->checkSource($config, $errors);
 
+        $sourcePath = $config['source']['path'] ?? null;
+
+        if (is_string($sourcePath) && (str_starts_with($sourcePath, '/') || preg_match('#^[A-Za-z]:[\\\\/]#', $sourcePath))) {
+            $warnings[] = '/config/source/path: core strips the leading separator and joins this onto the app root (base_path()), so an absolute path writes into a mirrored tree inside the project. Use a path relative to the project root, for example "storage/app/data/posts".';
+        }
+
         return [
             'valid' => $errors === [],
             'errors' => array_values(array_unique($errors)),

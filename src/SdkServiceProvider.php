@@ -11,6 +11,9 @@ use Streams\Sdk\Console\Commands\ListEntries;
 use Streams\Sdk\Console\Commands\ListStreams;
 use Streams\Sdk\Console\Commands\ShowEntry;
 use Streams\Sdk\Console\Commands\StreamsCapture;
+use Streams\Sdk\Console\Commands\MakeAddon;
+use Streams\Sdk\Console\Commands\MakeEntry;
+use Streams\Sdk\Console\Commands\MakeStream;
 use Streams\Sdk\Console\Commands\StreamsMake;
 use Streams\Sdk\Console\Commands\StreamsSchema;
 use Streams\Sdk\Console\Commands\StreamsTap;
@@ -30,6 +33,8 @@ class SdkServiceProvider extends ServiceProvider
 {
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__.'/../config/sdk.php', 'streams.sdk');
+
         $this->app->singleton(KindRegistry::class, function () {
             return KindRegistry::withBuiltIns()->loadConfigured();
         });
@@ -45,6 +50,9 @@ class SdkServiceProvider extends ServiceProvider
                 StreamsTap::class,
                 StreamsValidate::class,
                 StubPublish::class,
+                MakeStream::class,
+                MakeEntry::class,
+                MakeAddon::class,
                 ShowEntry::class,
                 ListEntries::class,
                 ListStreams::class,
@@ -65,6 +73,11 @@ class SdkServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerInputs();
+        $this->registerMcpServer();
+
+        $this->publishes([
+            __DIR__.'/../config/sdk.php' => config_path('streams/sdk.php'),
+        ], ['streams-config', 'sdk-config']);
 
         Field::macro('console', function () {
 
@@ -116,6 +129,34 @@ class SdkServiceProvider extends ServiceProvider
         // {
         //     return Factory::class;
         // }
+    }
+
+    /**
+     * The agent door. Registered here rather than in register() so laravel/mcp
+     * has already bound its Registrar, and never in production unless the app
+     * opts in: this server acts with the app's own permissions.
+     */
+    protected function registerMcpServer(): void
+    {
+        if (! (bool) config('streams.sdk.mcp.enabled', true)) {
+            return;
+        }
+
+        if (! class_exists(\Laravel\Mcp\Facades\Mcp::class)) {
+            return;
+        }
+
+        if ($this->app->environment('production') && ! (bool) config('streams.sdk.mcp.allow_production', false)) {
+            return;
+        }
+
+        $handle = (string) config('streams.sdk.mcp.handle', 'streams');
+
+        if (\Laravel\Mcp\Facades\Mcp::getLocalServer($handle) !== null) {
+            return;
+        }
+
+        \Laravel\Mcp\Facades\Mcp::local($handle, \Streams\Sdk\Mcp\StreamsServer::class);
     }
 
     protected function registerInputs()

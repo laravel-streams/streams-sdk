@@ -41,7 +41,7 @@ class ListStreams extends Command
         }
 
         if ($streams === []) {
-            $this->components->warn('No streams are registered. Write one with make:stream {id}, then run streams:validate.');
+            $this->components->warn('No streams are registered. Write streams/{id}.json (see the make-stream MCP tool or streams:make), then run streams:validate.');
 
             return Command::SUCCESS;
         }

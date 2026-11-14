@@ -25,9 +25,11 @@ class AddMemberTest extends TransformsTestCase
         ])))->apply($editor);
 
         // The only +/- lines are the new method; setUp() and the class
-        // declaration are printed from their original tokens.
+        // declaration are printed from their original tokens. The signature
+        // spacing is what nikic/php-parser 5 emits, which is also what pint
+        // and Laravel's own style expect (no space before the return type).
         $this->assertSame([
-            '+    public function heading() : string',
+            '+    public function heading(): string',
             '+    {',
             "+        return 'Widgets';",
             '+    }',

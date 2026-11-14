@@ -74,7 +74,14 @@ class PhpEditor
         $parser = static::parser($lexer);
 
         $editor->originalStatements = $parser->parse($code);
-        $editor->tokens = $lexer->getTokens();
+
+        // php-parser 5 dropped Lexer::getTokens() and exposes the stream it
+        // actually parsed with on the parser instead. The parser must be the
+        // source of the tokens either way: the format-preserving printer
+        // matches nodes to the positions in that same stream.
+        $editor->tokens = method_exists($parser, 'getTokens')
+            ? $parser->getTokens()
+            : $lexer->getTokens();
 
         // Deep-clone the AST before editing: the format-preserving printer
         // matches new nodes back to the original tokens by their positions,
@@ -313,6 +320,15 @@ class PhpEditor
 
     protected static function parser(Lexer $lexer): Parser
     {
+        // nikic/php-parser 5 removed ParserFactory::create() and builds its own
+        // lexer internally, so it cannot be handed the configured one. The
+        // constraint allows either major and a fresh install resolves 5.x, so
+        // both paths have to work; 5's default attributes already cover the
+        // comments and token positions the editor reads back.
+        if (method_exists(ParserFactory::class, 'createForNewestSupportedVersion')) {
+            return (new ParserFactory)->createForNewestSupportedVersion();
+        }
+
         return (new ParserFactory)->create(ParserFactory::PREFER_PHP7, $lexer);
     }
 }

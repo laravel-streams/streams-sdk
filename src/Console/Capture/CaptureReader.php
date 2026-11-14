@@ -286,7 +286,12 @@ class CaptureReader
      */
     protected function parse(string $file): ?array
     {
-        $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        // nikic/php-parser 5 removed create(); the constraint allows either
+        // major and a fresh install resolves 5.x.
+        $factory = new ParserFactory;
+        $parser = method_exists($factory, 'createForNewestSupportedVersion')
+            ? $factory->createForNewestSupportedVersion()
+            : $factory->create(ParserFactory::PREFER_PHP7);
 
         try {
             return $parser->parse((string) file_get_contents($file)) ?: null;

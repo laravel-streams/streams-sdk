@@ -75,8 +75,8 @@ class StreamsValidate extends Command
 
         return [
             'valid' => $schema['valid'] && $source['valid'],
-            'errors' => array_values(array_unique([...$schema['errors'], ...$source['errors']])),
-            'warnings' => array_values(array_unique([...$schema['warnings'], ...$source['warnings']])),
+            'errors' => StreamDefinitionValidator::consolidate($source['errors'], $schema['errors']),
+            'warnings' => StreamDefinitionValidator::consolidate($source['warnings'], $schema['warnings']),
             'source_type' => $source['source_type'],
         ];
     }

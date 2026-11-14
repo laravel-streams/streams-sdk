@@ -169,20 +169,16 @@ class ValidateStreamDefinition extends Tool
     protected function check(array $definition): array
     {
         $report = $this->validator()->validate($definition);
-
-        // Same ladder as streams:validate: JSON Schema first, then the installed Core.
-        $schema = app(StreamDefinitionValidator::class)->validate($definition);
-
-        $report['valid'] = $report['valid'] && $schema['valid'];
-        $report['errors'] = array_values(array_unique([...$schema['errors'], ...$report['errors']]));
-        $report['warnings'] = array_values(array_unique([...$schema['warnings'], ...$report['warnings']]));
-
         $report['errors'] = array_merge($report['errors'], $this->structural($definition));
 
+        // Same ladder as streams:validate: the installed Core explains a problem
+        // better than JSON Schema does, so its messages win on a shared pointer.
+        $schema = app(StreamDefinitionValidator::class)->validate($definition);
+
         return [
-            'valid' => $report['errors'] === [],
-            'errors' => array_values(array_unique($report['errors'])),
-            'warnings' => $report['warnings'],
+            'valid' => $report['errors'] === [] && $schema['valid'],
+            'errors' => StreamDefinitionValidator::consolidate($report['errors'], $schema['errors']),
+            'warnings' => StreamDefinitionValidator::consolidate($report['warnings'], $schema['warnings']),
             'source_type' => $report['source_type'],
         ];
     }

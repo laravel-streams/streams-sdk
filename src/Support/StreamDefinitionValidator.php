@@ -286,6 +286,38 @@ class StreamDefinitionValidator
         return $types;
     }
 
+    /**
+     * Merge JSON Schema errors into the more specific errors the app validator
+     * already reports.
+     *
+     * JSON Schema reports every branch of a oneOf that failed, so one bad field
+     * can produce a cascade ("fields must be an object", "fields must be a
+     * string", ...). The app validator names the actual problem, so its message
+     * wins on a shared pointer, and any pointer whose descendant is reported is
+     * dropped as an ancestor cascade.
+     */
+    public static function consolidate(array $specific, array $schema): array
+    {
+        $byPointer = [];
+
+        foreach ([...$specific, ...$schema] as $error) {
+            $pointer = explode(':', $error, 2)[0];
+            $byPointer[$pointer] ??= $error;
+        }
+
+        foreach (array_keys($byPointer) as $pointer) {
+            foreach (array_keys($byPointer) as $other) {
+                if ($other !== $pointer && str_starts_with($other, $pointer.'/')) {
+                    unset($byPointer[$pointer]);
+
+                    break;
+                }
+            }
+        }
+
+        return array_values($byPointer);
+    }
+
     protected function result(array $errors, array $warnings): array
     {
         return [
